@@ -1,4 +1,21 @@
-# Testing some stuff
+# Unofficial CFEngine Package Manager
+
+Copyright Northern.tech AS.
+
+## Installation
+
+### Download
+```
+cit clone git@github.com:olehermanse/cpm.git
+```
+Clone it wherever you like, it is completely self contained, and can update `/var/cfengine/` from anywhere.
+
+### Symlink
+```
+ln -s $PWD/cpm/__main__.py /usr/local/bin/cpm
+```
+
+### Curl experiments
 
 ```
 curl -L https://github.com/nickanderson/cfengine-cis/archive/master.zip -o /tmp/master.zip
