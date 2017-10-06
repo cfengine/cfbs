@@ -1,0 +1,10 @@
+{
+  "cfengine-cis": {
+    "url": "https://github.com/nickanderson/cfengine-cis/archive/master.zip",
+    "author": "Nick"
+  },
+  "cfengine-local_users": {
+    "url": "https://github.com/nickanderson/cfengine-local_users/archive/master.zip",
+    "author": "Nick"
+  }
+}
