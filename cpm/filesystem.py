@@ -5,7 +5,13 @@ import os
 from os.path import abspath, realpath, dirname
 import sys
 from collections import deque, OrderedDict
-from logging import debug, info, warning, error, critical
+import logging
+from logging import debug, warning, error, critical
+from copy import deepcopy, copy
+import shutil
+
+def info(msg):
+    logging.info(" "+str(msg))
 
 def print_json(data):
     """Prints a dictionary as JSON with indentation."""
@@ -95,11 +101,36 @@ def empty(a):
     """Check if a value is empty list, dict, string, None, or similar."""
     return a == "" or a == [] or a == [""] or a == {} or a == None
 
+def combine(a,b):
+    if a is None:
+        return b
+    elif b is None:
+        return a
+    elif is_dict(a) and is_dict(b):
+        res = copy(a)
+        for k,v in b.items():
+            if k not in res:
+                res[k] = v
+            else:
+                res[k] = combine(v, res[k])
+        return res
+    elif is_list(a) and is_list(b):
+        r = []
+        for e in a + b:
+            if e not in r:
+                r.append(e)
+        return r
+    elif a == b:
+        return a
+    else:
+        raise TypeError()
+
 
 class Folder:
     def __init__(self, path, *args, create=True):
         self.path = abspath(realpath(path))
-        self.path = self.sub_path(*args)
+        if args:
+            self.path = self.sub_path(*args)
         if os.path.isfile(self.path):
             raise TypeError("'{}' is a file, not folder!".format(self.path))
         make_dir(self.path)
@@ -110,8 +141,20 @@ class Folder:
     def folder(self, path, *args, create=True):
         return Folder(self.path, path, *args, create=create)
 
-    def sub_path(self, *args):
-        return os.path.join(self.path, *args)
+    def sub_path(self, sub, *args):
+        return abspath(os.path.join(self.path, sub, *args))
+
+    def exists(self, sub, *args):
+        p = self.sub_path(sub, *args)
+        return os.path.exists(p)
+
+    def copy(self, dst):
+        #if os.path.exists(dst.path):
+            #shutil.rmtree(dst.path)
+        shutil.copytree(self.path, dst.path)
+
+    def __del__(self):
+        pass#shutil.rmtree(self.path)
 
 class File:
     def __init__(self, path, *args, create=True):
@@ -121,15 +164,26 @@ class File:
         if os.path.exists(self.path) and not os.path.isfile(self.path):
             raise TypeError("'{}' is not a file!".format(self.path))
         self.load()
-        if create:
+        if create and not os.path.exists(self.path):
             self.save()
 
     def copy(self, dst):
         dst.data = self.data
+        info("Copy: {} -> {}".format(self.path, dst.path))
         dst.save()
 
+    def apply(self, target_file):
+        source = deepcopy(self.data)
+        target = deepcopy(target_file.data)
+        target_file.data = combine(source, target)
+        info("Apply: {} -> {}.".format(self.path, target_file.path))
+        info("Result:\n{}".format(json.dumps(target_file.data, indent=2)))
+        target_file.save()
+
     def load(self):
+        info("Load: {}".format(self.path))
         self.data = load_json(self.path)
 
     def save(self):
+        info("Save: {}".format(self.path))
         dump_json(self.data, self.path)

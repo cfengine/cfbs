@@ -11,5 +11,14 @@
     "installers": [
       "make"
     ]
+  },
+  "client_initiated_reporting": {
+    "name": "client_initiated_reporting",
+    "git": "git@github.com:olehermanse/cfengine_basics.git",
+    "git_folder": "cfengine_basics",
+    "subfolder": "client_initiated_reporting",
+    "installers": [
+      "def"
+    ]
   }
 }

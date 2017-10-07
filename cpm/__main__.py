@@ -39,10 +39,17 @@ def yes_or_no(msg):
     else:
         return "no"
 
+def get_index(seq, index):
+    try:
+        return seq[index]
+    except IndexError:
+        return None
+
 class CPM:
     def __init__(self, root_path):
         self.root = Folder(root_path)
         self.package_index  = self.root.file("package_index.json")
+        self.package_alias  = self.root.file("package_alias.json")
 
         self.user           = self.root.folder("user")
         self.user.def_json  = self.user.file("def.json")
@@ -50,38 +57,51 @@ class CPM:
         self.user.config    = self.user.file("config.json")
         self.user.packages  = self.user.folder("packages")
 
+        self.user.install   = self.user.folder("install")
+        self.user.download  = self.user.folder("download")
+
         self.cfe            = Folder("/var/cfengine")
         self.cfe.mpf        = self.cfe.folder("masterfiles")
         self.cfe.cfe        = self.cfe.folder("masterfiles")
         self.cfe.mpf.services = self.cfe.folder("services")
 
+    def search(self, query=None, data=None):
+        if not data:
+            data = self.package_index.data
+        results = []
+        for k in data:
+            if not query or query in k:
+                results.append(k)
+        return results
+
     def run(self, commands):
-        found_result = False
-        if commands[0] == "search":
-            query = None
-            if len(commands) > 1:
-                query = commands[1]
-            for k in self.package_index.data:
-                if not query or query in k:
-                    print(k)
-                    found_result = True
-            if not found_result:
+        cmd = commands[0]
+        if cmd == "search":
+            query = get_index(commands, 1)
+            results = self.search(query)
+            [print(x) for x in results]
+            if not results:
                 print("No remote packages found, check your query or update using 'cpm update'")
-        elif commands[0] == "list":
-            query = None
-            if len(commands) > 1:
-                query = commands[1]
-            for k in self.user.installed.data:
-                if not query or query in k:
-                    print(k)
-                    found_result = True
-            if not found_result:
+        elif cmd == "list":
+            query = get_index(commands, 1)
+            results = self.search(query, self.user.installed.data)
+            [print(x) for x in results]
+            if not results:
                 print("No installed packages found, use 'cpm search' to find new packages")
-        elif commands[0] == "install":
+        elif cmd == "install":
             if len(commands) <= 1:
                 user_error("No package specified!")
             for pkg in commands[1:]:
                 self.install(pkg)
+        elif cmd == "apply":
+            if len(commands) <= 1:
+                for pkg_name in self.user.installed.data:
+                    self.apply(pkg_name)
+            else:
+                for pkg_name in commands[1:]:
+                    self.apply(pkg_name)
+        else:
+            user_error("Command not found: '{}'".format(cmd))
 
     def download_zip(self, pkg):
         url = pkg["zip"]
@@ -91,21 +111,41 @@ class CPM:
             tmp_dir = self.user.folder("tmp")
             archive.extractall(path=tmp_dir.path)
             folder_name = [member for member in archive.infolist()][0].filename[:-1]
-            src = tmp_dir.sub_path(folder_name)
-            dst = self.user.packages.folder(name, create=False)
 
-            if os.path.exists(dst.path):
-                shutil.rmtree(dst.path)
-            shutil.copytree(src, dst.path)
-            shutil.rmtree(src)
+        src = tmp_dir.folder(folder_name)
+        dst = self.user.packages.folder(name, create=False)
+
+        src.copy(dst)
+        del src
         self.user.installed.data[name] = pkg
         self.user.installed.save()
         return dst
+
+    def download_git(self, pkg):
+        url = pkg["git"]
+        name = pkg["name"]
+        git_folder = pkg["git_folder"]
+        download_loc = self.user.download.sub_path(git_folder)
+        if os.path.exists(download_loc):
+            os.system("cd {} && git pull".format(download_loc))
+        else:
+            os.system("cd {} && git clone {}".format(self.user.download.path,
+                                                     url))
+        pkg_folder = Folder(download_loc)
+        if "subfolder" in pkg:
+            pkg_folder = pkg_folder.folder(pkg["subfolder"])
+
+        dst = self.user.packages.folder(name)
+        pkg_folder.copy(dst)
+        return dst
+
 
     def download(self, pkg):
         print("Downloading '{}'...".format(pkg["name"]))
         if "zip" in pkg:
             return self.download_zip(pkg)
+        elif "git" in pkg:
+            return self.download_git(pkg)
         else:
             raise NotImplementedError()
 
@@ -132,24 +172,55 @@ class CPM:
             and self.cfe.mpf.def_json.data):
             self.config_import_def_json()
 
-    def install(self, pkg_name):
-        self.config_prompts()
-        if pkg_name not in self.package_index.data:
-            user_error("Package '{}' not found!".format(pkg_name))
+    def get_pkg_name(self, pkg_name):
+        if pkg_name in self.package_index.data:
+            return pkg_name
+        if pkg_name in self.package_alias.data:
+            return self.package_alias.data[pkg_name]
+        return None
+
+    def install_make(self, folder_path):
+        os.system("make -C {} install".format(folder_path))
+
+    def install_def(self, folder_path):
+        target_def = self.user.install.file("def.json")
+        source_def = Folder(folder_path).file("def.json")
+        source_def.apply(target_def)
+
+    def apply(self, pkg_name_user):
+        pkg_name = self.get_pkg_name(pkg_name_user)
+        if not pkg_name:
+            user_error("Package '{}' not found!".format(pkg_name_user))
+
+        print("Installing '{}'...".format(pkg_name))
         pkg = self.package_index.data[pkg_name]
-        folder = self.download(pkg)
+        folder = self.user.packages.folder(pkg_name)
+        for installer in pkg["installers"]:
+            if installer == "make":
+                self.install_make(folder.path)
+            elif installer == "def":
+                self.install_def(folder.path)
+            else:
+                print("Installer '{}' is not implemented.".format(installer))
+        print("Finished installer(s) for '{}'.".format(pkg_name))
+
+    def install(self, pkg_name_user):
+        self.config_prompts()
+        pkg_name = self.get_pkg_name(pkg_name_user)
+        if not pkg_name:
+            user_error("Package '{}' not found!".format(pkg_name_user))
+        pkg = self.package_index.data[pkg_name]
+        self.download(pkg)
         if "installers" not in pkg or not pkg["installers"]:
             print("Warning: The package '{}' has no automatic installer.".format(pkg["name"]))
             print("         Consult the package README for installation instructions.")
             return
-        print("Installing '{}'...".format(pkg_name))
-        for installer in pkg["installers"]:
-            if installer == "make":
-                os.system("make -C {} install".format(folder.path))
-            else:
-                raise NotImplementedError(installer)
-        print("Finished installer(s) for '{}'.".format(pkg_name))
-
+        auto = self.user.config.data["auto_apply"]
+        if auto == "yes" or auto == "y" or auto == True:
+            self.apply(pkg_name)
+        else:
+            print("Package installers skipped (auto_apply is off).")
+            print("Use 'cpm apply {}' to run the installer for this package".format(pkg_name_user))
 
 def main(commands):
     c = CPM(package_location(__file__))
