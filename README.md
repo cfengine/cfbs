@@ -10,6 +10,11 @@ cit clone git@github.com:olehermanse/cpm.git
 ```
 Clone it wherever you like, it is completely self contained, and can update `/var/cfengine/` from anywhere.
 
+### Dependencies
+```
+pip3 install -r requirements.txt
+```
+
 ### Symlink
 ```
 ln -s $PWD/cpm/__main__.py /usr/local/bin/cpm

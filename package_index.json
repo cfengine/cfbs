@@ -1,10 +1,15 @@
 {
   "cfengine-cis": {
-    "url": "https://github.com/nickanderson/cfengine-cis/archive/master.zip",
-    "author": "Nick"
+    "name": "cfengine-cis",
+    "author": "Nick Anderson",
+    "zip": "https://github.com/nickanderson/cfengine-cis/archive/master.zip"
   },
   "cfengine-local_users": {
-    "url": "https://github.com/nickanderson/cfengine-local_users/archive/master.zip",
-    "author": "Nick"
+    "name": "cfengine-local_users",
+    "author": "Nick Anderson",
+    "zip": "https://github.com/nickanderson/cfengine-local_users/archive/master.zip",
+    "installers": [
+      "make"
+    ]
   }
 }

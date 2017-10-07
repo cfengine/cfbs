@@ -2,6 +2,7 @@
 """Functions to save, load and convert dicts, lists, and json"""
 import json
 import os
+from os.path import abspath, realpath, dirname
 import sys
 from collections import deque, OrderedDict
 from logging import debug, info, warning, error, critical
@@ -14,7 +15,7 @@ def dump_json(data, path):
     """Saves a data structure (dict) to file with indented JSON formatting."""
     folder = os.path.dirname(path)
     if not os.path.exists(folder):
-        os.makedirs(folder, exist_ok=True)
+        make_dir(folder)
     with open(path, 'w', encoding="utf-8") as out_file:
         json.dump(data, out_file, indent=2, ensure_ascii=False)
 
@@ -33,8 +34,14 @@ def load_json(path):
 def jsonify(data):
     return json.dumps(data, indent=2)
 
+def make_dir(folder):
+    try:
+        os.makedirs(folder, exist_ok=True)
+    except PermissionError:
+        sys.exit("Permission denied: '{}'".format(folder))
+
 def write_file(data, path):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    make_dir(dirname(path))
     with open(path, "w") as f:
         f.write(str(data))
 
@@ -80,10 +87,49 @@ def listify(data):
 def write_file(data, path):
     directory = os.path.dirname(path)
     if directory != "" and directory != "./":
-        os.makedirs(directory, exist_ok=True)
+        make_dir(directory)
     with open(path, "w") as f:
         f.write(str(data))
 
 def empty(a):
     """Check if a value is empty list, dict, string, None, or similar."""
     return a == "" or a == [] or a == [""] or a == {} or a == None
+
+
+class Folder:
+    def __init__(self, path, *args, create=True):
+        self.path = abspath(realpath(path))
+        self.path = self.sub_path(*args)
+        if os.path.isfile(self.path):
+            raise TypeError("'{}' is a file, not folder!".format(self.path))
+        make_dir(self.path)
+
+    def file(self, path, *args, create=True):
+        return File(self.path, path, *args, create=create)
+
+    def folder(self, path, *args, create=True):
+        return Folder(self.path, path, *args, create=create)
+
+    def sub_path(self, *args):
+        return os.path.join(self.path, *args)
+
+class File:
+    def __init__(self, path, *args, create=True):
+        self.path = abspath(realpath(path))
+        if len(args) > 0:
+            self.path = os.path.join(self.path, *args)
+        if os.path.exists(self.path) and not os.path.isfile(self.path):
+            raise TypeError("'{}' is not a file!".format(self.path))
+        self.load()
+        if create:
+            self.save()
+
+    def copy(self, dst):
+        dst.data = self.data
+        dst.save()
+
+    def load(self):
+        self.data = load_json(self.path)
+
+    def save(self):
+        dump_json(self.data, self.path)
