@@ -116,7 +116,7 @@ class CPM:
         dst = self.user.packages.folder(name, create=False)
 
         src.copy(dst)
-        del src
+        src.rm()
         self.user.installed.data[name] = pkg
         self.user.installed.save()
         return dst

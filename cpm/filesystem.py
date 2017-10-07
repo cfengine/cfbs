@@ -148,13 +148,13 @@ class Folder:
         p = self.sub_path(sub, *args)
         return os.path.exists(p)
 
-    def copy(self, dst):
-        #if os.path.exists(dst.path):
-            #shutil.rmtree(dst.path)
-        shutil.copytree(self.path, dst.path)
+    def rm(self):
+        shutil.rmtree(self.path)
 
-    def __del__(self):
-        pass#shutil.rmtree(self.path)
+    def copy(self, dst):
+        if os.path.exists(dst.path):
+            dst.rm()
+        shutil.copytree(self.path, dst.path)
 
 class File:
     def __init__(self, path, *args, create=True):
