@@ -66,7 +66,7 @@ class CPM:
         self.cfe.mpf.services = self.cfe.folder("services")
 
     def search(self, query=None, data=None):
-        if not data:
+        if data is None:
             data = self.package_index.data
         results = []
         for k in data:
