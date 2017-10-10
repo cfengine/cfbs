@@ -136,7 +136,7 @@ class CPM:
                     self.apply(pkg_name)
             self.system_apply()
         elif cmd == "config" or cmd == "init":
-            self.init_config(redo=True)
+            pass # Done in __init__()
         else:
             user_error("Command not found: '{}'".format(cmd))
 
