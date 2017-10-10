@@ -79,13 +79,17 @@ class CPM:
         if "auto_apply" not in self.user.config.data:
             self.config_auto_apply()
 
+    def auto_apply(self):
+        auto = self.user.config.data["auto_apply"]
+        return auto == "yes" or auto == "y" or auto == True
+
     def search(self, query=None, data=None):
         if data is None:
             data = self.package_index.data
         results = []
-        for k in data:
-            if not query or query in k:
-                results.append(k)
+        for key in data:
+            if not query or query in key:
+                results.append(key)
         return results
 
     def system_apply(self):
@@ -115,6 +119,8 @@ class CPM:
                 user_error("No package specified!")
             for pkg in commands[1:]:
                 self.install(pkg)
+            if self.auto_apply():
+                self.system_apply()
         elif cmd == "apply":
             if len(commands) <= 1:
                 for pkg_name in self.user.installed.data:
@@ -257,8 +263,7 @@ class CPM:
             print("Warning: The package '{}' has no automatic installer.".format(pkg["name"]))
             print("         Consult the package README for installation instructions.")
             return
-        auto = self.user.config.data["auto_apply"]
-        if auto == "yes" or auto == "y" or auto == True:
+        if self.auto_apply():
             self.apply(pkg_name)
         else:
             print("Package installers skipped (auto_apply is off).")
