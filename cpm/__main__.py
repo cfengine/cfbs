@@ -275,7 +275,7 @@ class CPM:
             user_error("Package '{}' not found!".format(pkg_name_user))
         pkg = self.package_index.data[pkg_name]
         self.download(pkg)
-        self.user.installed.data[name] = pkg
+        self.user.installed.data[pkg_name] = pkg
         self.user.installed.save()
         if "installers" not in pkg or not pkg["installers"]:
             print("Warning: The package '{}' has no automatic installer.".format(pkg["name"]))
