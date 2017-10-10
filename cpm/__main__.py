@@ -163,8 +163,6 @@ class CPM:
 
         src.copy(dst)
         src.rm()
-        self.user.installed.data[name] = pkg
-        self.user.installed.save()
         return dst
 
     def download_git(self, pkg):
@@ -183,6 +181,7 @@ class CPM:
 
         dst = self.user.packages.folder(name)
         pkg_folder.copy(dst)
+
         return dst
 
 
@@ -276,6 +275,8 @@ class CPM:
             user_error("Package '{}' not found!".format(pkg_name_user))
         pkg = self.package_index.data[pkg_name]
         self.download(pkg)
+        self.user.installed.data[name] = pkg
+        self.user.installed.save()
         if "installers" not in pkg or not pkg["installers"]:
             print("Warning: The package '{}' has no automatic installer.".format(pkg["name"]))
             print("         Consult the package README for installation instructions.")
