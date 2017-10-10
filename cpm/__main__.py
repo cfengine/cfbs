@@ -54,17 +54,30 @@ class CPM:
         self.user           = self.root.folder("user")
         self.user.def_json  = self.user.file("def.json")
         self.user.installed = self.user.file("installed.json")
-        self.user.config    = self.user.file("config.json")
         self.user.packages  = self.user.folder("packages")
-
+        self.user.config    = self.user.file("config.json")
         self.user.install   = self.user.folder("install")
         self.user.download  = self.user.folder("download")
 
-        self.cfe            = Folder("/var/cfengine")
-        self.cfe.mpf        = self.cfe.folder("masterfiles")
-        self.cfe.mpf.def_json = self.cfe.mpf.file("def.json")
-        self.cfe.cfe        = self.cfe.folder("masterfiles")
-        self.cfe.mpf.services = self.cfe.folder("services")
+        self.init_config()
+
+    def init_config(self):
+        if "cfe" not in self.user.config.data:
+            self.config_cfe()
+
+        self.cfe = Folder(self.user.config.data["cfe"], create=False)
+
+        if "mpf" not in self.user.config.data:
+            self.config_mpf()
+
+        self.mpf = Folder(self.user.config.data["mpf"], create=False)
+        self.mpf.def_json   = self.mpf.file("def.json", create=False)
+        self.mpf.services   = self.cfe.folder("services", create=False)
+
+        if "import_def_json" not in self.user.config.data:
+            self.config_import_def_json()
+        if "auto_apply" not in self.user.config.data:
+            self.config_auto_apply()
 
     def search(self, query=None, data=None):
         if data is None:
@@ -76,7 +89,12 @@ class CPM:
         return results
 
     def system_apply(self):
-        self.user.def_json.copy(self.cfe.mpf.def_json)
+        try:
+            self.user.def_json.copy(self.mpf.def_json)
+        except PermissionError:
+            user_error("Writing to '{}' failed: Permission denied!".format(self.mpf.def_json.path))
+        except:
+            user_error("Copying '{}' to '{}' failed.".format(self.user.def_json, self.mpf.def_json.path))
 
     def run(self, commands):
         cmd = commands[0]
@@ -154,13 +172,36 @@ class CPM:
         else:
             raise NotImplementedError()
 
-    def config_auto_apply(self):
-        m = "Do you want cpm to automatically apply installed packages to CFEngine folders?"
-        self.user.config.data["auto_apply"] = yes_or_no(m)
+    def config_cfe(self):
+        while True:
+            cfe_path = input("Where is CFEngine installed? (Empty for default)\n")
+            cfe_path = cfe_path.strip()
+            if cfe_path == "":
+                cfe_path = "/var/cfengine/"
+            if os.path.isdir(cfe_path):
+                break
+            print("Directory '{}' does not exist!".format(cfe_path))
+        self.user.config.data["cfe"] = cfe_path
+        self.user.config.save()
+
+    def config_mpf(self):
+        while True:
+            mpf_path = input("Where is masterfiles located? (Empty for default)\n")
+            mpf_path = mpf_path.strip()
+            if mpf_path == "":
+                mpf_path = os.path.join(self.user.config.data["cfe"], "masterfiles")
+            if os.path.isdir(mpf_path):
+                break
+            print("Directory '{}' does not exist!".format(mpf_path))
+        self.user.config.data["mpf"] = mpf_path
         self.user.config.save()
 
     def import_def_json(self):
-        self.cfe.mpf.def_json.copy(self.user.def_json)
+        self.mpf.def_json.copy(self.user.def_json)
+        if not self.user.def_json.data:
+            print("Warning: '{}' is empty after import.".format(
+                  self.user.def_json.path))
+            print("This likely means the file did not exist or had no data")
 
     def config_import_def_json(self):
         m = "Do you want to import your existing def.json file?"
@@ -169,13 +210,10 @@ class CPM:
         if x == "yes":
             self.import_def_json()
 
-    def config_prompts(self):
-        if "auto_apply" not in self.user.config.data:
-            self.config_auto_apply()
-        if ("import_def_json" not in self.user.config.data
-            and not self.user.def_json
-            and self.cfe.mpf.def_json.data):
-            self.config_import_def_json()
+    def config_auto_apply(self):
+        m = "Do you want cpm to automatically apply installed packages to CFEngine folders?"
+        self.user.config.data["auto_apply"] = yes_or_no(m)
+        self.user.config.save()
 
     def get_pkg_name(self, pkg_name):
         if pkg_name in self.package_index.data:
@@ -210,7 +248,6 @@ class CPM:
         print("Finished installer(s) for '{}'.".format(pkg_name))
 
     def install(self, pkg_name_user):
-        self.config_prompts()
         pkg_name = self.get_pkg_name(pkg_name_user)
         if not pkg_name:
             user_error("Package '{}' not found!".format(pkg_name_user))

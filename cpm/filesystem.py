@@ -133,7 +133,8 @@ class Folder:
             self.path = self.sub_path(*args)
         if os.path.isfile(self.path):
             raise TypeError("'{}' is a file, not folder!".format(self.path))
-        make_dir(self.path)
+        if create:
+            make_dir(self.path)
 
     def file(self, path, *args, create=True):
         return File(self.path, path, *args, create=create)
