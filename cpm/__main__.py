@@ -62,6 +62,7 @@ class CPM:
 
         self.cfe            = Folder("/var/cfengine")
         self.cfe.mpf        = self.cfe.folder("masterfiles")
+        self.cfe.mpf.def_json = self.cfe.mpf.file("def.json")
         self.cfe.cfe        = self.cfe.folder("masterfiles")
         self.cfe.mpf.services = self.cfe.folder("services")
 
@@ -73,6 +74,9 @@ class CPM:
             if not query or query in k:
                 results.append(k)
         return results
+
+    def system_apply(self):
+        self.user.def_json.copy(self.cfe.mpf.def_json)
 
     def run(self, commands):
         cmd = commands[0]
@@ -100,6 +104,7 @@ class CPM:
             else:
                 for pkg_name in commands[1:]:
                     self.apply(pkg_name)
+            self.system_apply()
         else:
             user_error("Command not found: '{}'".format(cmd))
 
