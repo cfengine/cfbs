@@ -245,6 +245,7 @@ class CPM:
         return None
 
     def install_make(self, folder_path):
+        os.environ['MASTERFILES'] = self.user.config.data['mpf']
         os.system("make -C {} install".format(folder_path))
 
     def install_def(self, folder_path):
