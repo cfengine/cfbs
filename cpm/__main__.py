@@ -95,6 +95,7 @@ class CPM:
     def system_apply(self):
         try:
             self.user.def_json.copy(self.mpf.def_json)
+            print("Successfully applied changes to '{}'".format(self.mpf.def_json.path))
         except PermissionError:
             user_error("Writing to '{}' failed: Permission denied!".format(self.mpf.def_json.path))
         except:
