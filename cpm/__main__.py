@@ -97,14 +97,23 @@ class CPM:
                 results.append(key)
         return results
 
+    def apply_user_def(self):
+        target_def = self.user.install.def_json
+        source_def = self.user.def_json
+        source_def.apply(target_def)
+
     def system_apply(self):
+        apply_user_def(self)
         try:
-            self.user.def_json.copy(self.mpf.def_json)
-            print("Successfully applied changes to '{}'".format(self.mpf.def_json.path))
+            self.user.install.def_json.copy(self.mpf.def_json)
+            print("Successfully applied changes to '{}'".format(
+                self.mpf.def_json.path))
         except PermissionError:
-            user_error("Writing to '{}' failed: Permission denied!".format(self.mpf.def_json.path))
+            user_error("Writing to '{}' failed: Permission denied!".format(
+                self.mpf.def_json.path))
         except:
-            user_error("Copying '{}' to '{}' failed.".format(self.user.def_json, self.mpf.def_json.path))
+            user_error("Copying '{}' to '{}' failed.".format(
+                self.user.install.def_json.path, self.mpf.def_json.path))
 
     def run(self, commands):
         cmd = commands[0]
