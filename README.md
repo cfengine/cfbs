@@ -5,28 +5,12 @@ Copyright Northern.tech AS.
 ## Installation
 
 ### Download
+Navigate to where you want to install cpm (it is self contained), then use git to download:
 ```
-cit clone git@github.com:olehermanse/cpm.git
-```
-Clone it wherever you like, it is completely self contained, and can update `/var/cfengine/` from anywhere.
-
-### Dependencies
-```
+git clone https://github.com/olehermanse/cpm.git
+cd ./cpm
 pip3 install -r requirements.txt
-```
-
-### Symlink
-```
+chmod a+x ./cpm/__main__.py
 ln -s $PWD/cpm/__main__.py /usr/local/bin/cpm
 ```
-
-### Curl experiments
-
-```
-curl -L https://github.com/nickanderson/cfengine-cis/archive/master.zip -o /tmp/master.zip
-sudo unzip /tmp/master.zip -d /
-sudo mv /.setup-bash-master/ /.setup-bash
-sudo rm -f /tmp/master.zip
-
-curl -L https://github.com/nickanderson/cfengine-cis/archive/master.zip -o /tmp/master.zip && sudo unzip /tmp/master.zip -d /tmp/ && sudo make -C cfengine-cis-master install
-```
+(`chmod` and `ln` is just one way to do it, I might provide an install script at some point)
