@@ -61,22 +61,22 @@ class CPM:
 
         self.init_config()
 
-    def init_config(self):
-        if "cfe" not in self.user.config.data:
+    def init_config(self, redo=False):
+        if "cfe" not in self.user.config.data or redo:
             self.config_cfe()
 
         self.cfe = Folder(self.user.config.data["cfe"], create=False)
 
-        if "mpf" not in self.user.config.data:
+        if "mpf" not in self.user.config.data or redo:
             self.config_mpf()
 
         self.mpf = Folder(self.user.config.data["mpf"], create=False)
         self.mpf.def_json   = self.mpf.file("def.json", create=False)
         self.mpf.services   = self.cfe.folder("services", create=False)
 
-        if "import_def_json" not in self.user.config.data:
+        if "import_def_json" not in self.user.config.data or redo:
             self.config_import_def_json()
-        if "auto_apply" not in self.user.config.data:
+        if "auto_apply" not in self.user.config.data or redo:
             self.config_auto_apply()
 
     def auto_apply(self):
@@ -129,6 +129,8 @@ class CPM:
                 for pkg_name in commands[1:]:
                     self.apply(pkg_name)
             self.system_apply()
+        elif cmd == "config" or cmd == "init":
+            self.init_config(redo=True)
         else:
             user_error("Command not found: '{}'".format(cmd))
 
