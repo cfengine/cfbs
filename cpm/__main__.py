@@ -103,7 +103,7 @@ class CPM:
         source_def.apply(target_def)
 
     def system_apply(self):
-        apply_user_def(self)
+        self.apply_user_def()
         try:
             self.user.install.def_json.copy(self.mpf.def_json)
             print("Successfully applied changes to '{}'".format(
