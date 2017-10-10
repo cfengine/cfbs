@@ -55,13 +55,18 @@ class CPM:
         self.user.def_json  = self.user.file("def.json")
         self.user.installed = self.user.file("installed.json")
         self.user.packages  = self.user.folder("packages")
-        self.user.config    = self.user.file("config.json")
-        self.user.install   = self.user.folder("install")
+
         self.user.download  = self.user.folder("download")
 
-        self.init_config()
+        self.user.install   = self.user.folder("install")
+        self.user.install.def_json = self.user.install.file("def.json")
+        if sys.argv[1] == "init" or sys.argv[1] == "config":
+            self.init_config(redo=True)
+        else:
+            self.init_config(redo=False)
 
     def init_config(self, redo=False):
+        self.user.config    = self.user.file("config.json")
         if "cfe" not in self.user.config.data or redo:
             self.config_cfe()
 
@@ -71,8 +76,8 @@ class CPM:
             self.config_mpf()
 
         self.mpf = Folder(self.user.config.data["mpf"], create=False)
-        self.mpf.def_json   = self.mpf.file("def.json", create=False)
-        self.mpf.services   = self.cfe.folder("services", create=False)
+        self.mpf.def_json = self.mpf.file("def.json", create=False)
+        self.mpf.services = self.cfe.folder("services", create=False)
 
         if "import_def_json" not in self.user.config.data or redo:
             self.config_import_def_json()
@@ -235,7 +240,7 @@ class CPM:
         os.system("make -C {} install".format(folder_path))
 
     def install_def(self, folder_path):
-        target_def = self.user.install.file("def.json")
+        target_def = self.user.install.def_json
         source_def = Folder(folder_path).file("def.json")
         source_def.apply(target_def)
 
