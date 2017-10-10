@@ -4,6 +4,15 @@
     "author": "Nick Anderson",
     "zip": "https://github.com/nickanderson/cfengine-cis/archive/master.zip"
   },
+  "cfengine-lynis": {
+    "name": "cfengine-lynis",
+    "author": "Nick Anderson",
+    "zip": "https://github.com/nickanderson/cfengine-lynis/archive/master.zip",
+    "installers": [
+      "make",
+      "def"
+    ]
+  },
   "cfengine-local_users": {
     "name": "cfengine-local_users",
     "author": "Nick Anderson",
@@ -12,6 +21,7 @@
       "make"
     ]
   },
+
   "client_initiated_reporting": {
     "name": "client_initiated_reporting",
     "git": "git@github.com:olehermanse/cfengine_basics.git",
