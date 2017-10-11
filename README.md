@@ -7,6 +7,13 @@ Use at your own risk!
 
 ## Installation
 
+### One-liner
+This will install cpm to a subfolder in `cwd` (`./cpm`):
+```
+bash <(curl -L -s bit.ly/cpminstall)
+```
+The install script runs the commands listed below (including symlink!).
+
 ### Download
 Navigate to where you want to install cpm (it is self contained), then use git to download:
 ```
