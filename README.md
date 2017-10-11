@@ -10,7 +10,7 @@ Use at your own risk!
 ### One-liner
 This will install cpm to a subfolder in `cwd` (`./cpm`):
 ```
-bash <(curl -L -s bit.ly/cpminstall)
+curl -L -s bit.ly/cpminstall | bash
 ```
 The install script runs the commands listed below (including symlink!).
 
