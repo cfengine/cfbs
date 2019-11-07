@@ -29,5 +29,10 @@
     "installers": [
       "def"
     ]
+  },
+  "lib-FIM": {
+    "name": "lib-fim",
+    "author": "Nick Anderson",
+    "zip": "https://github.com/nickanderson/cfengine-file_integrity_monitoring/archive/master.zip"
   }
 }
