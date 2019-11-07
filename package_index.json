@@ -4,8 +4,8 @@
     "author": "Nick Anderson",
     "zip": "https://github.com/nickanderson/cfengine-cis/archive/master.zip"
   },
-  "cfengine-lynis": {
-    "name": "cfengine-lynis",
+  "lynis": {
+    "name": "lynis",
     "author": "Nick Anderson",
     "zip": "https://github.com/nickanderson/cfengine-lynis/archive/master.zip",
     "installers": [
