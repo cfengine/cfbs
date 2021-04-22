@@ -1,8 +1,7 @@
-# Unofficial CFEngine Package Manager
+# Unofficial CFEngine Build System
 
-Copyright Northern.tech AS.
-
-CFEngine Package Manager (cfbs) comes with **no warranty** and is **not supported**.
+The CFEngine Build System (cfbs) comes with **no warranty** and is **not supported**.
+This is a work in progress, everything will change.
 Use at your own risk!
 
 ## CFEngine Build System Repositories
