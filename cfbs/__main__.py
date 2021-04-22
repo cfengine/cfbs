@@ -24,7 +24,7 @@ def package_location(module_file_path):
 
 sys.path.insert(0, package_location(__file__))
 
-from cpm.filesystem import File, Folder
+from cfbs.filesystem import File, Folder
 
 def user_error(msg):
     print("Error: {}".format(msg))
@@ -45,7 +45,7 @@ def get_index(seq, index):
     except IndexError:
         return None
 
-class CPM:
+class CFBS:
     def __init__(self, root_path):
         self.root = Folder(root_path)
         self.package_index  = self.root.file("package_index.json")
@@ -122,13 +122,13 @@ class CPM:
             results = self.search(query)
             [print(x) for x in results]
             if not results:
-                print("No remote packages found, check your query or update using 'cpm update'")
+                print("No remote packages found, check your query or update using 'cfbs update'")
         elif cmd == "list":
             query = get_index(commands, 1)
             results = self.search(query, self.user.installed.data)
             [print(x) for x in results]
             if not results:
-                print("No installed packages found, use 'cpm search' to find new packages")
+                print("No installed packages found, use 'cfbs search' to find new packages")
         elif cmd == "install":
             if len(commands) <= 1:
                 user_error("No package specified!")
@@ -233,7 +233,7 @@ class CPM:
             self.import_def_json()
 
     def config_auto_apply(self):
-        m = "Do you want cpm to automatically apply installed packages to CFEngine folders?"
+        m = "Do you want cfbs to automatically apply installed packages to CFEngine folders?"
         self.user.config.data["auto_apply"] = yes_or_no(m)
         self.user.config.save()
 
@@ -286,10 +286,10 @@ class CPM:
             self.apply(pkg_name)
         else:
             print("Package installers skipped (auto_apply is off).")
-            print("Use 'cpm apply {}' to run the installer for this package".format(pkg_name_user))
+            print("Use 'cfbs apply {}' to run the installer for this package".format(pkg_name_user))
 
 def main(commands):
-    c = CPM(package_location(__file__))
+    c = CFBS(package_location(__file__))
     c.run(commands)
 
 def get_args():
