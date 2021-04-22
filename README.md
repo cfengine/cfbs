@@ -24,45 +24,42 @@ pip install cfbs
 
 ## Usage
 
-After you have imported `def.json` (or not) do not edit it directly.
-Multiple `cfbs` packges/installers will overwrite the `masterfiles/def.json` file.
-Instead, put your custom things in `<cfbs repo dir>/user/def.json`.
-This file will be merged with packages' `def.json` files, before overwriting `masterfiles/def.json`.
+Here are the basic commands to set up a repo, add dependencies, build and deploy.
 
-### (WIP!) Configuration
-cfbs will run an interactive configuration the first time it is invoked.
-Alternately, you can redo the config step:
-```
-$ cfbs config
-```
-This will prompt you for paths to cfengine/masterfiles locations.
-It will also ask you to import your existing `def.json` file.
-Finally it will ask if you want `cfbs` to automatically install apply changes to the system, when you run `cfbs install`.
-It is recommended that you answer yes to both these questions, for ease of use.
-Beware that this is an unfinished project - do not use it on mission critical machines.
-
-### List installed packages
+### Initialize a new repo (Not implemented yet)
 
 ```
-$ cfbs list
+cfbs init
 ```
 
-### Search for downloadable packages
+### List or search available packages (Not implemented yet)
 
 ```
-$ cfbs search [query]
+cfbs search
 ```
 
-### Download/Install package
-```
-$ cfbs install <package name | package alias>
-```
-(If `auto_apply` is not enabled, it will only be downloaded, no installers will be run)
+Or more specific:
 
-### Apply package
-Only needed if `auto_apply` is disabled.
-This is used to explicitly run installers and apply changes to cfengine/masterfiles folders.
 ```
-$ cfbs install <package name | package alias>
-$ cfbs apply <package name | package alias>
+cfbs search masterfiles
+```
+
+(`masterfiles` is the name of a module and can be replaced with whatever you are looking for).
+
+### Add a module (Not implemented yet)
+
+```
+cfbs add masterfiles
+```
+
+### Build your policy set (Not implemented yet)
+
+```
+cfbs build
+```
+
+### Deploy your policy set (Not implemented yet)
+
+```
+cfbs deploy /var/cfengine/masterfiles
 ```
