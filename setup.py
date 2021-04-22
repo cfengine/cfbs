@@ -37,5 +37,6 @@ setuptools.setup(
     },
     install_requires=[
       "requests >= 2.25.1",
+      "cf-remote >= 0.2.0",
     ],
 )
