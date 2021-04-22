@@ -14,33 +14,13 @@ Use at your own risk!
 
 ## Installation
 
-### One-liner
-This will install cfbs to a subfolder in `cwd` (`./cfbs`):
-```
-curl -L -s bit.ly/cfbsinstall | bash
-```
-The install script runs the commands listed below (including symlink!).
+Requires Python 3.6 or newer and `pip`.
 
-### Download
-Navigate to where you want to install cfbs (it is self contained), then use git to download:
 ```
-git clone https://github.com/olehermanse/cfbs.git
-cd ./cfbs
-pip3 install -r requirements.txt
-chmod a+x ./cfbs/__main__.py
+pip install cfbs
 ```
 
-### Symlink
-
-#### Mac OS X
-```
-ln -s $PWD/cfbs/__main__.py /usr/local/bin/cfbs
-```
-
-#### Linux (CentOS)
-```
-ln -s $PWD/cfbs/__main__.py /usr/bin/cfbs
-```
+(or `sudo pip3 install cfbs` or whatever works with Python 3 on your system).
 
 ## Usage
 
