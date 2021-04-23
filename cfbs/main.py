@@ -1,21 +1,39 @@
 #!/usr/bin/env python3
 """CFEngine Build System"""
 
-__authors__    = ["Ole Herman Schumacher Elgesem"]
-__copyright__  = ["Northern.tech AS"]
+__authors__ = ["Ole Herman Schumacher Elgesem"]
+__copyright__ = ["Northern.tech AS"]
 
 import argparse
 import logging as log
 
-from cfbs import version
+from cf_remote.utils import write_json, read_json
+from cf_remote.paths import cfengine_dir
+
+from cfbs.version import string as version
+from cfbs.utils import user_error
+from cfbs import commands
+
 
 def get_args():
-    parser = argparse.ArgumentParser(description='CFEngine Build System.')
-    parser.add_argument('commands', metavar='cmd', type=str, nargs='?',
-                        help='The command to perform')
-    parser.add_argument('--loglevel', '-l',
-                        help='Set log level for more/less detailed output',
-                        type=str, default="error")
+    parser = argparse.ArgumentParser(description="CFEngine Build System.")
+    parser.add_argument(
+        "command", metavar="cmd", type=str, nargs="?", help="The command to perform"
+    )
+    parser.add_argument("args", nargs="*", help="Command arguments")
+    parser.add_argument(
+        "--loglevel",
+        "-l",
+        help="Set log level for more/less detailed output",
+        type=str,
+        default="error",
+    )
+    parser.add_argument(
+        "--version", "-V", help="Print version number", action="store_true"
+    )
+    parser.add_argument(
+        "--force", help="Force rebuild / redownload", action="store_true"
+    )
 
     args = parser.parse_args()
     return args
@@ -37,7 +55,31 @@ def set_log_level(level):
         raise ValueError("Unknown log level: {}".format(level))
 
 
-def main():
+def main() -> int:
     args = get_args()
     set_log_level(args.loglevel)
-    print(f"Welcome to cfbs version {version.string()}")
+
+    if args.version:
+        print(f"cfbs {version.string()}")
+        return 0
+
+    if not args.command:
+        user_error("Usage: cfbs COMMAND")
+
+    if not commands.is_cfbs_repo() and args.command != "init":
+        user_error("This is not a cfbs repo, to get started, type: cfbs init")
+
+    if args.command == "init":
+        return commands.init_command()
+    if args.command == "search":
+        return commands.search_command(args.args)
+    if args.command == "add":
+        return commands.add_command(args.args)
+    if args.command == "download":
+        return commands.download_command()
+    if args.command == "build":
+        return commands.build_command()
+    if args.command == "install":
+        return commands.install_command(args.args)
+
+    user_error(f"Command '{args.command}' not found")
