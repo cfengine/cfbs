@@ -15,12 +15,12 @@ from cfbs.utils import (
 )
 
 
-def policy_definition_filename() -> str:
-    return "policy-definition.json"
+def cfbs_filename() -> str:
+    return "cfbs.json"
 
 
 def is_cfbs_repo() -> bool:
-    return os.path.isfile(policy_definition_filename())
+    return os.path.isfile(cfbs_filename())
 
 
 def cfbs_dir(append=None) -> str:
@@ -33,14 +33,14 @@ definition = None
 def get_definition() -> dict:
     global definition
     if not definition:
-        definition = read_json(policy_definition_filename())
+        definition = read_json(cfbs_filename())
     return definition
 
 
 def put_definition(data: dict):
     global definition
     definition = data
-    write_json(policy_definition_filename(), data)
+    write_json(cfbs_filename(), data)
 
 
 index = None
@@ -74,7 +74,7 @@ def get_index(prefer_offline=False) -> dict:
 
 def init_command() -> int:
     if is_cfbs_repo():
-        user_error(f"Already initialized - look at {policy_definition_filename()}")
+        user_error(f"Already initialized - look at {cfbs_filename()}")
 
     definition = {
         "name": "Example",
@@ -82,9 +82,9 @@ def init_command() -> int:
         modules: [],
     }
 
-    write_json(policy_definition_filename(), definition)
+    write_json(cfbs_filename(), definition)
     assert is_cfbs_repo()
-    print(f"Initialized - edit name and description {policy_definition_filename()}")
+    print(f"Initialized - edit name and description {cfbs_filename()}")
     print(f"To add your first module, type: cfbs add masterfiles")
 
     return 0
