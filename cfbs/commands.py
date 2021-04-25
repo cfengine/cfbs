@@ -122,17 +122,17 @@ def add_command(to_add: list) -> int:
 
     definition = get_definition()
 
-    added = [m["name"] for m in definition["modules"]]
+    added = [m["name"] for m in definition["build"]]
 
     for module in to_add:
         if module in added:
             print(f"Skipping already added module - {module}")
             continue
         new_module = {"name": module, **get_index()[module]}
-        definition["modules"].append(new_module)
+        definition["build"].append(new_module)
         added.append(module)
 
-    for module in definition["modules"]:
+    for module in definition["build"]:
         if module["name"] in to_add:
             module["user_requested"] = True
     put_definition(definition)
@@ -168,7 +168,7 @@ def init_build_folder():
 
 
 def longest_module_name() -> int:
-    return max((len(m["name"]) for m in get_definition()["modules"]))
+    return max((len(m["name"]) for m in get_definition()["build"]))
 
 
 def download_dependencies(prefer_offline=False, redownload=False):
@@ -178,7 +178,7 @@ def download_dependencies(prefer_offline=False, redownload=False):
     github = os.path.join(downloads, "github.com")
     definition = get_definition()
     max_length = longest_module_name()
-    for module in definition["modules"]:
+    for module in definition["build"]:
         name = module["name"]
         commit = module["commit"]
         url = module["repo"]
@@ -242,7 +242,7 @@ def build_step(module, step, max_length):
 def build_steps() -> int:
     print("\nSteps:")
     module_name_length = longest_module_name()
-    for module in get_definition()["modules"]:
+    for module in get_definition()["build"]:
         for step in module["steps"]:
             build_step(module, step, module_name_length)
     print("Generating tarball...")
