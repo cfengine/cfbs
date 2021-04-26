@@ -48,6 +48,7 @@ def put_definition(data: dict):
     global definition
     definition = data
     write_json(cfbs_filename(), data)
+    sh(f"prettier --write '{cfbs_filename()}'")
 
 
 index = None
