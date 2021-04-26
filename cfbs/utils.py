@@ -1,8 +1,32 @@
+import os
 import sys
 import json
+import copy
 from collections import OrderedDict
 
 import requests
+
+
+def sh(cmd: str, directory=None):
+    if directory:
+        os.system(f"( cd {directory} && {cmd} 1>/dev/null 2>/dev/null )")
+        return
+    os.system(f"{cmd} 1>/dev/null 2>/dev/null")
+
+
+def mkdir(path: str):
+    os.system(f"mkdir -p {path}")
+
+
+def rm(path: str):
+    os.system(f'rm -rf "{path}"')
+
+
+def cp(src, dst):
+    if os.path.isfile(src):
+        os.system(f"rsync -r {src} {dst}")
+        return
+    os.system(f"rsync -r {src}/ {dst}")
 
 
 def pad_left(s, n) -> int:
@@ -63,5 +87,28 @@ def read_json(path):
 
 
 def write_json(path, data):
-    data = pretty(data)
+    data = pretty(data) + "\n"
     return save_file(path, data)
+
+
+def merge_json(a, b, overwrite_callback=None, stack=None):
+    if not stack:
+        stack = []
+    a, b = copy.deepcopy(a), copy.deepcopy(b)
+    for k, v in b.items():
+        if k not in a:
+            a[k] = v
+        elif isinstance(a[k], dict) and isinstance(v, dict):
+            a[k] = merge_json(a[k], v, overwrite_callback, [*stack, k])
+        elif type(a[k]) is not type(v):
+            if overwrite_callback:
+                overwrite_callback(k, stack, "type mismatch")
+            a[k] = v
+        elif type(v) is list:
+            a[k].extend(v)
+        else:
+            if overwrite_callback:
+                overwrite_callback(k, stack, "primitive overwrite")
+            a[k] = v
+
+    return a

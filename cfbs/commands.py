@@ -12,6 +12,11 @@ from cfbs.utils import (
     pad_right,
     write_json,
     read_json,
+    merge_json,
+    mkdir,
+    rm,
+    cp,
+    sh,
 )
 
 
@@ -138,31 +143,9 @@ def add_command(to_add: list) -> int:
     put_definition(definition)
 
 
-def sh(cmd: str, directory=None):
-    if directory:
-        os.system(f"( cd {directory} && {cmd} 1>/dev/null 2>/dev/null )")
-        return
-    os.system(f"{cmd} 1>/dev/null 2>/dev/null")
-
-
-def mkdir(path: str):
-    os.system(f"mkdir -p {path}")
-
-
-def rm(path: str):
-    os.system(f"rm -rf '{path}'")
-
-
-def cp(src, dst):
-    if os.path.isfile(src):
-        os.system(f"rsync -r {src} {dst}")
-        return
-    os.system(f"rsync -r {src}/ {dst}")
-
-
 def init_build_folder():
-    rm("build")
-    mkdir("build")
+    rm("out")
+    mkdir("out")
     mkdir("out/masterfiles")
     mkdir("out/steps")
 
@@ -227,7 +210,7 @@ def build_step(module, step, max_length):
         src, dst = os.path.join(source, src), os.path.join(destination, dst)
         cp(src, dst)
     elif operation == "run":
-        shell_command = args
+        shell_command = " ".join(args)
         print(f"{prefix} run '{shell_command}'")
         sh(shell_command, source)
     elif operation == "delete":
@@ -237,6 +220,21 @@ def build_step(module, step, max_length):
         print(f"{prefix} delete {as_string}")
         for file in files:
             rm(file)
+    elif operation == "json":
+        src, dst = args
+        if dst in [".", "./"]:
+            dst = ""
+        print(f"{prefix} json '{src}' 'masterfiles/{dst}'")
+        src, dst = os.path.join(source, src), os.path.join(destination, dst)
+        extras, original = read_json(src), read_json(dst)
+        assert extras
+        if original:
+            merged = merge_json(original, extras)
+        else:
+            merged = extras
+        write_json(dst, merged)
+    else:
+        user_error(f"Unknown build step operation: {operation}")
 
 
 def build_steps() -> int:
@@ -245,6 +243,8 @@ def build_steps() -> int:
     for module in get_definition()["build"]:
         for step in module["steps"]:
             build_step(module, step, module_name_length)
+    if os.path.isfile("out/masterfiles/def.json"):
+        sh("prettier --write out/masterfiles/def.json")
     print("Generating tarball...")
     sh("( cd out/ && tar -czf masterfiles.tgz masterfiles )")
     print("\nBuild complete, ready to deploy 🐿")
