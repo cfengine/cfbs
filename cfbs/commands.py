@@ -86,7 +86,7 @@ def init_command() -> int:
     definition = {
         "name": "Example",
         "description": "Example description",
-        modules: [],
+        "build": [],
     }
 
     write_json(cfbs_filename(), definition)
