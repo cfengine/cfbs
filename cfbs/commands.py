@@ -13,7 +13,9 @@ from cfbs.utils import (
     write_json,
     read_json,
     merge_json,
+    read_file,
     mkdir,
+    touch,
     rm,
     cp,
     sh,
@@ -233,6 +235,16 @@ def build_step(module, step, max_length):
         else:
             merged = extras
         write_json(dst, merged)
+    elif operation == "append":
+        src, dst = args
+        if dst in [".", "./"]:
+            dst = ""
+        print(f"{prefix} append '{src}' 'masterfiles/{dst}'")
+        src, dst = os.path.join(source, src), os.path.join(destination, dst)
+        if not os.path.exists(dst):
+            touch(dst)
+        assert os.path.isfile(dst)
+        sh(f"cat '{src}' >> '{dst}'")
     else:
         user_error(f"Unknown build step operation: {operation}")
 

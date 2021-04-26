@@ -7,15 +7,24 @@ from collections import OrderedDict
 import requests
 
 
+def _sh(cmd: str):
+    # print(cmd)
+    os.system(cmd)
+
+
 def sh(cmd: str, directory=None):
     if directory:
-        os.system(f"( cd {directory} && {cmd} 1>/dev/null 2>/dev/null )")
+        _sh(f"( cd {directory} && {cmd} ) 1>/dev/null 2>/dev/null")
         return
-    os.system(f"{cmd} 1>/dev/null 2>/dev/null")
+    _sh(f"( {cmd} ) 1>/dev/null 2>/dev/null")
 
 
 def mkdir(path: str):
     os.system(f"mkdir -p {path}")
+
+
+def touch(path: str):
+    os.system(f"touch {path}")
 
 
 def rm(path: str):
