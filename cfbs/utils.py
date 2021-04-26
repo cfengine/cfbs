@@ -9,7 +9,9 @@ import requests
 
 def _sh(cmd: str):
     # print(cmd)
-    os.system(cmd)
+    r = os.system(cmd)
+    if r != 0:
+        user_error(f"Command failed - {cmd}")
 
 
 def sh(cmd: str, directory=None):
@@ -20,22 +22,27 @@ def sh(cmd: str, directory=None):
 
 
 def mkdir(path: str):
-    os.system(f"mkdir -p {path}")
+    sh(f"mkdir -p {path}")
 
 
 def touch(path: str):
-    os.system(f"touch {path}")
+    sh(f"touch {path}")
 
 
 def rm(path: str):
-    os.system(f'rm -rf "{path}"')
+    sh(f'rm -rf "{path}"')
 
 
 def cp(src, dst):
+    above = os.path.dirname(dst)
+    if not os.path.exists(above):
+        mkdir(above)
+    if dst.endswith("/") and not os.path.exists(dst):
+        mkdir(dst)
     if os.path.isfile(src):
-        os.system(f"rsync -r {src} {dst}")
+        sh(f"rsync -r {src} {dst}")
         return
-    os.system(f"rsync -r {src}/ {dst}")
+    sh(f"rsync -r {src}/ {dst}")
 
 
 def pad_left(s, n) -> int:
