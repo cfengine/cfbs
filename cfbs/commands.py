@@ -157,7 +157,12 @@ def add_command(to_add: list) -> int:
         if module in added:
             print(f"Skipping already added module - {module}")
             continue
-        new_module = {"name": module, **get_index()[module]}
+        data = get_index()[module]
+        if "alias" in data:
+            module = data["alias"]
+            data = get_index()[module]
+        assert "alias" not in data
+        new_module = {"name": module, **data}
         definition["build"].append(new_module)
         added.append(module)
 
