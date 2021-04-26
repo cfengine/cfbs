@@ -26,6 +26,10 @@ def mkdir(path: str):
 
 
 def touch(path: str):
+    if "/" in path:
+        above = os.path.dirname(path)
+        if not os.path.exists(above):
+            mkdir(above)
     sh(f"touch {path}")
 
 
