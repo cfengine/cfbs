@@ -76,7 +76,7 @@ def main() -> int:
     if args.command == "add":
         return commands.add_command(args.args)
     if args.command == "download":
-        return commands.download_command()
+        return commands.download_command(args.force)
     if args.command == "build":
         return commands.build_command()
     if args.command == "install":
