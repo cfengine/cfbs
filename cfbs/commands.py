@@ -141,7 +141,7 @@ def search_command(terms: list) -> int:
     return 0 if found else 1
 
 
-def add_command(to_add: list) -> int:
+def add_command(to_add: list, user_requested=True) -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
 
@@ -151,24 +151,57 @@ def add_command(to_add: list) -> int:
 
     definition = get_definition()
 
-    added = [m["name"] for m in definition["build"]]
-
+    # Translate all aliases:
+    translated = []
     for module in to_add:
-        if module in added:
-            print(f"Skipping already added module - {module}")
-            continue
         data = get_index()[module]
         if "alias" in data:
+            print(f'{module} is an alias for {data["alias"]}')
             module = data["alias"]
-            data = get_index()[module]
+        translated.append(module)
+
+    # If some modules were added as deps previously, mark them as user requested:
+    if user_requested:
+        for module in definition["build"]:
+            if module["name"] in translated:
+                module["user_requested"] = True
+        put_definition(definition)
+
+    # Filter modules which are already added:
+    added = [m["name"] for m in definition["build"]]
+    filtered = []
+    for module in translated:
+        if module in [*added, *filtered] and user_requested:
+            print(f"Skipping already added module: {module}")
+            continue
+        filtered.append(module)
+
+    # Find all unmet dependencies:
+    dependencies = []
+    for module in filtered:
+        data = get_index()[module]
         assert "alias" not in data
+        if "dependencies" in data:
+            for dep in data["dependencies"]:
+                if dep not in [*added, *filtered, *dependencies]:
+                    dependencies.append(dep)
+
+    if dependencies:
+        add_command(dependencies, user_requested=False)
+        definition = get_definition()
+
+    for module in filtered:
+        data = get_index()[module]
         new_module = {"name": module, **data}
+        if user_requested:
+            new_module["user_requested"] = True
         definition["build"].append(new_module)
+        if user_requested:
+            print(f"Added module: {module}")
+        else:
+            print(f"Added module: {module} (Dependency)")
         added.append(module)
 
-    for module in definition["build"]:
-        if module["name"] in to_add:
-            module["user_requested"] = True
     put_definition(definition)
 
 
