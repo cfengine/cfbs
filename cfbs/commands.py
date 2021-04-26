@@ -141,10 +141,25 @@ def search_command(terms: list) -> int:
     return 0 if found else 1
 
 
-def add_command(to_add: list, user_requested=True) -> int:
+def add_command(to_add: list, added_by="cfbs add") -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
 
+    # added_by can be string, list of strings, or dictionary
+
+    # Convert string -> list:
+    if type(added_by) is str:
+        added_by = [added_by] * len(to_add)
+
+    # Convert list -> dict:
+    if not isinstance(added_by, dict):
+        assert len(added_by) == len(to_add)
+        added_by = {k: v for k, v in zip(to_add, added_by)}
+
+    # Should have a dict with keys for everything in to_add:
+    assert not any((k not in added_by for k in to_add))
+
+    # Print error and exit if there are unknown modules:
     missing = [m for m in to_add if m not in get_index()]
     if missing:
         user_error(f"Module(s) could not be found: {', '.join(missing)}")
@@ -161,16 +176,18 @@ def add_command(to_add: list, user_requested=True) -> int:
         translated.append(module)
 
     # If some modules were added as deps previously, mark them as user requested:
-    if user_requested:
-        for module in definition["build"]:
-            if module["name"] in translated:
-                module["user_requested"] = True
-        put_definition(definition)
+    for module in definition["build"]:
+        if module["name"] in translated:
+            new_added_by = added_by[module["name"]]
+            if new_added_by == "cfbs add":
+                module["added_by"] = "cfbs add"
+                put_definition(definition)
 
     # Filter modules which are already added:
     added = [m["name"] for m in definition["build"]]
     filtered = []
     for module in translated:
+        user_requested = added_by[module] == "cfbs add"
         if module in [*added, *filtered] and user_requested:
             print(f"Skipping already added module: {module}")
             continue
@@ -178,6 +195,7 @@ def add_command(to_add: list, user_requested=True) -> int:
 
     # Find all unmet dependencies:
     dependencies = []
+    dependencies_added_by = []
     for module in filtered:
         data = get_index()[module]
         assert "alias" not in data
@@ -185,21 +203,20 @@ def add_command(to_add: list, user_requested=True) -> int:
             for dep in data["dependencies"]:
                 if dep not in [*added, *filtered, *dependencies]:
                     dependencies.append(dep)
+                    dependencies_added_by.append(module)
 
     if dependencies:
-        add_command(dependencies, user_requested=False)
+        add_command(dependencies, dependencies_added_by)
         definition = get_definition()
 
     for module in filtered:
         data = get_index()[module]
-        new_module = {"name": module, **data}
-        if user_requested:
-            new_module["user_requested"] = True
+        new_module = {"name": module, **data, "added_by": added_by}
         definition["build"].append(new_module)
         if user_requested:
             print(f"Added module: {module}")
         else:
-            print(f"Added module: {module} (Dependency)")
+            print(f"Added module: {module} (Dependency of {added_by[module]})")
         added.append(module)
 
     put_definition(definition)
