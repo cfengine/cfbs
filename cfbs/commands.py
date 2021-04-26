@@ -98,6 +98,27 @@ def init_command() -> int:
     return 0
 
 
+def status_command() -> int:
+
+    definition = get_definition()
+    print(f'Name:        {definition["name"]}')
+    print(f'Description: {definition["description"]}')
+    print(f"File:        {cfbs_filename()}")
+
+    modules = definition["build"]
+    print(f"\nModules:")
+    max_length = longest_module_name()
+    counter = 1
+    for m in modules:
+        path = get_download_path(m)
+        status = "Downloaded" if os.path.exists(path) else "Not downloaded"
+        name = pad_right(m["name"], max_length)
+        print(f"{counter:03d} {name} @ {m['commit']} ({status})")
+        counter += 1
+
+    return 0
+
+
 def search_command(terms: list) -> int:
     found = False
     # No search term, list everything:
@@ -126,7 +147,7 @@ def add_command(to_add: list) -> int:
 
     missing = [m for m in to_add if m not in get_index()]
     if missing:
-        user_error(f"Modules could not be found: {', '.join(missing)}")
+        user_error(f"Module(s) could not be found: {', '.join(missing)}")
 
     definition = get_definition()
 
@@ -157,24 +178,31 @@ def longest_module_name() -> int:
     return max((len(m["name"]) for m in get_definition()["build"]))
 
 
+def get_download_path(module) -> str:
+    downloads = os.path.join(cfbs_dir(), "downloads")
+    github = os.path.join(downloads, "github.com")
+    name = module["name"]
+    commit = module["commit"]
+    url = module["repo"]
+    url = strip_right(url, ".git")
+    assert url.startswith("https://github.com/")
+    user_repo = strip_left(url, "https://github.com/")
+    user, repo = user_repo.split("/")
+    repo_dir = os.path.join(github, user, repo)
+    mkdir(repo_dir)
+    return os.path.join(repo_dir, commit)
+
+
 def download_dependencies(prefer_offline=False, redownload=False):
     print("\nModules:")
     counter = 1
-    downloads = os.path.join(cfbs_dir(), "downloads")
-    github = os.path.join(downloads, "github.com")
     definition = get_definition()
     max_length = longest_module_name()
     for module in definition["build"]:
         name = module["name"]
         commit = module["commit"]
-        url = module["repo"]
-        url = strip_right(url, ".git")
-        assert url.startswith("https://github.com/")
-        user_repo = strip_left(url, "https://github.com/")
-        user, repo = user_repo.split("/")
-        repo_dir = os.path.join(github, user, repo)
-        mkdir(repo_dir)
-        commit_dir = os.path.join(repo_dir, commit)
+        url = strip_right(module["repo"], ".git")
+        commit_dir = get_download_path(module)
         if redownload and os.path.exists(commit_dir):
             rm(commit_dir)
         if not os.path.exists(commit_dir):
@@ -188,7 +216,7 @@ def download_dependencies(prefer_offline=False, redownload=False):
             cp(commit_dir, target)
         else:
             cp(os.path.join(commit_dir, subdirectory), target)
-        print(f"{counter:03d} {pad_right(name, max_length)} @ {commit}")
+        print(f"{counter:03d} {pad_right(name, max_length)} @ {commit} (Downloaded)")
         counter += 1
 
 

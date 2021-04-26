@@ -18,7 +18,11 @@ from cfbs import commands
 def get_args():
     parser = argparse.ArgumentParser(description="CFEngine Build System.")
     parser.add_argument(
-        "command", metavar="cmd", type=str, nargs="?", help="The command to perform"
+        "command",
+        metavar="cmd",
+        type=str,
+        nargs="?",
+        help="The command to perform (init, status, search, add, download, build, install)",
     )
     parser.add_argument("args", nargs="*", help="Command arguments")
     parser.add_argument(
@@ -71,6 +75,8 @@ def main() -> int:
 
     if args.command == "init":
         return commands.init_command()
+    if args.command == "status":
+        return commands.status_command()
     if args.command == "search":
         return commands.search_command(args.args)
     if args.command == "add":
