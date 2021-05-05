@@ -64,7 +64,7 @@ def main() -> int:
     set_log_level(args.loglevel)
 
     if args.version:
-        print(f"cfbs {version.string()}")
+        print(f"cfbs {version()}")
         return 0
 
     if not args.command:
