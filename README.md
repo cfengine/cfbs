@@ -22,6 +22,20 @@ pip install cfbs
 
 (or `sudo pip3 install cfbs` or whatever works with Python 3 on your system).
 
+### Dependencies
+
+`cfbs` is implemented in Python and has some dependencies on python version and libraries:
+
+* Python 3.6 or newer
+* `cf-remote` and its dependencies
+  * Installed automatically by `pip`
+
+Additionally, some command line tools are required (not installed by pip):
+
+* `git` CLI installed and in PATH
+* `prettier` CLI installed and in PATH
+  * **Note:** Must be installed manually, for example using `npm`.
+
 ## Usage
 
 Here are the basic commands to set up a repo, add dependencies, build and deploy.
