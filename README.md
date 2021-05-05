@@ -6,11 +6,11 @@ Use at your own risk!
 
 ## CFEngine Build System Repositories
 
-* [cfbs](https://github.com/olehermanse/cfbs) - Command line client
-* [cfbs-index](https://github.com/olehermanse/cfbs-index) - Index of modules
-* [cfbs-modules](https://github.com/olehermanse/cfbs-modules) - Some modules / examples of modules
-* [cfbs-web](https://github.com/olehermanse/cfbs-web) - Website
-* [cfbs-example](https://github.com/olehermanse/cfbs-example) - Example project using cfbs
+* [cfbs](https://github.com/cfengine/cfbs) - Command line client
+* [cfbs-index](https://github.com/cfengine/cfbs-index) - Index of modules
+* [cfbs-modules](https://github.com/cfengine/cfbs-modules) - Some modules / examples of modules
+* [cfbs-web](https://github.com/cfengine/cfbs-web) - Website
+* [cfbs-example](https://github.com/cfengine/cfbs-example) - Example project using cfbs
 
 ## Installation
 
@@ -90,7 +90,7 @@ cf-remote deploy -H hub out/masterfiles.tgz
 
 There is an example project available here:
 
-https://github.com/olehermanse/cfbs-example
+https://github.com/cfengine/cfbs-example
 
 ### Creating a project from scratch
 

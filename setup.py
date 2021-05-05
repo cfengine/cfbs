@@ -20,7 +20,7 @@ setuptools.setup(
     description="Tooling to build, manage and deploy CFEngine policy",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/olehermanse/cfbs",
+    url="https://github.com/cfengine/cfbs",
     packages=setuptools.find_packages(),
     package_data={'cfbs': ['VERSION']},
     include_package_data=True,

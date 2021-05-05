@@ -55,7 +55,7 @@ index = None
 
 
 def index_url() -> str:
-    return "https://raw.githubusercontent.com/olehermanse/cfbs-index/master/index.json"
+    return "https://raw.githubusercontent.com/cfengine/cfbs-index/master/index.json"
 
 
 def index_path() -> str:
