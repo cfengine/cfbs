@@ -26,13 +26,13 @@ pip install cfbs
 
 Here are the basic commands to set up a repo, add dependencies, build and deploy.
 
-### Initialize a new repo (Not implemented yet)
+### Initialize a new repo
 
 ```
 cfbs init
 ```
 
-### List or search available packages (Not implemented yet)
+### List or search available packages
 
 ```
 cfbs search
@@ -46,20 +46,28 @@ cfbs search masterfiles
 
 (`masterfiles` is the name of a module and can be replaced with whatever you are looking for).
 
-### Add a module (Not implemented yet)
+### Add a module
 
 ```
 cfbs add masterfiles
 ```
 
-### Build your policy set (Not implemented yet)
+### Build your policy set
 
 ```
 cfbs build
 ```
 
-### Deploy your policy set (Not implemented yet)
+### Install your policy set locally
 
 ```
-cfbs deploy /var/cfengine/masterfiles
+cfbs install /var/cfengine/masterfiles
 ```
+
+### Deploy your policy set to a remote hub
+
+```
+cf-remote deploy -H hub out/masterfiles.tgz
+```
+
+(Replace `hub` with the cf-remote group name or IP of your hub).
