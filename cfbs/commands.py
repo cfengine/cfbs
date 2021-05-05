@@ -213,7 +213,7 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
 
     for module in filtered:
         data = get_index()[module]
-        new_module = {"name": module, **data, "added_by": added_by}
+        new_module = {"name": module, **data, "added_by": added_by[module]}
         definition["build"].append(new_module)
         if user_requested:
             print(f"Added module: {module}")
