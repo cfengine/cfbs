@@ -70,15 +70,17 @@ def main() -> int:
     if not args.command:
         user_error("Usage: cfbs COMMAND")
 
-    if not commands.is_cfbs_repo() and args.command != "init":
-        user_error("This is not a cfbs repo, to get started, type: cfbs init")
-
+    # Commands you can run outside a cfbs repo:
     if args.command == "init":
         return commands.init_command()
-    if args.command == "status":
-        return commands.status_command()
     if args.command == "search":
         return commands.search_command(args.args)
+
+    if not commands.is_cfbs_repo():
+        user_error("This is not a cfbs repo, to get started, type: cfbs init")
+
+    if args.command == "status":
+        return commands.status_command()
     if args.command == "add":
         return commands.add_command(args.args)
     if args.command == "download":
