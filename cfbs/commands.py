@@ -145,6 +145,17 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
 
+    # Translate all aliases:
+    translated = []
+    for module in to_add:
+        data = get_index()[module]
+        if "alias" in data:
+            print(f'{module} is an alias for {data["alias"]}')
+            module = data["alias"]
+        translated.append(module)
+
+    to_add = translated
+
     # added_by can be string, list of strings, or dictionary
 
     # Convert string -> list:
@@ -166,18 +177,9 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
 
     definition = get_definition()
 
-    # Translate all aliases:
-    translated = []
-    for module in to_add:
-        data = get_index()[module]
-        if "alias" in data:
-            print(f'{module} is an alias for {data["alias"]}')
-            module = data["alias"]
-        translated.append(module)
-
     # If some modules were added as deps previously, mark them as user requested:
     for module in definition["build"]:
-        if module["name"] in translated:
+        if module["name"] in to_add:
             new_added_by = added_by[module["name"]]
             if new_added_by == "cfbs add":
                 module["added_by"] = "cfbs add"
@@ -186,7 +188,7 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
     # Filter modules which are already added:
     added = [m["name"] for m in definition["build"]]
     filtered = []
-    for module in translated:
+    for module in to_add:
         user_requested = added_by[module] == "cfbs add"
         if module in [*added, *filtered] and user_requested:
             print(f"Skipping already added module: {module}")
