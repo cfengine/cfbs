@@ -350,7 +350,7 @@ def build_steps() -> int:
     print(" -> Tarball:   out/masterfiles.tgz")
     print("")
     print("To install on this machine: cfbs install")
-    print("To deploy on remote hub(s): cf-remote deploy")
+    print("To deploy on remote hub(s): cf-remote deploy -H hub out/masterfiles.tgz")
     return 0
 
 
