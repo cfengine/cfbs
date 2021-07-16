@@ -148,6 +148,8 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
     # Translate all aliases:
     translated = []
     for module in to_add:
+        if module not in get_index():
+            user_error(f"Module '{module}' does not exist")
         data = get_index()[module]
         if "alias" in data:
             print(f'{module} is an alias for {data["alias"]}')
@@ -199,6 +201,7 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
     dependencies = []
     dependencies_added_by = []
     for module in filtered:
+        assert module in get_index()
         data = get_index()[module]
         assert "alias" not in data
         if "dependencies" in data:
@@ -212,6 +215,7 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
         definition = get_definition()
 
     for module in filtered:
+        assert module in get_index()
         data = get_index()[module]
         new_module = {"name": module, **data, "added_by": added_by[module]}
         definition["build"].append(new_module)
