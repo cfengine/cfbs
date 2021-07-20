@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import sys
 
 from cf_remote.paths import cfengine_dir
 
