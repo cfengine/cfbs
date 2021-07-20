@@ -16,7 +16,9 @@ def test_pretty():
     assert pretty(()) == "[]"
     assert pretty({}) == "{}"
 
-    test = OrderedDict({"a": [], "b": ()})
+    test = OrderedDict()
+    test["a"] = []
+    test["b"] = ()
     expected = '{ "a": [], "b": [] }'
     assert pretty(test) == expected
 
@@ -28,9 +30,13 @@ def test_pretty():
     expected = '[null, true, false, 1, 1.2, "Hello!"]'
     assert pretty(test) == expected
 
-    test = OrderedDict(
-        {"a": None, "b": True, "c": False, "d": 1, "e": 1.2, "f": "Hello!"}
-    )
+    test = OrderedDict()
+    test["a"] = None
+    test["b"] = True
+    test["c"] = False
+    test["d"] = 1
+    test["e"] = 1.2
+    test["f"] = "Hello!"
     expected = '{ "a": null, "b": true, "c": false, "d": 1, "e": 1.2, "f": "Hello!" }'
     assert pretty(test) == expected
 
