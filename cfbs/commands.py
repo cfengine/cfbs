@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import logging as log
 
 from cf_remote.paths import cfengine_dir
 
@@ -13,7 +12,6 @@ from cfbs.utils import (
     write_json,
     read_json,
     merge_json,
-    read_file,
     mkdir,
     touch,
     rm,
