@@ -19,6 +19,8 @@ from cfbs.utils import (
     sh,
 )
 
+from cfbs.pretty import (pretty_file, pretty)
+
 
 def cfbs_filename() -> str:
     return "cfbs.json"
@@ -45,8 +47,7 @@ def get_definition() -> dict:
 def put_definition(data: dict):
     global definition
     definition = data
-    write_json(cfbs_filename(), data)
-    sh(f"prettier --write '{cfbs_filename()}'")
+    write_json(cfbs_filename(), pretty(data))
 
 
 index = None
@@ -344,7 +345,7 @@ def build_steps() -> int:
         for step in module["steps"]:
             build_step(module, step, module_name_length)
     if os.path.isfile("out/masterfiles/def.json"):
-        sh("prettier --write out/masterfiles/def.json")
+        pretty_file("out/masterfiles/def.json")
     print("Generating tarball...")
     sh("( cd out/ && tar -czf masterfiles.tgz masterfiles )")
     print("\nBuild complete, ready to deploy 🐿")
