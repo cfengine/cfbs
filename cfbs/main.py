@@ -7,9 +7,6 @@ __copyright__ = ["Northern.tech AS"]
 import argparse
 import logging as log
 
-from cf_remote.utils import write_json, read_json
-from cf_remote.paths import cfengine_dir
-
 from cfbs.version import string as version
 from cfbs.utils import user_error
 from cfbs import commands
