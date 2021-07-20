@@ -19,7 +19,7 @@ def get_args():
         metavar="cmd",
         type=str,
         nargs="?",
-        help="The command to perform (init, status, search, add, download, build, install)",
+        help="The command to perform (init, status, search, add, download, build, install, pretty)",
     )
     parser.add_argument("args", nargs="*", help="Command arguments")
     parser.add_argument(
@@ -72,6 +72,8 @@ def main() -> int:
         return commands.init_command()
     if args.command == "search":
         return commands.search_command(args.args)
+    if args.command == "pretty":
+        return commands.pretty_command(args.args)
 
     if not commands.is_cfbs_repo():
         user_error("This is not a cfbs repo, to get started, type: cfbs init")

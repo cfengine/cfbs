@@ -78,6 +78,18 @@ def get_index(prefer_offline=False) -> dict:
         sys.exit("Empty or invalid module index")
     return index["modules"]
 
+def pretty_command(filenames: list) -> int:
+    if not filenames:
+        user_error("Filenames missing for cfbs pretty command")
+    for f in filenames:
+        if not f or not f.endswith(".json"):
+            user_error(f"cfbs pretty command can only be used with .json files, not '{os.path.basename(f)}'")
+        try:
+            pretty_file(f)
+        except FileNotFoundError:
+            user_error(f"File '{f}' not found")
+    return 0
+
 
 def init_command() -> int:
     if is_cfbs_repo():
