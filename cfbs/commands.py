@@ -48,7 +48,7 @@ def get_definition() -> dict:
 def put_definition(data: dict):
     global definition
     definition = data
-    with open(cfbs_filename()) as f:
+    with open(cfbs_filename(), "w") as f:
         f.write(pretty(data))
 
 
