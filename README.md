@@ -33,8 +33,6 @@ pip install cfbs
 Additionally, some command line tools are required (not installed by pip):
 
 * `git` CLI installed and in PATH
-* `prettier` CLI installed and in PATH
-  * **Note:** Must be installed manually, for example using `npm`.
 
 ## Usage
 

@@ -1,6 +1,13 @@
 import json
 from collections import OrderedDict
 
+def pretty_file(filename):
+    with open(filename) as f:
+        data = f.read()
+    with open(filename, "w") as f:
+        f.write(pretty_string(data))
+        f.write("\n")
+
 
 def pretty_string(s):
     s = json.loads(s, object_pairs_hook=OrderedDict)

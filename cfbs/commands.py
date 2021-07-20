@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import logging as log
 
 from cf_remote.paths import cfengine_dir
 
@@ -13,13 +12,14 @@ from cfbs.utils import (
     write_json,
     read_json,
     merge_json,
-    read_file,
     mkdir,
     touch,
     rm,
     cp,
     sh,
 )
+
+from cfbs.pretty import (pretty_file, pretty)
 
 
 def cfbs_filename() -> str:
@@ -47,8 +47,7 @@ def get_definition() -> dict:
 def put_definition(data: dict):
     global definition
     definition = data
-    write_json(cfbs_filename(), data)
-    sh(f"prettier --write '{cfbs_filename()}'")
+    write_json(cfbs_filename(), pretty(data))
 
 
 index = None
@@ -78,6 +77,18 @@ def get_index(prefer_offline=False) -> dict:
     if "modules" not in index:
         sys.exit("Empty or invalid module index")
     return index["modules"]
+
+def pretty_command(filenames: list) -> int:
+    if not filenames:
+        user_error("Filenames missing for cfbs pretty command")
+    for f in filenames:
+        if not f or not f.endswith(".json"):
+            user_error(f"cfbs pretty command can only be used with .json files, not '{os.path.basename(f)}'")
+        try:
+            pretty_file(f)
+        except FileNotFoundError:
+            user_error(f"File '{f}' not found")
+    return 0
 
 
 def init_command() -> int:
@@ -242,7 +253,6 @@ def longest_module_name() -> int:
 def get_download_path(module) -> str:
     downloads = os.path.join(cfbs_dir(), "downloads")
     github = os.path.join(downloads, "github.com")
-    name = module["name"]
     commit = module["commit"]
     url = module["repo"]
     url = strip_right(url, ".git")
@@ -346,7 +356,7 @@ def build_steps() -> int:
         for step in module["steps"]:
             build_step(module, step, module_name_length)
     if os.path.isfile("out/masterfiles/def.json"):
-        sh("prettier --write out/masterfiles/def.json")
+        pretty_file("out/masterfiles/def.json")
     print("Generating tarball...")
     sh("( cd out/ && tar -czf masterfiles.tgz masterfiles )")
     print("\nBuild complete, ready to deploy 🐿")
