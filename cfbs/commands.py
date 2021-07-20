@@ -253,7 +253,6 @@ def longest_module_name() -> int:
 def get_download_path(module) -> str:
     downloads = os.path.join(cfbs_dir(), "downloads")
     github = os.path.join(downloads, "github.com")
-    name = module["name"]
     commit = module["commit"]
     url = module["repo"]
     url = strip_right(url, ".git")
