@@ -1,4 +1,4 @@
-# Unofficial CFEngine Build System
+# WIP CFEngine Build System
 
 The CFEngine Build System (cfbs) comes with **no warranty** and is **not supported**.
 This is a work in progress, everything will change.
