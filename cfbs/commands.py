@@ -154,6 +154,66 @@ def search_command(terms: list) -> int:
     return 0 if found else 1
 
 
+def module_exists(module_name):
+    return os.path.exists(module_name) or (module_name in get_index())
+
+def local_module_name(module_path):
+    assert os.path.exists(module_path)
+    module = module_path
+    if module.endswith(".cf") and not module.startswith("./"):
+        module = "./" + module
+    if not module.startswith("./"):
+        user_error(f"Please prepend local files or folders with './' to avoid ambiguity")
+    for illegal in ["//", "..", " ", "\n", "\t", " "]:
+        if illegal in module:
+            user_error(f"Module path cannot contain {repr(illegal)}")
+    if os.path.isdir(module) and not module.endswith("/"):
+        module = module + "/"
+    while "/./" in module:
+        module = module.replace("/./", "/")
+
+    assert os.path.exists(module_path)
+    if not module.endswith(".cf") or not os.path.isfile(module):
+        user_error("Only .cf files supported currently")
+
+    return module
+
+def local_module_data(module):
+    assert module.startswith("./")
+    assert module.endswith(".cf")
+    assert os.path.isfile(module)
+    target = os.path.basename(module)
+    return {
+      "description": "Local policy file added using cfbs command line",
+      "tags": ["local"],
+      "dependencies": [ "autorun" ],
+      "steps": [f"copy {module} services/autorun/{target}"],
+      "added_by": "cfbs add"
+    }
+
+def prettify_name(name):
+    if "/" not in name:
+        return name
+    while name.endswith("/"):
+        name = name[:-1]
+    if "/" in name:
+        name = name.split("/")[-1]
+    assert name
+    return name
+
+def local_module_copy(module, counter, max_length):
+    name = module["name"]
+    assert name.startswith("./") and os.path.isfile(name)
+    pretty_name = prettify_name(name)
+    target = f"out/steps/{counter:03d}_{pretty_name}_local/"
+    module["_directory"] = target
+    module["_counter"] = counter
+    cp(name, target + name)
+    print(f"{counter:03d} {pad_right(name, max_length)} @ local                                    (Copied)")
+
+def get_build_step(module):
+    return get_index()[module] if not module.startswith("./") else local_module_data(module)
+
 def add_command(to_add: list, added_by="cfbs add") -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
@@ -161,8 +221,11 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
     # Translate all aliases:
     translated = []
     for module in to_add:
-        if module not in get_index():
+        if not module_exists(module):
             user_error(f"Module '{module}' does not exist")
+        if (not module in get_index() and os.path.exists(module)):
+            translated.append(local_module_name(module))
+            continue
         data = get_index()[module]
         if "alias" in data:
             print(f'{module} is an alias for {data["alias"]}')
@@ -186,7 +249,7 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
     assert not any((k not in added_by for k in to_add))
 
     # Print error and exit if there are unknown modules:
-    missing = [m for m in to_add if m not in get_index()]
+    missing = [m for m in to_add if not m.startswith("./") and m not in get_index()]
     if missing:
         user_error(f"Module(s) could not be found: {', '.join(missing)}")
 
@@ -214,8 +277,8 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
     dependencies = []
     dependencies_added_by = []
     for module in filtered:
-        assert module in get_index()
-        data = get_index()[module]
+        assert module_exists(module)
+        data = get_build_step(module)
         assert "alias" not in data
         if "dependencies" in data:
             for dep in data["dependencies"]:
@@ -228,8 +291,8 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
         definition = get_definition()
 
     for module in filtered:
-        assert module in get_index()
-        data = get_index()[module]
+        assert module_exists(module)
+        data = get_build_step(module)
         new_module = {"name": module, **data, "added_by": added_by[module]}
         definition["build"].append(new_module)
         if user_requested:
@@ -273,6 +336,10 @@ def download_dependencies(prefer_offline=False, redownload=False):
     max_length = longest_module_name()
     for module in definition["build"]:
         name = module["name"]
+        if name.startswith("./"):
+            local_module_copy(module, counter, max_length)
+            counter += 1
+            continue
         commit = module["commit"]
         url = strip_right(module["repo"], ".git")
         commit_dir = get_download_path(module)
@@ -281,7 +348,7 @@ def download_dependencies(prefer_offline=False, redownload=False):
         if not os.path.exists(commit_dir):
             sh(f"git clone {url} {commit_dir}")
             sh(f"(cd {commit_dir} && git checkout {commit})")
-        target = f"out/steps/{counter:03d}_{module['name']}_{commit}"
+        target = f"out/steps/{counter:03d}_{module['name']}_{commit}/"
         module["_directory"] = target
         module["_counter"] = counter
         subdirectory = module.get("subdirectory", None)
