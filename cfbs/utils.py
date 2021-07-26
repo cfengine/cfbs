@@ -3,6 +3,7 @@ import sys
 import json
 import copy
 from collections import OrderedDict
+from shutil import rmtree
 
 import requests
 
@@ -35,8 +36,13 @@ def touch(path: str):
     sh(f"touch {path}")
 
 
-def rm(path: str):
-    sh(f'rm -rf "{path}"')
+def rm(path: str, missing_ok=False):
+    if not missing_ok:
+        assert os.path.exists(path)
+    if os.path.isdir(path):
+        rmtree(path)
+    if os.path.isfile(path):
+        os.remove(path)
 
 
 def cp(src, dst):

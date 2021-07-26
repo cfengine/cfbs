@@ -161,7 +161,7 @@ def local_module_name(module_path):
     assert os.path.exists(module_path)
     module = module_path
 
-    if module.endswith((".cf", ".json")) and not module.startswith("./"):
+    if module.endswith((".cf", ".json", "/")) and not module.startswith("./"):
         module = "./" + module
     if not module.startswith("./"):
         user_error(f"Please prepend local files or folders with './' to avoid ambiguity")
@@ -176,10 +176,12 @@ def local_module_name(module_path):
         module = module.replace("/./", "/")
 
     assert os.path.exists(module)
-    if not os.path.isfile(module):
-        user_error("Only files (not folders) supported currently")
-    if not module.endswith((".cf", ".json")):
-        user_error("Only .cf and .json files supported currently")
+    if os.path.isfile(module):
+        if not module.endswith((".cf", ".json")):
+            user_error("Only .cf and .json files supported currently")
+    else:
+        if not os.path.isdir(module):
+            user_error(f"'{module}' must be either a directory or a file")
 
     return module
 
@@ -201,10 +203,22 @@ def local_module_data_json_file(module):
       "added_by": "cfbs add"
     }
 
+def local_module_data_subdir(module):
+    return {
+      "description": "Local subdirectory added using cfbs command line",
+      "tags": ["local"],
+      "dependencies": [ "autorun" ],
+      "steps": [f"copy {module} services/autorun/"],
+      "added_by": "cfbs add"
+    }
+
 def local_module_data(module):
     assert module.startswith("./")
-    assert module.endswith((".cf", ".json"))
-    assert os.path.isfile(module)
+    assert module.endswith((".cf", ".json", "/"))
+    assert os.path.isfile(module) or os.path.isdir(module)
+
+    if os.path.isdir(module):
+        return local_module_data_subdir(module)
     if module.endswith(".cf"):
         return local_module_data_cf_file(module)
     if module.endswith(".json"):
@@ -222,7 +236,8 @@ def prettify_name(name):
 
 def local_module_copy(module, counter, max_length):
     name = module["name"]
-    assert name.startswith("./") and os.path.isfile(name)
+    assert name.startswith("./")
+    assert os.path.isfile(name) or os.path.isdir(name)
     pretty_name = prettify_name(name)
     target = f"out/steps/{counter:03d}_{pretty_name}_local/"
     module["_directory"] = target
@@ -324,7 +339,7 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
 
 
 def init_build_folder():
-    rm("out")
+    rm("out", missing_ok=True)
     mkdir("out")
     mkdir("out/masterfiles")
     mkdir("out/steps")
@@ -362,8 +377,8 @@ def download_dependencies(prefer_offline=False, redownload=False):
         commit = module["commit"]
         url = strip_right(module["repo"], ".git")
         commit_dir = get_download_path(module)
-        if redownload and os.path.exists(commit_dir):
-            rm(commit_dir)
+        if redownload:
+            rm(commit_dir, missing_ok=True)
         if not os.path.exists(commit_dir):
             sh(f"git clone {url} {commit_dir}")
             sh(f"(cd {commit_dir} && git checkout {commit})")
@@ -409,7 +424,7 @@ def build_step(module, step, max_length):
         as_string = " ".join([f"'{f}'" for f in files])
         print(f"{prefix} delete {as_string}")
         for file in files:
-            rm(file)
+            rm(os.path.join(source, file))
     elif operation == "json":
         src, dst = args
         if dst in [".", "./"]:
@@ -473,6 +488,6 @@ def install_command(destination=None) -> int:
 
     if not destination:
         destination = "/var/cfengine/masterfiles"
-    rm(destination)
+    rm(destination, missing_ok=True)
     cp("out/masterfiles", destination)
     return 0
