@@ -6,6 +6,8 @@ from collections import OrderedDict
 
 import requests
 
+from cfbs.pretty import pretty
+
 
 def _sh(cmd: str):
     # print(cmd)
@@ -92,10 +94,6 @@ def save_file(path, data):
         mkdir("/".join(path.split("/")[0:-1]))
     with open(path, "w") as f:
         f.write(data)
-
-
-def pretty(data):
-    return json.dumps(data, indent=2)
 
 
 def read_json(path):

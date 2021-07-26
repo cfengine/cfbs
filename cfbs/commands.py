@@ -160,28 +160,30 @@ def module_exists(module_name):
 def local_module_name(module_path):
     assert os.path.exists(module_path)
     module = module_path
-    if module.endswith(".cf") and not module.startswith("./"):
+
+    if module.endswith((".cf", ".json")) and not module.startswith("./"):
         module = "./" + module
     if not module.startswith("./"):
         user_error(f"Please prepend local files or folders with './' to avoid ambiguity")
+
     for illegal in ["//", "..", " ", "\n", "\t", " "]:
         if illegal in module:
             user_error(f"Module path cannot contain {repr(illegal)}")
+
     if os.path.isdir(module) and not module.endswith("/"):
         module = module + "/"
     while "/./" in module:
         module = module.replace("/./", "/")
 
-    assert os.path.exists(module_path)
-    if not module.endswith(".cf") or not os.path.isfile(module):
-        user_error("Only .cf files supported currently")
+    assert os.path.exists(module)
+    if not os.path.isfile(module):
+        user_error("Only files (not folders) supported currently")
+    if not module.endswith((".cf", ".json")):
+        user_error("Only .cf and .json files supported currently")
 
     return module
 
-def local_module_data(module):
-    assert module.startswith("./")
-    assert module.endswith(".cf")
-    assert os.path.isfile(module)
+def local_module_data_cf_file(module):
     target = os.path.basename(module)
     return {
       "description": "Local policy file added using cfbs command line",
@@ -190,6 +192,23 @@ def local_module_data(module):
       "steps": [f"copy {module} services/autorun/{target}"],
       "added_by": "cfbs add"
     }
+
+def local_module_data_json_file(module):
+    return {
+      "description": "Local augments file added using cfbs command line",
+      "tags": ["local"],
+      "steps": [f"json {module} def.json"],
+      "added_by": "cfbs add"
+    }
+
+def local_module_data(module):
+    assert module.startswith("./")
+    assert module.endswith((".cf", ".json"))
+    assert os.path.isfile(module)
+    if module.endswith(".cf"):
+        return local_module_data_cf_file(module)
+    if module.endswith(".json"):
+        return local_module_data_json_file(module)
 
 def prettify_name(name):
     if "/" not in name:
@@ -398,7 +417,9 @@ def build_step(module, step, max_length):
         print(f"{prefix} json '{src}' 'masterfiles/{dst}'")
         src, dst = os.path.join(source, src), os.path.join(destination, dst)
         extras, original = read_json(src), read_json(dst)
-        assert extras
+        assert extras is not None
+        if not extras:
+            print(f"Warning: '{os.path.basename(src)}' looks empty, adding nothing")
         if original:
             merged = merge_json(original, extras)
         else:
@@ -426,6 +447,7 @@ def build_steps() -> int:
             build_step(module, step, module_name_length)
     if os.path.isfile("out/masterfiles/def.json"):
         pretty_file("out/masterfiles/def.json")
+    print("")
     print("Generating tarball...")
     sh("( cd out/ && tar -czf masterfiles.tgz masterfiles )")
     print("\nBuild complete, ready to deploy 🐿")
