@@ -93,7 +93,8 @@ def pretty(o):
         elif isinstance(data, (int, float)):
             return repr(data)
         elif isinstance(data, str):
-            return '"' + data + '"'
+            # Use the json module to escape the string with backslashes:
+            return json.dumps(data)
         elif isinstance(data, (list, tuple)):
             return _encode_list(data, indent, cursor)
         elif isinstance(data, dict):

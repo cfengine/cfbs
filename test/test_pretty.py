@@ -40,6 +40,24 @@ def test_pretty():
     expected = '{ "a": null, "b": true, "c": false, "d": 1, "e": 1.2, "f": "Hello!" }'
     assert pretty(test) == expected
 
+    # Test that strings are escaped correctly:
+
+    test = ""            # Empty string
+    expected = '""'      # is represented as "" in JSON, same as python
+    assert pretty(test) == expected
+
+    test = r'""'         # Putting double quotes inside the string
+    expected = r'"\"\""' # means they have to be escaped with backslashes
+    assert pretty(test) == expected
+
+    test = '\n'          # A newline character
+    expected = r'"\n"'   # is encoded as \n, same as python
+    assert pretty(test) == expected
+
+    test = r'\ '         # A backslash character
+    expected = r'"\\ "'  # represented by two backslashes in JSON
+    assert pretty(test) == expected
+
 
 def test_pretty_string():
     # Test primitives
