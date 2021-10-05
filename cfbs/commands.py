@@ -20,7 +20,7 @@ from cfbs.utils import (
     sh,
 )
 
-from cfbs.pretty import (pretty_file, pretty)
+from cfbs.pretty import pretty_file, pretty
 
 
 def cfbs_filename() -> str:
@@ -80,12 +80,15 @@ def get_index(prefer_offline=False) -> dict:
         sys.exit("Empty or invalid module index")
     return index["modules"]
 
+
 def pretty_command(filenames: list) -> int:
     if not filenames:
         user_error("Filenames missing for cfbs pretty command")
     for f in filenames:
         if not f or not f.endswith(".json"):
-            user_error(f"cfbs pretty command can only be used with .json files, not '{os.path.basename(f)}'")
+            user_error(
+                f"cfbs pretty command can only be used with .json files, not '{os.path.basename(f)}'"
+            )
         try:
             pretty_file(f)
         except FileNotFoundError:
@@ -157,6 +160,7 @@ def search_command(terms: list) -> int:
 def module_exists(module_name):
     return os.path.exists(module_name) or (module_name in get_index())
 
+
 def local_module_name(module_path):
     assert os.path.exists(module_path)
     module = module_path
@@ -164,7 +168,9 @@ def local_module_name(module_path):
     if module.endswith((".cf", ".json", "/")) and not module.startswith("./"):
         module = "./" + module
     if not module.startswith("./"):
-        user_error(f"Please prepend local files or folders with './' to avoid ambiguity")
+        user_error(
+            f"Please prepend local files or folders with './' to avoid ambiguity"
+        )
 
     for illegal in ["//", "..", " ", "\n", "\t", " "]:
         if illegal in module:
@@ -185,32 +191,36 @@ def local_module_name(module_path):
 
     return module
 
+
 def local_module_data_cf_file(module):
     target = os.path.basename(module)
     return {
-      "description": "Local policy file added using cfbs command line",
-      "tags": ["local"],
-      "dependencies": [ "autorun" ],
-      "steps": [f"copy {module} services/autorun/{target}"],
-      "added_by": "cfbs add"
+        "description": "Local policy file added using cfbs command line",
+        "tags": ["local"],
+        "dependencies": ["autorun"],
+        "steps": [f"copy {module} services/autorun/{target}"],
+        "added_by": "cfbs add",
     }
+
 
 def local_module_data_json_file(module):
     return {
-      "description": "Local augments file added using cfbs command line",
-      "tags": ["local"],
-      "steps": [f"json {module} def.json"],
-      "added_by": "cfbs add"
+        "description": "Local augments file added using cfbs command line",
+        "tags": ["local"],
+        "steps": [f"json {module} def.json"],
+        "added_by": "cfbs add",
     }
+
 
 def local_module_data_subdir(module):
     return {
-      "description": "Local subdirectory added using cfbs command line",
-      "tags": ["local"],
-      "dependencies": [ "autorun" ],
-      "steps": [f"copy {module} services/autorun/"],
-      "added_by": "cfbs add"
+        "description": "Local subdirectory added using cfbs command line",
+        "tags": ["local"],
+        "dependencies": ["autorun"],
+        "steps": [f"copy {module} services/autorun/"],
+        "added_by": "cfbs add",
     }
+
 
 def local_module_data(module):
     assert module.startswith("./")
@@ -224,6 +234,7 @@ def local_module_data(module):
     if module.endswith(".json"):
         return local_module_data_json_file(module)
 
+
 def prettify_name(name):
     if "/" not in name:
         return name
@@ -234,6 +245,7 @@ def prettify_name(name):
     assert name
     return name
 
+
 def local_module_copy(module, counter, max_length):
     name = module["name"]
     assert name.startswith("./")
@@ -243,10 +255,18 @@ def local_module_copy(module, counter, max_length):
     module["_directory"] = target
     module["_counter"] = counter
     cp(name, target + name)
-    print(f"{counter:03d} {pad_right(name, max_length)} @ local                                    (Copied)")
+    print(
+        f"{counter:03d} {pad_right(name, max_length)} @ local                                    (Copied)"
+    )
+
 
 def get_build_step(module):
-    return get_index()[module] if not module.startswith("./") else local_module_data(module)
+    return (
+        get_index()[module]
+        if not module.startswith("./")
+        else local_module_data(module)
+    )
+
 
 def add_command(to_add: list, added_by="cfbs add") -> int:
     if not to_add:
@@ -257,7 +277,7 @@ def add_command(to_add: list, added_by="cfbs add") -> int:
     for module in to_add:
         if not module_exists(module):
             user_error(f"Module '{module}' does not exist")
-        if (not module in get_index() and os.path.exists(module)):
+        if not module in get_index() and os.path.exists(module):
             translated.append(local_module_name(module))
             continue
         data = get_index()[module]

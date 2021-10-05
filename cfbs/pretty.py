@@ -1,6 +1,7 @@
 import json
 from collections import OrderedDict
 
+
 def pretty_file(filename):
     with open(filename) as f:
         data = f.read()

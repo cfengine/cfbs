@@ -8,4 +8,5 @@ if __name__ == "__main__":
     sys.path.insert(0, abspath)
 
     from cfbs.main import main
+
     main()
