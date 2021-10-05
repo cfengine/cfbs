@@ -52,6 +52,7 @@ def put_definition(data: dict):
     with open(cfbs_filename(), "w") as f:
         f.write(pretty(data))
 
+
 def pretty_command(filenames: list) -> int:
     if not filenames:
         user_error("Filenames missing for cfbs pretty command")
@@ -105,6 +106,7 @@ def status_command() -> int:
 
     return 0
 
+
 def get_index_from_config():
     if not os.path.isfile(cfbs_filename()):
         return None
@@ -112,6 +114,7 @@ def get_index_from_config():
     if not "index" in conf:
         return None
     return conf["index"]
+
 
 def search_command(terms: list, index=None) -> int:
     if not index:
@@ -136,7 +139,6 @@ def search_command(terms: list, index=None) -> int:
                 print(name)
             found = True
     return 0 if found else 1
-
 
 
 def local_module_name(module_path):

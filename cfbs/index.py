@@ -22,7 +22,8 @@ from cfbs.utils import (
 
 from cfbs.pretty import pretty_file, pretty
 
-class Index():
+
+class Index:
     def __init__(self, path):
         self.path = path
         if not self.path:
