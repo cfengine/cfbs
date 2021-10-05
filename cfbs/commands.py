@@ -105,8 +105,17 @@ def status_command() -> int:
 
     return 0
 
+def get_index_from_config():
+    if not os.path.isfile(cfbs_filename()):
+        return None
+    conf = get_definition()
+    if not "index" in conf:
+        return None
+    return conf["index"]
 
 def search_command(terms: list, index=None) -> int:
+    if not index:
+        index = get_index_from_config()
     index = Index(index)
     found = False
     # No search term, list everything:
@@ -229,12 +238,12 @@ def local_module_copy(module, counter, max_length):
     )
 
 
-
-
-
 def add_command(to_add: list, added_by="cfbs add", index=None) -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
+
+    if not index:
+        index = get_index_from_config()
 
     index = Index(index)
 

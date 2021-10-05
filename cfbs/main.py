@@ -74,7 +74,7 @@ def main() -> int:
     if args.command == "init":
         return commands.init_command()
     if args.command == "search":
-        return commands.search_command(args.args)
+        return commands.search_command(args.args, index=args.index)
     if args.command == "pretty":
         return commands.pretty_command(args.args)
 
