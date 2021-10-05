@@ -8,7 +8,7 @@ import argparse
 import logging as log
 
 from cfbs.version import string as version
-from cfbs.utils import user_error
+from cfbs.utils import user_error, is_cfbs_repo
 from cfbs import commands
 
 
@@ -76,7 +76,7 @@ def main() -> int:
     if args.command == "pretty":
         return commands.pretty_command(args.args)
 
-    if not commands.is_cfbs_repo():
+    if not is_cfbs_repo():
         user_error("This is not a cfbs repo, to get started, type: cfbs init")
 
     if args.command == "status":

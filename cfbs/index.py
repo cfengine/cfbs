@@ -5,6 +5,7 @@ import sys
 from cf_remote.paths import cfengine_dir
 
 from cfbs.utils import (
+    cfbs_dir,
     user_error,
     get_json,
     strip_left,
