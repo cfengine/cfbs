@@ -23,6 +23,47 @@ from cfbs.utils import (
 
 from cfbs.pretty import pretty_file, pretty
 
+def _local_module_data_cf_file(module):
+    target = os.path.basename(module)
+    return {
+        "description": "Local policy file added using cfbs command line",
+        "tags": ["local"],
+        "dependencies": ["autorun"],
+        "steps": [f"copy {module} services/autorun/{target}"],
+        "added_by": "cfbs add",
+    }
+
+
+def _local_module_data_json_file(module):
+    return {
+        "description": "Local augments file added using cfbs command line",
+        "tags": ["local"],
+        "steps": [f"json {module} def.json"],
+        "added_by": "cfbs add",
+    }
+
+
+def _local_module_data_subdir(module):
+    return {
+        "description": "Local subdirectory added using cfbs command line",
+        "tags": ["local"],
+        "dependencies": ["autorun"],
+        "steps": [f"copy {module} services/autorun/"],
+        "added_by": "cfbs add",
+    }
+
+
+def generate_index_for_local_module(module):
+    assert module.startswith("./")
+    assert module.endswith((".cf", ".json", "/"))
+    assert os.path.isfile(module) or os.path.isdir(module)
+
+    if os.path.isdir(module):
+        return _local_module_data_subdir(module)
+    if module.endswith(".cf"):
+        return _local_module_data_cf_file(module)
+    if module.endswith(".json"):
+        return _local_module_data_json_file(module)
 
 class Index:
     def __init__(self, path):
@@ -73,5 +114,5 @@ class Index:
         return (
             self.get_modules()[module]
             if not module.startswith("./")
-            else local_module_data(module)
+            else generate_index_for_local_module(module)
         )

@@ -161,49 +161,6 @@ def local_module_name(module_path):
     return module
 
 
-def local_module_data_cf_file(module):
-    target = os.path.basename(module)
-    return {
-        "description": "Local policy file added using cfbs command line",
-        "tags": ["local"],
-        "dependencies": ["autorun"],
-        "steps": [f"copy {module} services/autorun/{target}"],
-        "added_by": "cfbs add",
-    }
-
-
-def local_module_data_json_file(module):
-    return {
-        "description": "Local augments file added using cfbs command line",
-        "tags": ["local"],
-        "steps": [f"json {module} def.json"],
-        "added_by": "cfbs add",
-    }
-
-
-def local_module_data_subdir(module):
-    return {
-        "description": "Local subdirectory added using cfbs command line",
-        "tags": ["local"],
-        "dependencies": ["autorun"],
-        "steps": [f"copy {module} services/autorun/"],
-        "added_by": "cfbs add",
-    }
-
-
-def local_module_data(module):
-    assert module.startswith("./")
-    assert module.endswith((".cf", ".json", "/"))
-    assert os.path.isfile(module) or os.path.isdir(module)
-
-    if os.path.isdir(module):
-        return local_module_data_subdir(module)
-    if module.endswith(".cf"):
-        return local_module_data_cf_file(module)
-    if module.endswith(".json"):
-        return local_module_data_json_file(module)
-
-
 def prettify_name(name):
     if "/" not in name:
         return name
