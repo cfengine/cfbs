@@ -4,6 +4,7 @@ import json
 import copy
 from collections import OrderedDict
 from shutil import rmtree
+from cf_remote.paths import cfengine_dir
 
 import requests
 
@@ -139,3 +140,15 @@ def merge_json(a, b, overwrite_callback=None, stack=None):
             a[k] = v
 
     return a
+
+
+def cfbs_filename() -> str:
+    return "cfbs.json"
+
+
+def is_cfbs_repo() -> bool:
+    return os.path.isfile(cfbs_filename())
+
+
+def cfbs_dir(append=None) -> str:
+    return os.path.join(cfengine_dir("cfbs"), append if append else "")

@@ -2,9 +2,10 @@
 import os
 import sys
 
-from cf_remote.paths import cfengine_dir
-
 from cfbs.utils import (
+    cfbs_dir,
+    cfbs_filename,
+    is_cfbs_repo,
     user_error,
     get_json,
     strip_left,
@@ -22,18 +23,6 @@ from cfbs.utils import (
 
 from cfbs.pretty import pretty_file, pretty
 from cfbs.index import Index
-
-
-def cfbs_filename() -> str:
-    return "cfbs.json"
-
-
-def is_cfbs_repo() -> bool:
-    return os.path.isfile(cfbs_filename())
-
-
-def cfbs_dir(append=None) -> str:
-    return os.path.join(cfengine_dir("cfbs"), append if append else "")
 
 
 definition = None
