@@ -35,6 +35,9 @@ def get_args():
     parser.add_argument(
         "--force", help="Force rebuild / redownload", action="store_true"
     )
+    parser.add_argument(
+        "--index", help="Specify alternate index", type=str
+    )
 
     args = parser.parse_args()
     return args
@@ -81,7 +84,7 @@ def main() -> int:
     if args.command == "status":
         return commands.status_command()
     if args.command == "add":
-        return commands.add_command(args.args)
+        return commands.add_command(args.args, index=args.index)
     if args.command == "download":
         return commands.download_command(args.force)
     if args.command == "build":
