@@ -21,6 +21,7 @@ from cfbs.utils import (
 )
 
 from cfbs.pretty import pretty_file, pretty
+from cfbs.index import Index
 
 
 def cfbs_filename() -> str:
@@ -50,34 +51,6 @@ def put_definition(data: dict):
     definition = data
     with open(cfbs_filename(), "w") as f:
         f.write(pretty(data))
-
-def index_url() -> str:
-    return "https://raw.githubusercontent.com/cfengine/cfbs-index/master/index.json"
-
-
-def index_path() -> str:
-    return cfbs_dir("index.json")
-
-
-def get_index(path) -> dict:
-    if not path:
-        path = index_url()
-    if path.startswith("https://"):
-        index = get_json(path)
-        if not index:
-            index = read_json(index_path())
-            if index:
-                print("Warning: Downloading index failed, using cache")
-    else:
-        if not os.path.isfile(path):
-            sys.exit(f"Index does not exist at: '{path}'")
-        index = read_json(path)
-    if not index:
-        sys.exit("Could not download or find module index")
-    if "modules" not in index:
-        sys.exit("Empty or invalid module index")
-    return index["modules"]
-
 
 def pretty_command(filenames: list) -> int:
     if not filenames:
@@ -134,11 +107,11 @@ def status_command() -> int:
 
 
 def search_command(terms: list, index=None) -> int:
-    index = get_index(index)
+    index = Index(index)
     found = False
     # No search term, list everything:
     if not terms:
-        for name, data in index.items():
+        for name, data in index.get_modules().items():
             if "alias" in data:
                 continue
             print(name)
@@ -146,7 +119,7 @@ def search_command(terms: list, index=None) -> int:
         return 0 if found else 1
 
     # Print all modules which match at least 1 search term:
-    for name, data in index.items():
+    for name, data in index.get_modules().items():
         if any((t for t in terms if t in name)):
             if "alias" in data:
                 print(f"{name} -> {data['alias']}")
@@ -155,9 +128,6 @@ def search_command(terms: list, index=None) -> int:
             found = True
     return 0 if found else 1
 
-
-def module_exists(module_name, index):
-    return os.path.exists(module_name) or (module_name in index)
 
 
 def local_module_name(module_path):
@@ -259,24 +229,19 @@ def local_module_copy(module, counter, max_length):
     )
 
 
-def get_build_step(module, index):
-    return (
-        index[module]
-        if not module.startswith("./")
-        else local_module_data(module)
-    )
+
 
 
 def add_command(to_add: list, added_by="cfbs add", index=None) -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
 
-    index = get_index(index)
+    index = Index(index)
 
     # Translate all aliases:
     translated = []
     for module in to_add:
-        if not module_exists(module, index):
+        if not index.exists(module):
             user_error(f"Module '{module}' does not exist")
         if not module in index and os.path.exists(module):
             translated.append(local_module_name(module))
@@ -332,8 +297,8 @@ def add_command(to_add: list, added_by="cfbs add", index=None) -> int:
     dependencies = []
     dependencies_added_by = []
     for module in filtered:
-        assert module_exists(module, index)
-        data = get_build_step(module, index)
+        assert index.exists(module)
+        data = index.get_build_step(module)
         assert "alias" not in data
         if "dependencies" in data:
             for dep in data["dependencies"]:
@@ -346,8 +311,8 @@ def add_command(to_add: list, added_by="cfbs add", index=None) -> int:
         definition = get_definition()
 
     for module in filtered:
-        assert module_exists(module, index)
-        data = get_build_step(module, index)
+        assert index.exists(module)
+        data = index.get_build_step(module)
         new_module = {"name": module, **data, "added_by": added_by[module]}
         definition["build"].append(new_module)
         if user_requested:
