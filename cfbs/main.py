@@ -36,6 +36,9 @@ def get_args():
         "--force", help="Force rebuild / redownload", action="store_true"
     )
     parser.add_argument("--index", help="Specify alternate index", type=str)
+    parser.add_argument(
+        "--check", help="Check if file(s) would be reformatted", action="store_true"
+    )
 
     args = parser.parse_args()
     return args
@@ -74,7 +77,7 @@ def main() -> int:
     if args.command == "search":
         return commands.search_command(args.args, index=args.index)
     if args.command == "pretty":
-        return commands.pretty_command(args.args)
+        return commands.pretty_command(args.args, args.check)
 
     if not is_cfbs_repo():
         user_error("This is not a cfbs repo, to get started, type: cfbs init")
