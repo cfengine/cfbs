@@ -2,6 +2,18 @@ import json
 from collections import OrderedDict
 
 
+def pretty_check_file(filename):
+    with open(filename) as f:
+        s = f.read()
+    o = json.loads(s, object_pairs_hook=OrderedDict)
+    return s == pretty(o) + "\n"
+
+
+def pretty_check_string(s):
+    o = json.loads(s, object_pairs_hook=OrderedDict)
+    return s == pretty(o)
+
+
 def pretty_file(filename):
     with open(filename) as f:
         data = f.read()

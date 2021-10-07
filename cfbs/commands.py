@@ -21,7 +21,7 @@ from cfbs.utils import (
     sh,
 )
 
-from cfbs.pretty import pretty_file, pretty
+from cfbs.pretty import pretty_check_file, pretty_file, pretty
 from cfbs.index import Index
 
 
@@ -42,18 +42,28 @@ def put_definition(data: dict):
         f.write(pretty(data))
 
 
-def pretty_command(filenames: list) -> int:
+def pretty_command(filenames: list, check) -> int:
     if not filenames:
         user_error("Filenames missing for cfbs pretty command")
+
+    num_files = 0
     for f in filenames:
         if not f or not f.endswith(".json"):
             user_error(
                 f"cfbs pretty command can only be used with .json files, not '{os.path.basename(f)}'"
             )
         try:
-            pretty_file(f)
+            if check:
+                if not pretty_check_file(f):
+                    num_files += 1
+                    print("Would reformat %s" % f)
+            else:
+                pretty_file(f)
         except FileNotFoundError:
             user_error(f"File '{f}' not found")
+    if check:
+        print("Would reformat %d file(s)" % num_files)
+        return 1 if num_files > 0 else 0
     return 0
 
 

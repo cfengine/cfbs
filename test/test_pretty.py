@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from cfbs.pretty import pretty, pretty_string
+from cfbs.pretty import pretty, pretty_check_string, pretty_string
 
 
 def test_pretty():
@@ -181,3 +181,18 @@ def test_pretty_string():
   }
 ]"""
     assert pretty_string(test) == expected
+
+
+def test_pretty_check_string():
+    assert pretty_check_string(' "Hello" ') == False
+    assert pretty_check_string('"Hello"') == True
+    assert (
+        pretty_check_string(
+            """{
+  "name": "lars",
+  "age": 27
+}"""
+        )
+        == False
+    )
+    assert pretty_check_string('{ "name": "lars", "age": 27 }') == True
