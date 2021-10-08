@@ -23,6 +23,7 @@ from cfbs.utils import (
 
 from cfbs.pretty import pretty_check_file, pretty_file, pretty
 from cfbs.index import Index
+from cfbs.validate import CFBSIndexException, validate_index
 
 
 definition = None
@@ -289,6 +290,22 @@ def add_command(to_add: list, added_by="cfbs add", index=None) -> int:
         added.append(module)
 
     put_definition(definition)
+
+
+def validate_command(index=None):
+    if not index:
+        index = get_index_from_config()
+    if not index:
+        user_error("Index not found")
+
+    index = Index(index)._get()
+
+    try:
+        validate_index(index)
+    except CFBSIndexException as e:
+        print(e)
+        return 1
+    return 0
 
 
 def init_build_folder():

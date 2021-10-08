@@ -78,6 +78,8 @@ def main() -> int:
         return commands.search_command(args.args, index=args.index)
     if args.command == "pretty":
         return commands.pretty_command(args.args, args.check)
+    if args.command == "validate":
+        return commands.validate_command(index=args.index)
 
     if not is_cfbs_repo():
         user_error("This is not a cfbs repo, to get started, type: cfbs init")
