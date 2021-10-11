@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 import os
-import sys
 
 from cfbs.utils import (
     cfbs_dir,
     cfbs_filename,
     is_cfbs_repo,
     user_error,
-    get_json,
     strip_left,
     strip_right,
     pad_right,
