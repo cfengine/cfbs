@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import copy
+import subprocess
 from collections import OrderedDict
 from shutil import rmtree
 from cf_remote.paths import cfengine_dir
@@ -13,16 +14,17 @@ from cfbs.pretty import pretty
 
 def _sh(cmd: str):
     # print(cmd)
-    r = os.system(cmd)
-    if r != 0:
-        user_error(f"Command failed - {cmd}")
+    try:
+        r = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        user_error(f"Command failed - {cmd}\n{e.stdout.decode('utf-8')}")
 
 
 def sh(cmd: str, directory=None):
     if directory:
-        _sh(f"( cd {directory} && {cmd} ) 1>/dev/null 2>/dev/null")
+        _sh(f"cd {directory} && {cmd}")
         return
-    _sh(f"( {cmd} ) 1>/dev/null 2>/dev/null")
+    _sh(f"{cmd}")
 
 
 def mkdir(path: str):
