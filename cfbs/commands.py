@@ -459,3 +459,6 @@ def install_command(destination=None) -> int:
     rm(destination, missing_ok=True)
     cp("out/masterfiles", destination)
     return 0
+
+def help_command():
+    pass # no-op to allow help to be printed
