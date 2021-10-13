@@ -73,7 +73,7 @@ def main() -> int:
 
     # Commands you can run outside a cfbs repo:
     if args.command == "init":
-        return commands.init_command()
+        return commands.init_command(index=args.index)
     if args.command == "search":
         return commands.search_command(args.args, index=args.index)
     if args.command == "pretty":
