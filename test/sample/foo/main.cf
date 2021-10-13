@@ -1,0 +1,5 @@
+bundle agent foo
+{
+  reports:
+    "$(this.promise_dirname) $(this.promise_filename) $(this.bundle)";
+}

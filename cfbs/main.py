@@ -13,7 +13,9 @@ from cfbs import commands
 
 
 def get_args():
-    command_list = [cmd.split('_')[0] for cmd in dir(commands) if cmd.endswith('_command')]
+    command_list = [
+        cmd.split("_")[0] for cmd in dir(commands) if cmd.endswith("_command")
+    ]
     parser = argparse.ArgumentParser(description="CFEngine Build System.")
     parser.add_argument(
         "command",
@@ -85,6 +87,8 @@ def main() -> int:
         return commands.pretty_command(args.args, args.check)
     if args.command == "validate":
         return commands.validate_command(index=args.index)
+    if args.command in ("info", "show"):
+        return commands.info_command(args.args, index=args.index)
 
     if not is_cfbs_repo():
         user_error("This is not a cfbs repo, to get started, type: cfbs init")

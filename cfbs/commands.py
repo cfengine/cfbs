@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+"""
+Functions ending in "_command" are dynamically included in the list of commands
+in main.py for -h/--help/help.
+"""
 import os
 
 from cfbs.utils import (
@@ -31,6 +34,8 @@ def get_definition() -> dict:
     global definition
     if not definition:
         definition = read_json(cfbs_filename())
+    if not definition:
+        user_error("Unable to read {}".format(cfbs_filename()))
     return definition
 
 
@@ -460,5 +465,67 @@ def install_command(destination=None) -> int:
     cp("out/masterfiles", destination)
     return 0
 
+
 def help_command():
-    pass # no-op to allow help to be printed
+    pass  # no-op here, all *_command functions are presented in help contents
+
+
+def print_module_info(data):
+    ordered_keys = [
+        "module",
+        "version",
+        "status",
+        "by",
+        "tags",
+        "repo",
+        "commit",
+        "dependencies",
+        "added_by",
+        "description",
+    ]
+    for key in ordered_keys:
+        if key in data:
+            if key in ["tags", "dependencies"]:
+                value = ", ".join(data[key])
+            else:
+                value = data[key]
+            print("{}: {}".format(key.title().replace("_", " "), value))
+
+
+def info_command(modules, index=None):
+    if not index:
+        index = get_index_from_config()
+    index = Index(index)
+    build = get_definition()["build"]
+    alias = None
+
+    for module in modules:
+        print()  # whitespace for readability
+        if not index.exists(module):
+            print("Module '{}' does not exist".format(module))
+            continue
+        if module in index:
+            data = index[module]
+            if "alias" in data:
+                alias = module
+                module = data["alias"]
+                data = index[module]
+            found = any(m for m in build if m["name"] == module)
+            data["status"] = "Added" if found else "Not Added"
+        else:
+            if not module.startswith("./"):
+                module = "./" + module
+            data = next((m for m in build if m["name"] == module), None)
+            if data is None:
+                print("Path {} exists but is not yet added as a module.".format(module))
+                continue
+            data["status"] = "Added"
+        data["module"] = (module + "({})".format(alias)) if alias else module
+        print_module_info(data)
+    print()  # extra line for ease of reading
+    return 0
+
+
+# show_command here to auto-populate into help in main.py
+def show_command(module):
+    return info_command(module)
