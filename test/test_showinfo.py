@@ -1,19 +1,30 @@
 import os
 import re
-from cfbs.commands import info_command
+import pytest
+from cfbs.commands import info_command, clear_definition
 
-os.chdir(os.path.join(os.path.dirname(__file__),"sample"))
 
-def test_noargs(capfd):
+@pytest.mark.parametrize("chdir", ["sample"], indirect=True)
+def test_noargs(capfd, chdir):
+    clear_definition()
     info_command([])
-    out, err = capfd.readouterr()
+    out, _ = capfd.readouterr()
     assert out == "\n"
 
-def test_showinfo(capfd):
-    info_command("autorun masterfiles foo/main.cf bar/my.json bar/baz/main.cf nosuchfile".split(" "))
-    out, err = capfd.readouterr()
 
-    assert re.search(r"""Module: autorun
+@pytest.mark.parametrize("chdir", ["sample"], indirect=True)
+def test_showinfo(capfd, chdir):
+    clear_definition()
+    assert os.path.exists("cfbs.json")
+    info_command(
+        "autorun masterfiles foo/main.cf bar/my.json bar/baz/main.cf nosuchfile".split(
+            " "
+        )
+    )
+    out, _ = capfd.readouterr()
+
+    assert re.search(
+        r"""Module: autorun
 Version: \d+\.\d+\.\d+
 Status: Added
 By: https:\/\/github.com\/cfengine
@@ -22,20 +33,27 @@ Repo: https:\/\/github.com\/cfengine\/modules
 Commit: [a-zA-Z0-9]+
 Added By: ./foo/main.cf
 Description: Enable autorun functionality
-""", out, re.M)
+""",
+        out,
+        re.M,
+    ), out
 
-
-    assert re.search(r"""Module: masterfiles
+    assert re.search(
+        r"""Module: masterfiles
 Version: \d+\.\d+\.\d+
 Status: Not Added
 By: https:\/\/github.com\/cfengine
-Tags: official, base
+Tags: official, base, supported
 Repo: https:\/\/github.com\/cfengine\/masterfiles
 Commit: [a-zA-Z0-9]+
 Description: Official CFEngine Masterfiles Policy Framework \(MPF\)
-""", out, re.M)
+""",
+        out,
+        re.M,
+    ), out
 
-    assert """Module: ./foo/main.cf
+    assert (
+        """Module: ./foo/main.cf
 Status: Added
 Tags: local
 Dependencies: autorun
@@ -57,7 +75,6 @@ Description: Local policy file added using cfbs command line
 
 Module 'nosuchfile' does not exist
 
-""" in out
-
-def __main__():
-  test_showinfo()
+"""
+        in out
+    )

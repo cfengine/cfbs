@@ -21,7 +21,6 @@ from cfbs.utils import (
     sh,
 )
 
-from cfbs.pretty import pretty_file, pretty
 
 def _local_module_data_cf_file(module):
     target = os.path.basename(module)
@@ -44,11 +43,12 @@ def _local_module_data_json_file(module):
 
 
 def _local_module_data_subdir(module):
+    assert module.startswith("./")
+    dst = os.path.join("services", "cfbs", module[2:])
     return {
         "description": "Local subdirectory added using cfbs command line",
         "tags": ["local"],
-        "dependencies": ["autorun"],
-        "steps": [f"copy {module} services/autorun/"],
+        "steps": ["directory {} {}".format(module, dst)],
         "added_by": "cfbs add",
     }
 
@@ -64,6 +64,7 @@ def generate_index_for_local_module(module):
         return _local_module_data_cf_file(module)
     if module.endswith(".json"):
         return _local_module_data_json_file(module)
+
 
 class Index:
     def __init__(self, path):

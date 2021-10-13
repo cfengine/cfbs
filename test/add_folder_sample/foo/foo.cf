@@ -1,0 +1,6 @@
+bundle agent foo
+{
+  meta:
+    "tags" slist => { "autorun" };
+  reports: "I am foo.";
+}
