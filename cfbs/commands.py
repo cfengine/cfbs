@@ -66,7 +66,7 @@ def pretty_command(filenames: list, check) -> int:
     return 0
 
 
-def init_command() -> int:
+def init_command(index=None) -> int:
     if is_cfbs_repo():
         user_error(f"Already initialized - look at {cfbs_filename()}")
 
@@ -75,6 +75,8 @@ def init_command() -> int:
         "description": "Example description",
         "build": [],
     }
+    if index:
+        definition['index'] = index
 
     write_json(cfbs_filename(), definition)
     assert is_cfbs_repo()
