@@ -13,13 +13,16 @@ from cfbs import commands
 
 
 def get_args():
+    command_list = [
+        cmd.split("_")[0] for cmd in dir(commands) if cmd.endswith("_command")
+    ]
     parser = argparse.ArgumentParser(description="CFEngine Build System.")
     parser.add_argument(
         "command",
         metavar="cmd",
         type=str,
         nargs="?",
-        help="The command to perform (init, status, search, add, download, build, install, pretty)",
+        help="The command to perform ({})".format(", ".join(command_list)),
     )
     parser.add_argument("args", nargs="*", help="Command arguments")
     parser.add_argument(
@@ -41,6 +44,8 @@ def get_args():
     )
 
     args = parser.parse_args()
+    if args.command == "help":
+        parser.print_help()
     return args
 
 
@@ -72,6 +77,8 @@ def main() -> int:
         user_error("Usage: cfbs COMMAND")
 
     # Commands you can run outside a cfbs repo:
+    if args.command == "help":
+        return 0
     if args.command == "init":
         return commands.init_command(index=args.index)
     if args.command == "search":
@@ -80,6 +87,8 @@ def main() -> int:
         return commands.pretty_command(args.args, args.check)
     if args.command == "validate":
         return commands.validate_command(index=args.index)
+    if args.command in ("info", "show"):
+        return commands.info_command(args.args, index=args.index)
 
     if not is_cfbs_repo():
         user_error("This is not a cfbs repo, to get started, type: cfbs init")

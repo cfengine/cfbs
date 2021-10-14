@@ -1,0 +1,41 @@
+{
+  "name": "Example",
+  "description": "Example description",
+  "build": [
+    {
+      "name": "autorun",
+      "description": "Enable autorun functionality",
+      "tags": ["wip", "untested"],
+      "repo": "https://github.com/cfengine/modules",
+      "by": "https://github.com/cfengine",
+      "version": "1.0.0",
+      "commit": "2bd83b1c0d1e6799a8d7221d7e98360b1bdc99bc",
+      "subdirectory": "management/autorun",
+      "steps": ["json def.json def.json"],
+      "added_by": "./foo/main.cf"
+    },
+    {
+      "name": "./foo/main.cf",
+      "description": "Local policy file added using cfbs command line",
+      "tags": ["local"],
+      "dependencies": ["autorun"],
+      "steps": ["copy ./foo/main.cf services/autorun/main.cf"],
+      "added_by": "cfbs add"
+    },
+    {
+      "name": "./bar/my.json",
+      "description": "Local augments file added using cfbs command line",
+      "tags": ["local"],
+      "steps": ["json ./bar/my.json def.json"],
+      "added_by": "cfbs add"
+    },
+    {
+      "name": "./bar/baz/main.cf",
+      "description": "Local policy file added using cfbs command line",
+      "tags": ["local"],
+      "dependencies": ["autorun"],
+      "steps": ["copy ./bar/baz/main.cf services/autorun/main.cf"],
+      "added_by": "cfbs add"
+    }
+  ]
+}

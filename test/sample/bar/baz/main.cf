@@ -1,0 +1,5 @@
+bundle agent bar_baz
+{
+  reports:
+    "$(this.promise_dirname) $(this.promise_filename) $(this.bundle)";
+}
