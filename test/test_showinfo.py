@@ -20,6 +20,7 @@ By: https:\/\/github.com\/cfengine
 Tags: wip, untested
 Repo: https:\/\/github.com\/cfengine\/modules
 Commit: [a-zA-Z0-9]+
+Added By: ./foo/main.cf
 Description: Enable autorun functionality
 """, out, re.M)
 

@@ -568,6 +568,7 @@ def print_module_info(data):
         "by",
         "tags",
         "repo",
+        "index",
         "commit",
         "dependencies",
         "added_by",
@@ -591,17 +592,21 @@ def info_command(modules, index=None):
 
     for module in modules:
         print()  # whitespace for readability
-        if not index.exists(module):
+        in_build = any(m for m in build if m["name"] == module)
+        if not index.exists(module) and not in_build:
             print("Module '{}' does not exist".format(module))
             continue
-        if module in index:
+        if in_build:
+            # prefer information from the local source
+            data = next(m for m in build if m["name"] == module)
+            data["status"] = "Added"
+        elif module in index:
             data = index[module]
             if "alias" in data:
                 alias = module
                 module = data["alias"]
                 data = index[module]
-            found = any(m for m in build if m["name"] == module)
-            data["status"] = "Added" if found else "Not Added"
+            data["status"] = "Added" if in_build else "Not Added"
         else:
             if not module.startswith("./"):
                 module = "./" + module
