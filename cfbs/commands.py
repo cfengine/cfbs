@@ -3,6 +3,7 @@ Functions ending in "_command" are dynamically included in the list of commands
 in main.py for -h/--help/help.
 """
 import os
+import re
 
 from cfbs.utils import (
     cfbs_dir,
@@ -201,15 +202,96 @@ def local_module_copy(module, counter, max_length):
         f"{counter:03d} {pad_right(name, max_length)} @ local                                    (Copied)"
     )
 
+def _get_path_from_url(url):
+    if not url.startswith(("https://", "ssh://", "git://")):
+        if ("://" in url):
+            return user_error("Unsupported URL protocol in '%s'" % url)
+        else:
+            # It's a path already, just remove trailing slashes (if any).
+            return url.strip("/")
 
-def add_command(to_add: list, added_by="cfbs add", index=None) -> int:
+    path = None
+    if url.startswith("ssh://"):
+        match = re.match(r"ssh://(\w+)@(.+)", url)
+        if match is not None:
+            path = match[2]
+    path = path or url[url.index("://") + 3:]
+    path = strip_right(path, ".git")
+    path = path.strip("/")
+
+    return path
+
+def _get_git_repo_commit_sha(repo_path):
+    assert os.path.isdir(os.path.join(repo_path, ".git"))
+
+    with open(os.path.join(repo_path, ".git", "HEAD"), "r") as f:
+        head_ref_info = f.read()
+
+    assert head_ref_info.startswith("ref: ")
+    head_ref = head_ref_info[5:].strip()
+
+    with open(os.path.join(repo_path, ".git", head_ref)) as f:
+        return f.read().strip()
+
+def _clone_index_repo(repo_url):
+    assert repo_url.startswith(("https://", "ssh://", "git://"))
+
+    commit = None
+    if "@" in repo_url and (repo_url.rindex("@") > repo_url.rindex(".")):
+        # commit specified in the url
+        repo_url, commit = repo_url.rsplit("@", 1)
+
+    downloads = os.path.join(cfbs_dir(), "downloads")
+
+    repo_path = _get_path_from_url(repo_url)
+    repo_dir = os.path.join(downloads, repo_path)
+    os.makedirs(repo_dir, exist_ok=True)
+
+    if commit is not None:
+        commit_path = os.path.join(repo_dir, commit)
+        sh("git clone --no-checkout %s %s" % (repo_url, commit_path))
+        sh("cd %s; git checkout %s" % (commit_path, commit))
+    else:
+        master_path = os.path.join(repo_dir, "master")
+        sh("git clone %s %s" % (repo_url, master_path))
+        commit = _get_git_repo_commit_sha(master_path)
+
+        commit_path = os.path.join(repo_dir, commit)
+        if os.path.exists(commit_path):
+            # Already cloned in the commit dir, just remove the 'master' clone
+            sh("rm -rf %s" % master_path)
+        else:
+            sh("mv %s %s" % (master_path, commit_path))
+
+    index_path = os.path.join(commit_path, "cfbs.json")
+    if os.path.exists(index_path):
+        return (index_path, commit)
+    else:
+        user_error("Repository '%s' doesn't contain a valid cfbs.json index file" % repo_url)
+
+def add_command(to_add: list, added_by="cfbs add", index_path=None) -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
 
-    if not index:
-        index = get_index_from_config()
+    index_commit = None
+    if to_add[0].startswith(("https://", "git://", "ssh://")):
+        index_repo = to_add.pop(0)
+        index_path, index_commit = _clone_index_repo(index_repo)
 
-    index = Index(index)
+    non_default_index = True
+    if not index_path:
+        non_default_index = False
+        index_path = get_index_from_config()
+
+    index = Index(index_path)
+
+    # URL specified in to_add, but no specific modules => let's add all (with a prompt)
+    if len(to_add) == 0:
+        modules = index.get_modules()
+        answer = input("Do you want to add all %d modules from the repository? [y/N] " % len(modules))
+        if answer.lower() not in ("y", "yes"):
+            return 0
+        to_add = modules.keys()
 
     # Translate all aliases:
     translated = []
@@ -224,6 +306,10 @@ def add_command(to_add: list, added_by="cfbs add", index=None) -> int:
             print(f'{module} is an alias for {data["alias"]}')
             module = data["alias"]
         translated.append(module)
+        if non_default_index:
+            index[module]["index"] = index_repo
+            index[module]["commit"] = index_commit
+            index[module]["repo"] = index_repo
 
     to_add = translated
 
@@ -343,6 +429,7 @@ def download_dependencies(prefer_offline=False, redownload=False):
     counter = 1
     definition = get_definition()
     max_length = longest_module_name()
+    downloads = os.path.join(cfbs_dir(), "downloads")
     for module in definition["build"]:
         name = module["name"]
         if name.startswith("./"):
@@ -350,6 +437,7 @@ def download_dependencies(prefer_offline=False, redownload=False):
             counter += 1
             continue
         commit = module["commit"]
+
         url = strip_right(module["repo"], ".git")
         commit_dir = get_download_path(module)
         if redownload:
