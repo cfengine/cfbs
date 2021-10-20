@@ -96,7 +96,7 @@ def main() -> int:
     if args.command == "status":
         return commands.status_command()
     if args.command == "add":
-        return commands.add_command(args.args, index=args.index)
+        return commands.add_command(args.args, index_path=args.index)
     if args.command == "download":
         return commands.download_command(args.force)
     if args.command == "build":
