@@ -215,7 +215,7 @@ def _get_path_from_url(url):
             return user_error("Unsupported URL protocol in '%s'" % url)
         else:
             # It's a path already, just remove trailing slashes (if any).
-            return url.strip("/")
+            return url.rstrip("/")
 
     path = None
     if url.startswith("ssh://"):
@@ -224,7 +224,7 @@ def _get_path_from_url(url):
             path = match[2]
     path = path or url[url.index("://") + 3 :]
     path = strip_right(path, ".git")
-    path = path.strip("/")
+    path = path.rstrip("/")
 
     return path
 
