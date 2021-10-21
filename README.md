@@ -1,10 +1,10 @@
-# WIP CFEngine Build System
+# CFEngine Build System
 
-The CFEngine Build System (cfbs) comes with **no warranty** and is **not supported**.
-This is a work in progress, everything will change.
-Use at your own risk!
+This is a command line tool for combining multiple modules into 1 policy set to deploy on your infrastructure.
+Modules can be custom promise types, JSON files which enable certain functionality, or reusable CFEngine policy.
+The modules you use can be written by the CFEngine team, others in the community, your colleagues, or yourself.
 
-## CFEngine Build System Repositories
+## CFEngine Build Repositories
 
 * [modules](https://github.com/cfengine/modules) - Official modules provided by the CFEngine team
 * [cfbs](https://github.com/cfengine/cfbs) - Command line client
