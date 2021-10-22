@@ -3,6 +3,8 @@ import sys
 import json
 import copy
 import subprocess
+import hashlib
+import urllib
 from collections import OrderedDict
 from shutil import rmtree
 from cf_remote.paths import cfengine_dir
@@ -154,3 +156,33 @@ def is_cfbs_repo() -> bool:
 
 def cfbs_dir(append=None) -> str:
     return os.path.join(cfengine_dir("cfbs"), append if append else "")
+
+
+class FetchError(Exception):
+    pass
+
+
+def fetch_url(url, target):
+    checksum = hashlib.sha1()
+    try:
+        with open(target, "wb") as f:
+            with urllib.request.urlopen(url) as u:
+                if not (200 <= u.status <= 300):
+                    raise FetchError("Failed to fetch '%s': %s" % (url, u.reason))
+                done = False
+                while not done:
+                    chunk = u.read(512 * 1024) # 512 KiB
+                    if len(chunk) == 0:
+                        done = True
+                    else:
+                        f.write(chunk)
+                        checksum.update(chunk)
+        return checksum.digest().hex()
+    except urllib.error.URLError as e:
+        if os.path.exists(target):
+            os.unlink(target)
+        raise FetchError("Failed to fetch '%s': %s" % (url, e)) from e
+    except OSError as e:
+        if os.path.exists(target):
+            os.unlink(target)
+        raise FetchError("Failed to fetch '%s' to '%s': %s" % (url, target, e)) from e
