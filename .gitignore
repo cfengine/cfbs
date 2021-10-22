@@ -14,3 +14,7 @@ node_modules/
 build/
 dist/
 .cache
+
+# Test Outputs
+test/add_folder_sample/cfbs.json
+test/add_folder_sample/out

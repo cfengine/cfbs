@@ -31,6 +31,12 @@ from cfbs.validate import CFBSIndexException, validate_index
 definition = None
 
 
+# This function is for clearing the global for pytest cases when it should be changing
+def clear_definition():
+    global definition
+    definition = None
+
+
 def get_definition() -> dict:
     global definition
     if not definition:
@@ -82,7 +88,7 @@ def init_command(index=None) -> int:
         "build": [],
     }
     if index:
-        definition['index'] = index
+        definition["index"] = index
 
     write_json(cfbs_filename(), definition)
     assert is_cfbs_repo()
@@ -202,9 +208,10 @@ def local_module_copy(module, counter, max_length):
         f"{counter:03d} {pad_right(name, max_length)} @ local                                    (Copied)"
     )
 
+
 def _get_path_from_url(url):
     if not url.startswith(("https://", "ssh://", "git://")):
-        if ("://" in url):
+        if "://" in url:
             return user_error("Unsupported URL protocol in '%s'" % url)
         else:
             # It's a path already, just remove trailing slashes (if any).
@@ -215,11 +222,12 @@ def _get_path_from_url(url):
         match = re.match(r"ssh://(\w+)@(.+)", url)
         if match is not None:
             path = match[2]
-    path = path or url[url.index("://") + 3:]
+    path = path or url[url.index("://") + 3 :]
     path = strip_right(path, ".git")
     path = path.strip("/")
 
     return path
+
 
 def _get_git_repo_commit_sha(repo_path):
     assert os.path.isdir(os.path.join(repo_path, ".git"))
@@ -232,6 +240,7 @@ def _get_git_repo_commit_sha(repo_path):
 
     with open(os.path.join(repo_path, ".git", head_ref)) as f:
         return f.read().strip()
+
 
 def _clone_index_repo(repo_url):
     assert repo_url.startswith(("https://", "ssh://", "git://"))
@@ -267,7 +276,10 @@ def _clone_index_repo(repo_url):
     if os.path.exists(index_path):
         return (index_path, commit)
     else:
-        user_error("Repository '%s' doesn't contain a valid cfbs.json index file" % repo_url)
+        user_error(
+            "Repository '%s' doesn't contain a valid cfbs.json index file" % repo_url
+        )
+
 
 def add_command(to_add: list, added_by="cfbs add", index_path=None) -> int:
     if not to_add:
@@ -288,7 +300,10 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None) -> int:
     # URL specified in to_add, but no specific modules => let's add all (with a prompt)
     if len(to_add) == 0:
         modules = index.get_modules()
-        answer = input("Do you want to add all %d modules from the repository? [y/N] " % len(modules))
+        answer = input(
+            "Do you want to add all %d modules from the repository? [y/N] "
+            % len(modules)
+        )
         if answer.lower() not in ("y", "yes"):
             return 0
         to_add = modules.keys()
@@ -513,6 +528,38 @@ def build_step(module, step, max_length):
             touch(dst)
         assert os.path.isfile(dst)
         sh(f"cat '{src}' >> '{dst}'")
+    elif operation == "directory":
+        src, dst = args
+        if dst in [".", "./"]:
+            dst = ""
+        print("{} directory '{}' 'masterfiles/{}'".format(prefix, src, dst))
+        dstarg = dst  # save this for adding .cf files to inputs
+        src, dst = os.path.join(source, src), os.path.join(destination, dst)
+        defjson = os.path.join(destination, "def.json")
+        merged = read_json(defjson)
+        if not merged:
+            merged = {}
+        if "classes" not in merged:
+            merged["classes"] = {}
+        if "services_autorun_bundles" not in merged["classes"]:
+            merged["classes"]["services_autorun_bundles"] = ["any"]
+        inputs = []
+        for root, dirs, files in os.walk(src):
+            for f in files:
+                if f.endswith(".cf"):
+                    inputs.append(os.path.join(dstarg, f))
+                    cp(os.path.join(root, f), os.path.join(destination, dstarg, f))
+                elif f == "def.json":
+                    extra = read_json(os.path.join(root, f))
+                    if extra:
+                        merged = merge_json(merged, extra)
+                else:
+                    cp(os.path.join(root, f), os.path.join(destination, dstarg, f))
+        if "inputs" in merged:
+            merged["inputs"].extend(inputs)
+        else:
+            merged["inputs"] = inputs
+        write_json(defjson, merged)
     else:
         user_error(f"Unknown build step operation: {operation}")
 
