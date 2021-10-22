@@ -162,8 +162,8 @@ class FetchError(Exception):
     pass
 
 
-def fetch_url(url, target):
-    checksum = hashlib.sha1()
+def fetch_url(url, target, checksum=None):
+    sha = hashlib.sha1()
     try:
         with open(target, "wb") as f:
             with urllib.request.urlopen(url) as u:
@@ -176,8 +176,17 @@ def fetch_url(url, target):
                         done = True
                     else:
                         f.write(chunk)
-                        checksum.update(chunk)
-        return checksum.digest().hex()
+                        sha.update(chunk)
+        digest = sha.digest().hex()
+        if checksum is not None:
+            if checksum == digest:
+                return digest
+            else:
+                if os.path.exists(target):
+                    os.unlink(target)
+                raise FetchError("Checksum mismatch in fetched '%s': %s != %s" % (url, digest, checksum))
+        else:
+            return digest
     except urllib.error.URLError as e:
         if os.path.exists(target):
             os.unlink(target)

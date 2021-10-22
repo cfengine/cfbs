@@ -288,7 +288,7 @@ def _clone_index_repo(repo_url):
         )
 
 
-def _fetch_archive(url):
+def _fetch_archive(url, checksum=None):
     assert url.endswith(_SUPPORTED_ARCHIVES)
 
     url_path = url[url.index("://") + 3:]
@@ -310,15 +310,15 @@ def _fetch_archive(url):
 
     archive_path = os.path.join(downloads, archive_dir, archive_filename)
     try:
-        checksum = fetch_url(url, archive_path)
+        archive_checksum = fetch_url(url, archive_path, checksum)
     except FetchError as e:
         user_error(str(e))
 
-    content_dir = os.path.join(downloads, archive_dir, checksum)
+    content_dir = os.path.join(downloads, archive_dir, archive_checksum)
     index_path = os.path.join(content_dir, "cfbs.json")
     if os.path.exists(index_path):
         # available already
-        return (index_path, checksum)
+        return (index_path, archive_checksum)
     else:
         mkdir(content_dir)
 
@@ -347,11 +347,11 @@ def _fetch_archive(url):
         os.rmdir(content_root_items[0])
 
     if os.path.exists(index_path):
-        return (index_path, checksum)
+        return (index_path, archive_checksum)
     else:
         user_error("Archive '%s' doesn't contain a valid cfbs.json index file" % url)
 
-def add_command(to_add: list, added_by="cfbs add", index_path=None) -> int:
+def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=None) -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
 
@@ -359,7 +359,7 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None) -> int:
     index_repo = None
     if to_add[0].endswith(_SUPPORTED_ARCHIVES):
         archive_url = index_repo = to_add.pop(0)
-        index_path, index_commit = _fetch_archive(archive_url)
+        index_path, index_commit = _fetch_archive(archive_url, checksum)
     elif to_add[0].startswith(("https://", "git://", "ssh://")):
         index_repo = to_add.pop(0)
         index_path, index_commit = _clone_index_repo(index_repo)
@@ -534,7 +534,7 @@ def download_dependencies(prefer_offline=False, redownload=False):
             rm(commit_dir, missing_ok=True)
         if not os.path.exists(commit_dir):
             if url.endswith(_SUPPORTED_ARCHIVES):
-                _fetch_archive(url)
+                _fetch_archive(url, commit)
             else:
                 sh(f"git clone {url} {commit_dir}")
                 sh(f"(cd {commit_dir} && git checkout {commit})")
