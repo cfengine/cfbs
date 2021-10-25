@@ -42,6 +42,8 @@ def get_args():
     parser.add_argument(
         "--check", help="Check if file(s) would be reformatted", action="store_true"
     )
+    parser.add_argument("--checksum", type=str, default=None,
+                        help="Expected checksum of the downloaded file")
 
     args = parser.parse_args()
     if args.command == "help":
@@ -96,7 +98,7 @@ def main() -> int:
     if args.command == "status":
         return commands.status_command()
     if args.command == "add":
-        return commands.add_command(args.args, index_path=args.index)
+        return commands.add_command(args.args, index_path=args.index, checksum=args.checksum)
     if args.command == "download":
         return commands.download_command(args.force)
     if args.command == "build":

@@ -4,6 +4,7 @@ in main.py for -h/--help/help.
 """
 import os
 import re
+import distutils.spawn
 
 from cfbs.utils import (
     cfbs_dir,
@@ -21,11 +22,17 @@ from cfbs.utils import (
     rm,
     cp,
     sh,
+    fetch_url,
+    FetchError,
 )
 
 from cfbs.pretty import pretty_check_file, pretty_file, pretty
 from cfbs.index import Index
 from cfbs.validate import CFBSIndexException, validate_index
+
+
+_SUPPORTED_TAR_TYPES = (".tar.gz", ".tgz")
+_SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
 
 
 definition = None
@@ -215,7 +222,7 @@ def _get_path_from_url(url):
             return user_error("Unsupported URL protocol in '%s'" % url)
         else:
             # It's a path already, just remove trailing slashes (if any).
-            return url.strip("/")
+            return url.rstrip("/")
 
     path = None
     if url.startswith("ssh://"):
@@ -224,7 +231,7 @@ def _get_path_from_url(url):
             path = match[2]
     path = path or url[url.index("://") + 3 :]
     path = strip_right(path, ".git")
-    path = path.strip("/")
+    path = path.rstrip("/")
 
     return path
 
@@ -281,18 +288,85 @@ def _clone_index_repo(repo_url):
         )
 
 
-def add_command(to_add: list, added_by="cfbs add", index_path=None) -> int:
+def _fetch_archive(url, checksum=None):
+    assert url.endswith(_SUPPORTED_ARCHIVES)
+
+    url_path = url[url.index("://") + 3:]
+    archive_dirname = os.path.dirname(url_path)
+    archive_filename = os.path.basename(url_path)
+
+    for ext in _SUPPORTED_ARCHIVES:
+        if archive_filename.endswith(ext):
+            archive_type = ext
+            break
+    else:
+        user_error("Unsupported archive type: '%s'" % url)
+
+    archive_name = strip_right(archive_filename, archive_type)
+    downloads = os.path.join(cfbs_dir(), "downloads")
+
+    archive_dir = os.path.join(downloads, archive_dirname)
+    mkdir(archive_dir)
+
+    archive_path = os.path.join(downloads, archive_dir, archive_filename)
+    try:
+        archive_checksum = fetch_url(url, archive_path, checksum)
+    except FetchError as e:
+        user_error(str(e))
+
+    content_dir = os.path.join(downloads, archive_dir, archive_checksum)
+    index_path = os.path.join(content_dir, "cfbs.json")
+    if os.path.exists(index_path):
+        # available already
+        return (index_path, archive_checksum)
+    else:
+        mkdir(content_dir)
+
+    # TODO: use Python modules instead of CLI tools?
+    if archive_type.startswith(_SUPPORTED_TAR_TYPES):
+        if distutils.spawn.find_executable("tar"):
+            sh("cd %s; tar -xf %s" % (content_dir, archive_path))
+        else:
+            user_error("Working with .tar archives requires the 'tar' utility")
+    elif archive_type == (".zip"):
+        if distutils.spawn.find_executable("unzip"):
+            sh("cd %s; unzip %s" % (content_dir, archive_path))
+        else:
+            user_error("Working with .zip archives requires the 'unzip' utility")
+    else:
+        raise RuntimeError("Unhandled archive type: '%s'. Please report this at %s." %
+                           (url, "https://github.com/cfengine/cfbs/issues"))
+
+    os.unlink(archive_path)
+
+    content_root_items = [os.path.join(content_dir, item) for item in os.listdir(content_dir)]
+    if len(content_root_items) == 1 and os.path.isdir(content_root_items[0]):
+        # the archive contains a top-level folder, let's just move things one
+        # level up from inside it
+        sh("mv %s %s" % (os.path.join(content_root_items[0], "*"), content_dir))
+        os.rmdir(content_root_items[0])
+
+    if os.path.exists(index_path):
+        return (index_path, archive_checksum)
+    else:
+        user_error("Archive '%s' doesn't contain a valid cfbs.json index file" % url)
+
+def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=None) -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
 
     index_commit = None
-    if to_add[0].startswith(("https://", "git://", "ssh://")):
+    index_repo = None
+    if to_add[0].endswith(_SUPPORTED_ARCHIVES):
+        archive_url = index_repo = to_add.pop(0)
+        index_path, index_commit = _fetch_archive(archive_url, checksum)
+    elif to_add[0].startswith(("https://", "git://", "ssh://")):
         index_repo = to_add.pop(0)
         index_path, index_commit = _clone_index_repo(index_repo)
 
-    non_default_index = True
+    default_index = False
     if not index_path:
-        non_default_index = False
+        default_index = True
         index_path = get_index_from_config()
 
     index = Index(index_path)
@@ -301,14 +375,13 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None) -> int:
     if len(to_add) == 0:
         modules = index.get_modules()
         answer = input(
-            "Do you want to add all %d modules from the repository? [y/N] "
-            % len(modules)
+            "Do you want to add all %d modules from '%s'? [y/N] " % (len(modules), index_repo)
         )
         if answer.lower() not in ("y", "yes"):
             return 0
         to_add = modules.keys()
 
-    # Translate all aliases:
+    # Translate all aliases and remote paths
     translated = []
     for module in to_add:
         if not index.exists(module):
@@ -321,10 +394,12 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None) -> int:
             print(f'{module} is an alias for {data["alias"]}')
             module = data["alias"]
         translated.append(module)
-        if non_default_index:
-            index[module]["index"] = index_repo
-            index[module]["commit"] = index_commit
-            index[module]["repo"] = index_repo
+        if not default_index:
+            if index_repo:
+                index[module]["index"] = index_repo
+                index[module]["repo"] = index_repo
+            if index_commit:
+                index[module]["commit"] = index_commit
 
     to_add = translated
 
@@ -427,14 +502,14 @@ def longest_module_name() -> int:
 
 def get_download_path(module) -> str:
     downloads = os.path.join(cfbs_dir(), "downloads")
-    github = os.path.join(downloads, "github.com")
     commit = module["commit"]
     url = module["repo"]
-    url = strip_right(url, ".git")
-    assert url.startswith("https://github.com/")
-    user_repo = strip_left(url, "https://github.com/")
-    user, repo = user_repo.split("/")
-    repo_dir = os.path.join(github, user, repo)
+    if url.endswith(_SUPPORTED_ARCHIVES):
+        url = os.path.dirname(url)
+    else:
+        url = strip_right(url, ".git")
+    repo = url[url.index("://") + 3:]
+    repo_dir = os.path.join(downloads, repo)
     mkdir(repo_dir)
     return os.path.join(repo_dir, commit)
 
@@ -458,8 +533,11 @@ def download_dependencies(prefer_offline=False, redownload=False):
         if redownload:
             rm(commit_dir, missing_ok=True)
         if not os.path.exists(commit_dir):
-            sh(f"git clone {url} {commit_dir}")
-            sh(f"(cd {commit_dir} && git checkout {commit})")
+            if url.endswith(_SUPPORTED_ARCHIVES):
+                _fetch_archive(url, commit)
+            else:
+                sh(f"git clone {url} {commit_dir}")
+                sh(f"(cd {commit_dir} && git checkout {commit})")
         target = f"out/steps/{counter:03d}_{module['name']}_{commit}/"
         module["_directory"] = target
         module["_counter"] = counter
