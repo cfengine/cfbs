@@ -730,6 +730,7 @@ def print_module_info(data):
         "repo",
         "index",
         "commit",
+        "subdirectory",
         "dependencies",
         "added_by",
         "description",

@@ -31,6 +31,7 @@ By: https:\/\/github.com\/cfengine
 Tags: wip, untested
 Repo: https:\/\/github.com\/cfengine\/modules
 Commit: [a-zA-Z0-9]+
+Subdirectory: management\/autorun
 Added By: ./foo/main.cf
 Description: Enable autorun functionality
 """,
