@@ -45,7 +45,7 @@ def validate_index(index):
             raise CFBSIndexException(name, "'tags' must be of type list")
         for tag in modules[name]["tags"]:
             if type(tag) != str:
-                raise CFBSIndexException("'tags' must be a list of strings")
+                raise CFBSIndexException(name, "'tags' must be a list of strings")
 
     def validate_repo(name, modules):
         if not "repo" in modules[name]:
@@ -120,9 +120,9 @@ def validate_index(index):
             raise CFBSIndexException(name, "'steps' must be non-empty")
         for step in modules[name]["steps"]:
             if type(step) != str:
-                raise CFBSIndexException("'steps' must be a list of strings")
+                raise CFBSIndexException(name, "'steps' must be a list of strings")
             if not step:
-                raise CFBSIndexException("'steps' must be a list of non-empty strings")
+                raise CFBSIndexException(name, "'steps' must be a list of non-empty strings")
 
     def validate_derived_url(name, modules):
         url = modules[name]["repo"]
@@ -135,6 +135,25 @@ def validate_index(index):
                 name,
                 "HEAD request of url '%s' responded with status code '%d'"
                 % (url, response.status_code),
+            )
+
+    def validate_url_field(name, modules, field):
+        url = modules[name].get(field)
+        if not url:
+            return
+
+        if not url.startswith("https://"):
+            raise CFBSIndexException(name, "'%s' must be an HTTPS URL" % field)
+        try:
+            response = requests.head(url)
+        except requests.RequestException as e:
+            raise CFBSIndexException(
+                name, "HEAD request of %s url '%s' failed: %s" % (field, url, e)) from e
+        if not response.ok:
+            raise CFBSIndexException(
+                name,
+                "HEAD request of %s url '%s' responded with status code '%d'"
+                % (field, url, response.status_code),
             )
 
     # Make sure index has a collection named modules
@@ -159,6 +178,8 @@ def validate_index(index):
                 validate_subdirectory(name, modules)
             validate_steps(name, modules)
             validate_derived_url(name, modules)
+            validate_url_field(name, modules, "website")
+            validate_url_field(name, modules, "documentation")
 
 
 def main():
