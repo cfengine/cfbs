@@ -96,8 +96,9 @@ def init_command(index=None) -> int:
 
     definition = {
         "name": "Example",
+        "type": "policy-set", # TODO: Prompt whether user wants to make a module
         "description": "Example description",
-        "build": [],
+        "build": [], # TODO: Prompt what masterfile user wants to add
     }
     if index:
         definition["index"] = index
