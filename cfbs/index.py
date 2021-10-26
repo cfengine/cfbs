@@ -28,7 +28,7 @@ class Index:
     def __init__(self, path):
         self.path = path
         if not self.path:
-            self.path = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/index.json"
+            self.path = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/cfbs.json"
         self._data = None
 
     def __contains__(self, key):
