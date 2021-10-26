@@ -4,6 +4,8 @@ import sys
 import requests
 import re
 
+from cfbs.utils import is_a_commit_hash
+
 
 class CFBSIndexException(Exception):
     def __init__(self, name, message) -> None:
@@ -97,8 +99,11 @@ def validate_index(index):
     def validate_commit(name, modules):
         if not "commit" in modules[name]:
             raise CFBSIndexException(name, "Missing required attribute 'commit'")
-        if type(modules[name]["commit"]) != str:
+        commit = modules[name]["commit"]
+        if type(commit) != str:
             raise CFBSIndexException(name, "'commit' must be of type string")
+        if not is_a_commit_hash(commit):
+            raise CFBSIndexException(name, "'commit' must be a commit reference")
 
     def validate_subdirectory(name, modules):
         if type(modules[name]["subdirectory"]) != str:

@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import json
 import copy
@@ -12,6 +13,9 @@ from cf_remote.paths import cfengine_dir
 import requests
 
 from cfbs.pretty import pretty
+
+SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _sh(cmd: str):
@@ -195,3 +199,7 @@ def fetch_url(url, target, checksum=None):
         if os.path.exists(target):
             os.unlink(target)
         raise FetchError("Failed to fetch '%s' to '%s': %s" % (url, target, e)) from e
+
+
+def is_a_commit_hash(commit):
+    return bool(SHA1_RE.match(commit) or SHA256_RE.match(commit))
