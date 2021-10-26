@@ -70,7 +70,7 @@ class Index:
     def __init__(self, path):
         self.path = path
         if not self.path:
-            self.path = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/index.json"
+            self.path = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/cfbs.json"
         self._data = None
 
     def __contains__(self, key):
@@ -96,7 +96,7 @@ class Index:
             index = read_json(path)
         if not index:
             sys.exit("Could not download or find module index")
-        if "modules" not in index:
+        if "index" not in index:
             sys.exit("Empty or invalid module index")
         return index
 
@@ -106,7 +106,7 @@ class Index:
         return self._data
 
     def get_modules(self) -> dict:
-        return self.get()["modules"]
+        return self.get()["index"]
 
     def exists(self, module):
         return os.path.exists(module) or (module in self)
