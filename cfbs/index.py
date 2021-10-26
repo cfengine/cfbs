@@ -54,7 +54,7 @@ class Index:
             index = read_json(path)
         if not index:
             sys.exit("Could not download or find module index")
-        if "modules" not in index:
+        if "index" not in index:
             sys.exit("Empty or invalid module index")
         return index
 
@@ -64,7 +64,7 @@ class Index:
         return self._data
 
     def get_modules(self) -> dict:
-        return self.get()["modules"]
+        return self.get()["index"]
 
     def exists(self, module):
         return os.path.exists(module) or (module in self)
