@@ -137,6 +137,25 @@ def validate_index(index):
                 % (url, response.status_code),
             )
 
+    def validate_url_field(name, modules, field):
+        url = modules[name].get(field)
+        if not url:
+            return
+
+        if not url.startswith("https://"):
+            raise CFBSIndexException(name, "'%s' must be an HTTPS URL" % field)
+        try:
+            response = requests.head(url)
+        except requests.RequestException as e:
+            raise CFBSIndexException(
+                name, "HEAD request of %s url '%s' failed: %s" % (field, url, e)) from e
+        if not response.ok:
+            raise CFBSIndexException(
+                name,
+                "HEAD request of %s url '%s' responded with status code '%d'"
+                % (field, url, response.status_code),
+            )
+
     # Make sure index has a collection named modules
     if not "modules" in index:
         raise CFBSIndexException(None, "Missing required attribute 'modules'")
@@ -159,6 +178,8 @@ def validate_index(index):
                 validate_subdirectory(name, modules)
             validate_steps(name, modules)
             validate_derived_url(name, modules)
+            validate_url_field(name, modules, "website")
+            validate_url_field(name, modules, "documentation")
 
 
 def main():
