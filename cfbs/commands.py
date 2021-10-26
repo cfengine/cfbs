@@ -24,6 +24,7 @@ from cfbs.utils import (
     sh,
     fetch_url,
     FetchError,
+    is_a_commit_hash,
 )
 
 from cfbs.pretty import pretty_check_file, pretty_file, pretty
@@ -256,6 +257,8 @@ def _clone_index_repo(repo_url):
     if "@" in repo_url and (repo_url.rindex("@") > repo_url.rindex(".")):
         # commit specified in the url
         repo_url, commit = repo_url.rsplit("@", 1)
+        if not is_a_commit_hash(commit):
+            user_error("'%s' is not a commit reference" % commit)
 
     downloads = os.path.join(cfbs_dir(), "downloads")
 
@@ -502,7 +505,11 @@ def longest_module_name() -> int:
 
 def get_download_path(module) -> str:
     downloads = os.path.join(cfbs_dir(), "downloads")
+
     commit = module["commit"]
+    if not is_a_commit_hash(commit):
+        user_error("'%s' is not a commit reference" % commit)
+
     url = module["repo"]
     if url.endswith(_SUPPORTED_ARCHIVES):
         url = os.path.dirname(url)
@@ -527,6 +534,8 @@ def download_dependencies(prefer_offline=False, redownload=False):
             counter += 1
             continue
         commit = module["commit"]
+        if not is_a_commit_hash(commit):
+            user_error("'%s' is not a commit reference" % commit)
 
         url = strip_right(module["repo"], ".git")
         commit_dir = get_download_path(module)
