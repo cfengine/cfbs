@@ -14,6 +14,7 @@ from cfbs.utils import (
     strip_left,
     strip_right,
     pad_right,
+    get_json,
     write_json,
     read_json,
     merge_json,
@@ -34,6 +35,9 @@ from cfbs.validate import CFBSIndexException, validate_index
 
 _SUPPORTED_TAR_TYPES = (".tar.gz", ".tgz")
 _SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
+
+_MODULES_URL = "https://cfbs.s3.amazonaws.com/modules"
+_VERSION_INDEX = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/versions.json"
 
 
 definition = None
@@ -291,7 +295,7 @@ def _clone_index_repo(repo_url):
         )
 
 
-def _fetch_archive(url, checksum=None):
+def _fetch_archive(url, checksum=None, directory=None, with_index=True):
     assert url.endswith(_SUPPORTED_ARCHIVES)
 
     url_path = url[url.index("://") + 3:]
@@ -319,7 +323,7 @@ def _fetch_archive(url, checksum=None):
 
     content_dir = os.path.join(downloads, archive_dir, archive_checksum)
     index_path = os.path.join(content_dir, "cfbs.json")
-    if os.path.exists(index_path):
+    if with_index and os.path.exists(index_path):
         # available already
         return (index_path, archive_checksum)
     else:
@@ -343,16 +347,26 @@ def _fetch_archive(url, checksum=None):
     os.unlink(archive_path)
 
     content_root_items = [os.path.join(content_dir, item) for item in os.listdir(content_dir)]
-    if len(content_root_items) == 1 and os.path.isdir(content_root_items[0]):
+    if (with_index and len(content_root_items) == 1 and os.path.isdir(content_root_items[0]) and
+        os.path.exists(os.path.join(content_root_items[0], "cfbs.json"))):
         # the archive contains a top-level folder, let's just move things one
         # level up from inside it
         sh("mv %s %s" % (os.path.join(content_root_items[0], "*"), content_dir))
         os.rmdir(content_root_items[0])
 
-    if os.path.exists(index_path):
-        return (index_path, archive_checksum)
+    if with_index:
+        if os.path.exists(index_path):
+            return (index_path, archive_checksum)
+        else:
+            user_error("Archive '%s' doesn't contain a valid cfbs.json index file" % url)
     else:
-        user_error("Archive '%s' doesn't contain a valid cfbs.json index file" % url)
+        if directory is not None:
+            directory = directory.rstrip("/")
+            mkdir(os.path.dirname(directory))
+            sh("rsync -a %s/ %s/" % (content_dir, directory))
+            rm(content_dir)
+            return (directory, archive_checksum)
+        return (content_dir, archive_checksum)
 
 def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=None) -> int:
     if not to_add:
@@ -541,12 +555,24 @@ def download_dependencies(prefer_offline=False, redownload=False):
         commit_dir = get_download_path(module)
         if redownload:
             rm(commit_dir, missing_ok=True)
-        if not os.path.exists(commit_dir):
+        if "subdirectory" in module:
+            module_dir = os.path.join(commit_dir, module["subdirectory"])
+        else:
+            module_dir = commit_dir
+        if not os.path.exists(module_dir):
             if url.endswith(_SUPPORTED_ARCHIVES):
                 _fetch_archive(url, commit)
-            else:
+            elif "index" in module:
                 sh(f"git clone {url} {commit_dir}")
                 sh(f"(cd {commit_dir} && git checkout {commit})")
+            else:
+                versions = get_json(_VERSION_INDEX)
+                try:
+                    checksum = versions[name][module["version"]]["archive_sha256"]
+                except KeyError:
+                    user_error("Cannot verify checksum of the '%s' module" % name)
+                module_archive_url = os.path.join(_MODULES_URL, name, commit + ".tar.gz")
+                _fetch_archive(module_archive_url, checksum, directory=commit_dir, with_index=False)
         target = f"out/steps/{counter:03d}_{module['name']}_{commit}/"
         module["_directory"] = target
         module["_counter"] = counter
