@@ -45,7 +45,7 @@ def validate_index(index):
             raise CFBSIndexException(name, "'tags' must be of type list")
         for tag in modules[name]["tags"]:
             if type(tag) != str:
-                raise CFBSIndexException("'tags' must be a list of strings")
+                raise CFBSIndexException(name, "'tags' must be a list of strings")
 
     def validate_repo(name, modules):
         if not "repo" in modules[name]:
@@ -120,9 +120,9 @@ def validate_index(index):
             raise CFBSIndexException(name, "'steps' must be non-empty")
         for step in modules[name]["steps"]:
             if type(step) != str:
-                raise CFBSIndexException("'steps' must be a list of strings")
+                raise CFBSIndexException(name, "'steps' must be a list of strings")
             if not step:
-                raise CFBSIndexException("'steps' must be a list of non-empty strings")
+                raise CFBSIndexException(name, "'steps' must be a list of non-empty strings")
 
     def validate_derived_url(name, modules):
         url = modules[name]["repo"]
