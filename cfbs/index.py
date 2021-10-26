@@ -80,7 +80,7 @@ class Index:
         return self.get_modules()[key]
 
     def _cache_path(self) -> str:
-        return cfbs_dir("index.json")
+        return cfbs_dir("cache.json")
 
     def _get(self) -> dict:
         path = self.path

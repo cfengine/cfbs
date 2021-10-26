@@ -157,9 +157,9 @@ def validate_index(index):
             )
 
     # Make sure index has a collection named modules
-    if not "modules" in index:
+    if not "index" in index:
         raise CFBSIndexException(None, "Missing required attribute 'modules'")
-    modules = index["modules"]
+    modules = index["index"]
 
     # Validate each entry in modules
     for name in modules:
