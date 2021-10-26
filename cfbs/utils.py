@@ -167,7 +167,16 @@ class FetchError(Exception):
 
 
 def fetch_url(url, target, checksum=None):
-    sha = hashlib.sha1()
+    if checksum is not None:
+        if SHA1_RE.match(checksum):
+            sha = hashlib.sha1()
+        elif SHA256_RE.match(checksum):
+            sha = hashlib.sha256()
+        else:
+            raise FetchError("Invalid checksum or unsupported checksum algorithm: '%s'" % checksum)
+    else:
+        sha = hashlib.sha1()
+
     try:
         with open(target, "wb") as f:
             with urllib.request.urlopen(url) as u:
