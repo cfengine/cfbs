@@ -30,7 +30,7 @@ def get_args():
         "-l",
         help="Set log level for more/less detailed output",
         type=str,
-        default="error",
+        default="warning",
     )
     parser.add_argument(
         "--version", "-V", help="Print version number", action="store_true"
