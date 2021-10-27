@@ -5,6 +5,7 @@ in main.py for -h/--help/help.
 import os
 import re
 import distutils.spawn
+import logging as log
 
 from cfbs.utils import (
     cfbs_dir,
@@ -496,12 +497,86 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
     put_definition(definition)
 
 
+def update_command():
+    cfg_index = get_index_from_config()
+    index = Index(cfg_index)
+
+    new_deps = []
+    new_deps_added_by = dict()
+    definition = get_definition()
+    index_modules = index.get_modules()
+    for module in definition["build"]:
+        if "index" in module:
+            # not a module from the default index, not updating
+            continue
+
+        index_info = index_modules.get(module["name"])
+        if not index_info:
+            log.warning("Module '%s' not present in the index, cannot update it", module["name"])
+            continue
+
+        if ("version" in module and
+            module["version"] != index_info["version"] and
+            module["commit"] == index_info["commit"]):
+            log.warning("Version and commit mismatch detected." +
+                        " The module %s has the same commit but different version" +
+                        " locally (%s) and in the index (%s)." +
+                        " Skipping its update.",
+                        module["name"], module["version"], index_info["version"])
+            continue
+
+        if "version" in module:
+            local_ver = [int(version_number) for version_number in  module["version"].split(".")]
+            index_ver = [int(version_number) for version_number in  index_info["version"].split(".")]
+            if local_ver > index_ver:
+                print(("Locally installed version of module %s (%s)" +
+                       " is newer than the version in index (%s), not updating.") %
+                      (module["name"], module["version"], index_info["version"]))
+                continue
+
+        commit_differs = (module["commit"] != index_info["commit"])
+        for key, value in module.items():
+            if key not in index_info or module[key] == index_info[key]:
+                continue
+            if key == "steps":
+                # same commit => user modifications, don't revert them
+                if commit_differs:
+                    ans = input("Module %s has different build steps now\n" % module["name"] +
+                                "old steps: %s\n" % module["steps"] +
+                                "new steps: %s\n" % index_info["steps"] +
+                                "Do you want to use the new build steps? [y/N]")
+                    if ans.lower() in ["y", "yes"]:
+                        module["steps"] = index_info["steps"]
+                    else:
+                        print("Please make sure the old build steps work" +
+                              " with the new version of the module")
+            else:
+                if key == "dependencies":
+                    extra = set(index_info["dependencies"]) - set(module["dependencies"])
+                    new_deps.extend(extra)
+                    new_deps_added_by.update({item: module["name"] for item in extra})
+
+                module[key] = index_info[key]
+
+        # add new items
+        for key in set(index_info.keys()) - set(module.keys()):
+            module[key] = index_info[key]
+            if key == "dependencies":
+                extra = index_info["dependencies"]
+                new_deps.extend(extra)
+                new_deps_added_by.update({item: module["name"] for item in extra})
+
+    put_definition(definition)
+
+    if new_deps:
+        add_command(new_deps, new_deps_added_by)
+
+
 def validate_command(index_path=None):
     if index_path:
         index = Index(index_path)
     else:
         index = get_index_from_config() or Index()
-
     if not index:
         user_error("Index not found")
 
