@@ -90,7 +90,7 @@ def pretty_command(filenames: list, check) -> int:
     return 0
 
 
-def init_command(index=None) -> int:
+def init_command(index_path=None) -> int:
     if is_cfbs_repo():
         user_error(f"Already initialized - look at {cfbs_filename()}")
 
@@ -100,8 +100,8 @@ def init_command(index=None) -> int:
         "description": "Example description",
         "build": [], # TODO: Prompt what masterfile user wants to add
     }
-    if index:
-        definition["index"] = index
+    if index_path:
+        definition["index_path"] = index_path
 
     write_json(cfbs_filename(), definition)
     assert is_cfbs_repo()
@@ -138,13 +138,17 @@ def get_index_from_config():
     conf = get_definition()
     if not "index" in conf:
         return None
-    return conf["index"]
+    if type(conf["index"]) == str:
+        return Index(conf["index"])
+    else:
+        return Index(data=conf["index"])
 
 
-def search_command(terms: list, index=None) -> int:
-    if not index:
-        index = get_index_from_config()
-    index = Index(index)
+def search_command(terms: list, index_path=None) -> int:
+    if index_path:
+        index = Index(index_path)
+    else:
+        index = get_index_from_config() or Index()
     found = False
     # No search term, list everything:
     if not terms:
@@ -382,12 +386,12 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
         index_repo = to_add.pop(0)
         index_path, index_commit = _clone_index_repo(index_repo)
 
-    default_index = False
-    if not index_path:
+    if index_path:
+        default_index = False
+        index = Index(index_path)
+    else:
         default_index = True
-        index_path = get_index_from_config()
-
-    index = Index(index_path)
+        index = get_index_from_config() or Index()
 
     # URL specified in to_add, but no specific modules => let's add all (with a prompt)
     if len(to_add) == 0:
@@ -491,16 +495,17 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
     put_definition(definition)
 
 
-def validate_command(index=None):
-    if not index:
-        index = get_index_from_config()
+def validate_command(index_path=None):
+    if index_path:
+        index = Index(index_path)
+    else:
+        index = get_index_from_config() or Index()
+
     if not index:
         user_error("Index not found")
 
-    index = Index(index)._get()
-
     try:
-        validate_index(index)
+        validate_index(index.get())
     except CFBSIndexException as e:
         print(e)
         return 1
@@ -745,10 +750,12 @@ def print_module_info(data):
             print("{}: {}".format(key.title().replace("_", " "), value))
 
 
-def info_command(modules, index=None):
-    if not index:
-        index = get_index_from_config()
-    index = Index(index)
+def info_command(modules, index_path=None):
+    if index_path:
+        index = Index(index_path)
+    else:
+        index = get_index_from_config() or Index()
+
     build = get_definition()["build"]
     alias = None
 

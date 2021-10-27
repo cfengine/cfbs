@@ -82,15 +82,15 @@ def main() -> int:
     if args.command == "help":
         return 0
     if args.command == "init":
-        return commands.init_command(index=args.index)
+        return commands.init_command(index_path=args.index)
     if args.command == "search":
-        return commands.search_command(args.args, index=args.index)
+        return commands.search_command(args.args, index_path=args.index)
     if args.command == "pretty":
         return commands.pretty_command(args.args, args.check)
     if args.command == "validate":
-        return commands.validate_command(index=args.index)
+        return commands.validate_command(index_path=args.index)
     if args.command in ("info", "show"):
-        return commands.info_command(args.args, index=args.index)
+        return commands.info_command(args.args, index_path=args.index)
 
     if not is_cfbs_repo():
         user_error("This is not a cfbs repo, to get started, type: cfbs init")
