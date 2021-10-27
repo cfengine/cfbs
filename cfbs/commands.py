@@ -459,8 +459,9 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
     filtered = []
     for module in to_add:
         user_requested = added_by[module] == "cfbs add"
-        if module in [*added, *filtered] and user_requested:
-            print(f"Skipping already added module: {module}")
+        if module in [*added, *filtered]:
+            if user_requested:
+                print(f"Skipping already added module: {module}")
             continue
         filtered.append(module)
 
