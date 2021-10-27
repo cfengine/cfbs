@@ -62,7 +62,7 @@ def put_definition(data: dict):
     global definition
     definition = data
     with open(cfbs_filename(), "w") as f:
-        f.write(pretty(data))
+        f.write(pretty(data) + "\n")
 
 
 def pretty_command(filenames: list, check) -> int:
