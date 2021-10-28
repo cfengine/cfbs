@@ -150,25 +150,44 @@ def search_command(terms: list, index_path=None) -> int:
         index = Index(index_path)
     else:
         index = get_index_from_config() or Index()
-    found = False
-    # No search term, list everything:
-    if not terms:
-        for name, data in index.get_modules().items():
-            if "alias" in data:
-                continue
-            print(name)
-            found = True
-        return 0 if found else 1
+    results = {}
 
-    # Print all modules which match at least 1 search term:
+    # in order to gather all aliases, we must iterate over everything first
     for name, data in index.get_modules().items():
-        if any((t for t in terms if t in name)):
-            if "alias" in data:
-                print(f"{name} -> {data['alias']}")
+        if "alias" in data:
+            realname = data["alias"]
+            if realname not in results:
+                results[realname] = {}
+            if "aliases" in results[realname]:
+                results[realname]["aliases"].append(name)
             else:
-                print(name)
-            found = True
-    return 0 if found else 1
+                results[realname]["aliases"] = [name]
+            continue
+        if name in results:
+            results[name]["description"] = data["description"]
+        else:
+            results[name] = {"description": data["description"], "aliases": []}
+
+    filtered = {}
+    if terms:
+        for name in (
+            name
+            for name, data in results.items()
+            if any((t for t in terms if t in name))
+            or any((t for t in terms if any((s for s in data["aliases"] if t in s))))
+        ):
+            filtered[name] = results[name]
+    else:
+        filtered = results
+
+    results = filtered
+    for k, v in results.items():
+        print("{}".format(k), end="")
+        if any(v["aliases"]):
+            print(" ({})".format(", ".join(v["aliases"])), end="")
+        print(" - {}".format(v["description"]))
+
+    return 0 if any(results) else 1
 
 
 def local_module_name(module_path):
