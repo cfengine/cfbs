@@ -67,11 +67,15 @@ def generate_index_for_local_module(module):
 
 
 class Index:
-    def __init__(self, path):
-        self.path = path
-        if not self.path:
-            self.path = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/cfbs.json"
-        self._data = None
+    def __init__(self, path=None, data=None):
+        """If data is not None, path is ignored"""
+        self._data = {"index": data} if data else None
+
+        if not self._data:
+            if path:
+                self.path = path
+            else:
+                self.path = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/cfbs.json"
 
     def __contains__(self, key):
         return key in self.get_modules()
