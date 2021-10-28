@@ -6,11 +6,11 @@ The modules you use can be written by the CFEngine team, others in the community
 
 ## CFEngine Build Repositories
 
-* [modules](https://github.com/cfengine/modules) - Official modules provided by the CFEngine team
+* [build-index](https://github.com/cfengine/build-index) - Index of modules
+* [build-website](https://github.com/cfengine/build-website) - Website
 * [cfbs](https://github.com/cfengine/cfbs) - Command line client
-* [cfbs-index](https://github.com/cfengine/cfbs-index) - Index of modules
-* [cfbs-web](https://github.com/cfengine/cfbs-web) - Website
-* [cfbs-example](https://github.com/cfengine/cfbs-example) - Example project using cfbs
+* [modules](https://github.com/cfengine/modules) - Official modules provided by the CFEngine team
+* [module-template](https://github.com/cfengine/build-example) - Template for creating new modules
 
 ## Installation
 
