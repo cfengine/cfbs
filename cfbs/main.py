@@ -30,7 +30,7 @@ def get_args():
         "-l",
         help="Set log level for more/less detailed output",
         type=str,
-        default="error",
+        default="warning",
     )
     parser.add_argument(
         "--version", "-V", help="Print version number", action="store_true"
@@ -105,5 +105,7 @@ def main() -> int:
         return commands.build_command()
     if args.command == "install":
         return commands.install_command(args.args)
+    if args.command == "update":
+        return commands.update_command()
 
     user_error(f"Command '{args.command}' not found")
