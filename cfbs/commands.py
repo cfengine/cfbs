@@ -851,7 +851,11 @@ def info_command(modules, index_path=None):
     else:
         index = get_index_from_config() or Index()
 
-    build = get_definition()["build"]
+    if os.path.isfile(cfbs_filename()):
+        build = get_definition()["build"]
+    else:
+        build = {}
+
     alias = None
 
     for module in modules:
