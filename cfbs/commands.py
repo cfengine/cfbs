@@ -38,7 +38,9 @@ _SUPPORTED_TAR_TYPES = (".tar.gz", ".tgz")
 _SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
 
 _MODULES_URL = "https://cfbs.s3.amazonaws.com/modules"
-_VERSION_INDEX = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/versions.json"
+_VERSION_INDEX = (
+    "https://raw.githubusercontent.com/cfengine/cfbs-index/master/versions.json"
+)
 
 # TODO: Move this to CFBSConfig
 definition = None
@@ -60,6 +62,7 @@ def get_definition() -> CFBSConfig:
         user_error("Unable to read {}".format(cfbs_filename()))
     return definition
 
+
 # TODO: Move this to CFBSConfig
 def put_definition(data=None):
     global definition
@@ -76,7 +79,8 @@ def pretty_command(filenames: list, check) -> int:
     for f in filenames:
         if not f or not f.endswith(".json"):
             user_error(
-                "cfbs pretty command can only be used with .json files, not '%s'" % os.path.basename(f)
+                "cfbs pretty command can only be used with .json files, not '%s'"
+                % os.path.basename(f)
             )
         try:
             if check:
@@ -99,9 +103,9 @@ def init_command(index_path=None) -> int:
 
     definition = {
         "name": "Example",
-        "type": "policy-set", # TODO: Prompt whether user wants to make a module
+        "type": "policy-set",  # TODO: Prompt whether user wants to make a module
         "description": "Example description",
-        "build": [], # TODO: Prompt what masterfile user wants to add
+        "build": [],  # TODO: Prompt what masterfile user wants to add
     }
     if index_path:
         definition["index_path"] = index_path
@@ -117,8 +121,8 @@ def init_command(index_path=None) -> int:
 def status_command() -> int:
 
     definition = get_definition()
-    print('Name:        %s' % definition["name"])
-    print('Description: %s' % definition["description"])
+    print("Name:        %s" % definition["name"])
+    print("Description: %s" % definition["description"])
     print("File:        %s" % cfbs_filename())
 
     modules = definition["build"]
@@ -185,9 +189,7 @@ def local_module_name(module_path):
     if module.endswith((".cf", ".json", "/")) and not module.startswith("./"):
         module = "./" + module
     if not module.startswith("./"):
-        user_error(
-            "Please prepend local files or folders with './' to avoid ambiguity"
-        )
+        user_error("Please prepend local files or folders with './' to avoid ambiguity")
 
     for illegal in ["//", "..", " ", "\n", "\t", " "]:
         if illegal in module:
@@ -230,7 +232,8 @@ def local_module_copy(module, counter, max_length):
     module["_counter"] = counter
     cp(name, target + name)
     print(
-        "%03d %s @ local                                    (Copied)" % (counter, pad_right(name, max_length))
+        "%03d %s @ local                                    (Copied)"
+        % (counter, pad_right(name, max_length))
     )
 
 
@@ -311,7 +314,7 @@ def _clone_url_repo(repo_url):
 def _fetch_archive(url, checksum=None, directory=None, with_index=True):
     assert url.endswith(_SUPPORTED_ARCHIVES)
 
-    url_path = url[url.index("://") + 3:]
+    url_path = url[url.index("://") + 3 :]
     archive_dirname = os.path.dirname(url_path)
     archive_filename = os.path.basename(url_path)
 
@@ -354,14 +357,22 @@ def _fetch_archive(url, checksum=None, directory=None, with_index=True):
         else:
             user_error("Working with .zip archives requires the 'unzip' utility")
     else:
-        raise RuntimeError("Unhandled archive type: '%s'. Please report this at %s." %
-                           (url, "https://github.com/cfengine/cfbs/issues"))
+        raise RuntimeError(
+            "Unhandled archive type: '%s'. Please report this at %s."
+            % (url, "https://github.com/cfengine/cfbs/issues")
+        )
 
     os.unlink(archive_path)
 
-    content_root_items = [os.path.join(content_dir, item) for item in os.listdir(content_dir)]
-    if (with_index and len(content_root_items) == 1 and os.path.isdir(content_root_items[0]) and
-        os.path.exists(os.path.join(content_root_items[0], "cfbs.json"))):
+    content_root_items = [
+        os.path.join(content_dir, item) for item in os.listdir(content_dir)
+    ]
+    if (
+        with_index
+        and len(content_root_items) == 1
+        and os.path.isdir(content_root_items[0])
+        and os.path.exists(os.path.join(content_root_items[0], "cfbs.json"))
+    ):
         # the archive contains a top-level folder, let's just move things one
         # level up from inside it
         sh("mv %s %s" % (os.path.join(content_root_items[0], "*"), content_dir))
@@ -371,7 +382,9 @@ def _fetch_archive(url, checksum=None, directory=None, with_index=True):
         if os.path.exists(index_path):
             return (index_path, archive_checksum)
         else:
-            user_error("Archive '%s' doesn't contain a valid cfbs.json index file" % url)
+            user_error(
+                "Archive '%s' doesn't contain a valid cfbs.json index file" % url
+            )
     else:
         if directory is not None:
             directory = directory.rstrip("/")
@@ -381,7 +394,10 @@ def _fetch_archive(url, checksum=None, directory=None, with_index=True):
             return (directory, archive_checksum)
         return (content_dir, archive_checksum)
 
-def _add_modules(to_add: list, added_by="cfbs add", index_path=None, checksum=None) -> int:
+
+def _add_modules(
+    to_add: list, added_by="cfbs add", index_path=None, checksum=None
+) -> int:
     config = CFBSConfig(index_path)
     index = config.index
 
@@ -395,7 +411,7 @@ def _add_modules(to_add: list, added_by="cfbs add", index_path=None, checksum=No
             continue
         data = index[module]
         if "alias" in data:
-            print('%s is an alias for %s' % (module, data["alias"]))
+            print("%s is an alias for %s" % (module, data["alias"]))
             module = data["alias"]
         translated.append(module)
 
@@ -418,7 +434,7 @@ def _add_modules(to_add: list, added_by="cfbs add", index_path=None, checksum=No
     # Print error and exit if there are unknown modules:
     missing = [m for m in to_add if not m.startswith("./") and m not in index]
     if missing:
-        user_error("Module(s) could not be found: %s" % ', '.join(missing))
+        user_error("Module(s) could not be found: %s" % ", ".join(missing))
 
     definition = get_definition()
 
@@ -473,7 +489,9 @@ def _add_modules(to_add: list, added_by="cfbs add", index_path=None, checksum=No
     return 0
 
 
-def _add_using_url(url, to_add: list, added_by="cfbs add", index_path=None, checksum=None):
+def _add_using_url(
+    url, to_add: list, added_by="cfbs add", index_path=None, checksum=None
+):
     url_repo_commit = None
     if url.endswith(_SUPPORTED_ARCHIVES):
         config_path, url_repo_commit = _fetch_archive(url, checksum)
@@ -491,9 +509,7 @@ def _add_using_url(url, to_add: list, added_by="cfbs add", index_path=None, chec
         print("Found %d modules in '%s':" % (len(modules), url))
         for m in modules:
             print("  - " + m["name"])
-        answer = input(
-            "Do you want to add all %d of them? [y/N] " % (len(modules))
-        )
+        answer = input("Do you want to add all %d of them? [y/N] " % (len(modules)))
         if answer.lower() not in ("y", "yes"):
             return 0
     else:
@@ -508,11 +524,15 @@ def _add_using_url(url, to_add: list, added_by="cfbs add", index_path=None, chec
     return 0
 
 
-def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=None) -> int:
+def add_command(
+    to_add: list, added_by="cfbs add", index_path=None, checksum=None
+) -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
 
-    if (to_add[0].endswith(_SUPPORTED_ARCHIVES) or to_add[0].startswith(("https://", "git://", "ssh://"))):
+    if to_add[0].endswith(_SUPPORTED_ARCHIVES) or to_add[0].startswith(
+        ("https://", "git://", "ssh://")
+    ):
         return _add_using_url(to_add[0], to_add[1:], added_by, index_path, checksum)
 
     return _add_modules(to_add, added_by, index_path, checksum)
@@ -542,7 +562,10 @@ def clean_command():
 
     print("The following modules were added as dependencies but are no longer needed:")
     for module in to_remove:
-        print("%s - %s – added by: %s" % (module["name"], module["description"], module["added_by"]))
+        print(
+            "%s - %s – added by: %s"
+            % (module["name"], module["description"], module["added_by"])
+        )
 
     answer = input("Do you wish to remove these modules? [y/N] ")
     if answer.lower() in ("yes", "y"):
@@ -568,47 +591,70 @@ def update_command():
 
         index_info = index_modules.get(module["name"])
         if not index_info:
-            log.warning("Module '%s' not present in the index, cannot update it", module["name"])
+            log.warning(
+                "Module '%s' not present in the index, cannot update it", module["name"]
+            )
             continue
 
-        if ("version" in module and
-            module["version"] != index_info["version"] and
-            module["commit"] == index_info["commit"]):
-            log.warning("Version and commit mismatch detected." +
-                        " The module %s has the same commit but different version" +
-                        " locally (%s) and in the index (%s)." +
-                        " Skipping its update.",
-                        module["name"], module["version"], index_info["version"])
+        if (
+            "version" in module
+            and module["version"] != index_info["version"]
+            and module["commit"] == index_info["commit"]
+        ):
+            log.warning(
+                "Version and commit mismatch detected."
+                + " The module %s has the same commit but different version"
+                + " locally (%s) and in the index (%s)."
+                + " Skipping its update.",
+                module["name"],
+                module["version"],
+                index_info["version"],
+            )
             continue
 
         if "version" in module:
-            local_ver = [int(version_number) for version_number in  module["version"].split(".")]
-            index_ver = [int(version_number) for version_number in  index_info["version"].split(".")]
+            local_ver = [
+                int(version_number) for version_number in module["version"].split(".")
+            ]
+            index_ver = [
+                int(version_number)
+                for version_number in index_info["version"].split(".")
+            ]
             if local_ver > index_ver:
-                print(("Locally installed version of module %s (%s)" +
-                       " is newer than the version in index (%s), not updating.") %
-                      (module["name"], module["version"], index_info["version"]))
+                print(
+                    (
+                        "Locally installed version of module %s (%s)"
+                        + " is newer than the version in index (%s), not updating."
+                    )
+                    % (module["name"], module["version"], index_info["version"])
+                )
                 continue
 
-        commit_differs = (module["commit"] != index_info["commit"])
+        commit_differs = module["commit"] != index_info["commit"]
         for key, value in module.items():
             if key not in index_info or module[key] == index_info[key]:
                 continue
             if key == "steps":
                 # same commit => user modifications, don't revert them
                 if commit_differs:
-                    ans = input("Module %s has different build steps now\n" % module["name"] +
-                                "old steps: %s\n" % module["steps"] +
-                                "new steps: %s\n" % index_info["steps"] +
-                                "Do you want to use the new build steps? [y/N]")
+                    ans = input(
+                        "Module %s has different build steps now\n" % module["name"]
+                        + "old steps: %s\n" % module["steps"]
+                        + "new steps: %s\n" % index_info["steps"]
+                        + "Do you want to use the new build steps? [y/N]"
+                    )
                     if ans.lower() in ["y", "yes"]:
                         module["steps"] = index_info["steps"]
                     else:
-                        print("Please make sure the old build steps work" +
-                              " with the new version of the module")
+                        print(
+                            "Please make sure the old build steps work"
+                            + " with the new version of the module"
+                        )
             else:
                 if key == "dependencies":
-                    extra = set(index_info["dependencies"]) - set(module["dependencies"])
+                    extra = set(index_info["dependencies"]) - set(
+                        module["dependencies"]
+                    )
                     new_deps.extend(extra)
                     new_deps_added_by.update({item: module["name"] for item in extra})
 
@@ -665,7 +711,7 @@ def get_download_path(module) -> str:
         url = os.path.dirname(url)
     else:
         url = strip_right(url, ".git")
-    repo = url[url.index("://") + 3:]
+    repo = url[url.index("://") + 3 :]
     repo_dir = os.path.join(downloads, repo)
     mkdir(repo_dir)
     return os.path.join(repo_dir, commit)
@@ -707,8 +753,12 @@ def download_dependencies(prefer_offline=False, redownload=False):
                     checksum = versions[name][module["version"]]["archive_sha256"]
                 except KeyError:
                     user_error("Cannot verify checksum of the '%s' module" % name)
-                module_archive_url = os.path.join(_MODULES_URL, name, commit + ".tar.gz")
-                _fetch_archive(module_archive_url, checksum, directory=commit_dir, with_index=False)
+                module_archive_url = os.path.join(
+                    _MODULES_URL, name, commit + ".tar.gz"
+                )
+                _fetch_archive(
+                    module_archive_url, checksum, directory=commit_dir, with_index=False
+                )
         target = "out/steps/%03d_%s_%s/" % (counter, module["name"], commit)
         module["_directory"] = target
         module["_counter"] = counter
@@ -717,7 +767,9 @@ def download_dependencies(prefer_offline=False, redownload=False):
             cp(commit_dir, target)
         else:
             cp(os.path.join(commit_dir, subdirectory), target)
-        print("%03d %s @ %s (Downloaded)" % (counter, pad_right(name, max_length), commit))
+        print(
+            "%03d %s @ %s (Downloaded)" % (counter, pad_right(name, max_length), commit)
+        )
         counter += 1
 
 

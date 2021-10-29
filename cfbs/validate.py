@@ -122,7 +122,9 @@ def validate_index(index):
             if type(step) != str:
                 raise CFBSIndexException(name, "'steps' must be a list of strings")
             if not step:
-                raise CFBSIndexException(name, "'steps' must be a list of non-empty strings")
+                raise CFBSIndexException(
+                    name, "'steps' must be a list of non-empty strings"
+                )
 
     def validate_derived_url(name, modules):
         url = modules[name]["repo"]
@@ -148,7 +150,8 @@ def validate_index(index):
             response = requests.head(url)
         except requests.RequestException as e:
             raise CFBSIndexException(
-                name, "HEAD request of %s url '%s' failed: %s" % (field, url, e)) from e
+                name, "HEAD request of %s url '%s' failed: %s" % (field, url, e)
+            ) from e
         if not response.ok:
             raise CFBSIndexException(
                 name,

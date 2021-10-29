@@ -141,7 +141,9 @@ class CFBSConfig:
             self._data = data
         else:
             self._data = read_json(self.path)
-        self._default_index = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/cfbs.json"
+        self._default_index = (
+            "https://raw.githubusercontent.com/cfengine/cfbs-index/master/cfbs.json"
+        )
         if index_argument:
             self._unexpanded_index = index_argument
         elif "index" in self._data:
@@ -154,12 +156,12 @@ class CFBSConfig:
     @property
     def index(self):
         if not self._index:
-            self._index = Index(data = _expand_index(self._unexpanded_index))
+            self._index = Index(data=_expand_index(self._unexpanded_index))
         return self._index
 
     @property
     def using_default_index(self):
-        return (self._unexpanded_index == self._default_index)
+        return self._unexpanded_index == self._default_index
 
     def __getitem__(self, key):
         if key == "index":
@@ -169,7 +171,7 @@ class CFBSConfig:
     def get_provides(self):
         print(pretty(self._data))
         modules = OrderedDict()
-        for k,v in self._data["provides"].items():
+        for k, v in self._data["provides"].items():
             module = OrderedDict()
             module["name"] = k
             module["description"] = v["description"]
