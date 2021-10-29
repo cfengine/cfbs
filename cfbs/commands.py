@@ -579,7 +579,7 @@ def clean_command(non_interactive=False):
     print("The following modules were added as dependencies but are no longer needed:")
     for module in to_remove:
         print(
-            "%s - %s – added by: %s"
+            "%s - %s - added by: %s"
             % (module["name"], module["description"], module["added_by"])
         )
 
