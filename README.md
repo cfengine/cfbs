@@ -80,6 +80,12 @@ cfbs build
 cfbs install /var/cfengine/masterfiles
 ```
 
+### Remove unused dependencies
+
+```
+cfbs clean
+```
+
 ### Deploy your policy set to a remote hub
 
 ```

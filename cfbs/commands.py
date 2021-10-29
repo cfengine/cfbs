@@ -516,6 +516,41 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
     put_definition(definition)
 
 
+def clean_command():
+    definition = get_definition()
+    modules = definition["build"]
+
+    def _someone_needs_me(this) -> bool:
+        if this["added_by"] == "cfbs add":
+            return True
+        for other in modules:
+            if not "dependencies" in other:
+                continue
+            if this["name"] in other["dependencies"]:
+                return _someone_needs_me(other)
+        return False
+
+    to_remove = list()
+    for module in modules:
+        if not _someone_needs_me(module):
+            to_remove.append(module)
+
+    if not to_remove:
+        return 0
+
+    print("The following modules were added as dependencies but are no longer needed:")
+    for module in to_remove:
+        print("%s - %s – added by: %s" % (module["name"], module["description"], module["added_by"]))
+
+    answer = input("Do you wish to remove these modules? [y/N] ")
+    if answer.lower() in ("yes", "y"):
+        for module in to_remove:
+            modules.remove(module)
+        put_definition(definition)
+
+    return 0
+
+
 def update_command():
     cfg_index = get_index_from_config()
     index = Index(cfg_index)
