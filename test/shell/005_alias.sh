@@ -6,5 +6,7 @@ cd ./tmp/
 touch cfbs.json && rm cfbs.json
 
 cfbs init
-cfbs add masterfiles
-grep masterfiles cfbs.json
+cfbs add mpf > output.log
+
+grep "alias" output.log
+grep "Added module" output.log

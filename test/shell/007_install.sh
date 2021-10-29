@@ -6,5 +6,8 @@ cd ./tmp/
 touch cfbs.json && rm cfbs.json
 
 cfbs init
-cfbs add masterfiles
-grep masterfiles cfbs.json
+cfbs add mpf
+cfbs add autorun
+cfbs install
+
+ls /var/cfengine/masterfiles/def.json
