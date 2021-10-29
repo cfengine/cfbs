@@ -5,12 +5,13 @@ import sys
 from cfbs.utils import (
     cfbs_dir,
     user_error,
-    get_json,
     strip_left,
     strip_right,
     pad_right,
+    get_json,
     write_json,
     read_json,
+    get_or_read_json,
     merge_json,
     mkdir,
     touch,
@@ -120,3 +121,42 @@ class Index:
             if not module.startswith("./")
             else generate_index_for_local_module(module)
         )
+
+
+def _expand_index(thing):
+    assert type(thing) in (dict, list, str)
+    if type(thing) is str:
+        return get_or_read_json(thing)["index"]
+    return thing
+
+
+class CFBSConfig:
+    def __init__(self, index_argument=None, path="./cfbs.json"):
+        if not os.path.exists(path):
+            user_error("Could not find required configuration file: '{}'".format(path))
+        self.path = path
+        self._data = read_json(self.path)
+        self._default_index = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/cfbs.json"
+        if index_argument:
+            self._unexpanded_index = index_argument
+        elif "index" in self._data:
+            self._unexpanded_index = self._data["index"]
+        else:
+            self._unexpanded_index = self._default_index
+
+        self._index = None
+
+    @property
+    def index(self):
+        if not self._index:
+            self._index = Index(data = _expand_index(self._unexpanded_index))
+        return self._index
+
+    @property
+    def using_default_index(self):
+        return (self._unexpanded_index == self._default_index)
+
+    def __getitem__(self, key):
+        if key == "index":
+            return self.index
+        return self._data[key]

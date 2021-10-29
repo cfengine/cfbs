@@ -82,6 +82,10 @@ def get_json(url: str) -> dict:
     assert r.status_code >= 200 and r.status_code < 300
     return r.json()
 
+def get_or_read_json(path: str) -> dict:
+    if path.startswith("https://"):
+        return get_json(path)
+    return read_json(path)
 
 def strip_right(string, ending):
     if not string.endswith(ending):
