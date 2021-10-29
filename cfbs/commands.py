@@ -29,7 +29,7 @@ from cfbs.utils import (
     is_a_commit_hash,
 )
 
-from cfbs.pretty import pretty_check_file, pretty_file, pretty
+from cfbs.pretty import pretty_check_file, pretty_file
 from cfbs.index import CFBSConfig
 from cfbs.validate import CFBSIndexException, validate_index
 
@@ -52,20 +52,20 @@ def clear_definition():
 
 
 # TODO: Move this to CFBSConfig
-def get_definition() -> dict:
+def get_definition() -> CFBSConfig:
     global definition
     if not definition:
-        definition = read_json(cfbs_filename())
+        definition = CFBSConfig()
     if not definition:
         user_error("Unable to read {}".format(cfbs_filename()))
     return definition
 
 # TODO: Move this to CFBSConfig
-def put_definition(data: dict):
+def put_definition(data=None):
     global definition
-    definition = data
-    with open(cfbs_filename(), "w") as f:
-        f.write(pretty(data) + "\n")
+    if not definition:
+        definition = CFBSConfig(data=data)
+    definition.save(data)
 
 
 def pretty_command(filenames: list, check) -> int:
