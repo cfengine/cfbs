@@ -74,7 +74,7 @@ def pretty_command(filenames: list, check) -> int:
     for f in filenames:
         if not f or not f.endswith(".json"):
             user_error(
-                f"cfbs pretty command can only be used with .json files, not '{os.path.basename(f)}'"
+                "cfbs pretty command can only be used with .json files, not '%s'" % os.path.basename(f)
             )
         try:
             if check:
@@ -84,7 +84,7 @@ def pretty_command(filenames: list, check) -> int:
             else:
                 pretty_file(f)
         except FileNotFoundError:
-            user_error(f"File '{f}' not found")
+            user_error("File '%s' not found" % f)
     if check:
         print("Would reformat %d file(s)" % num_files)
         return 1 if num_files > 0 else 0
@@ -93,7 +93,7 @@ def pretty_command(filenames: list, check) -> int:
 
 def init_command(index_path=None) -> int:
     if is_cfbs_repo():
-        user_error(f"Already initialized - look at {cfbs_filename()}")
+        user_error("Already initialized - look at %s" % cfbs_filename())
 
     definition = {
         "name": "Example",
@@ -106,8 +106,8 @@ def init_command(index_path=None) -> int:
 
     write_json(cfbs_filename(), definition)
     assert is_cfbs_repo()
-    print(f"Initialized - edit name and description {cfbs_filename()}")
-    print(f"To add your first module, type: cfbs add masterfiles")
+    print("Initialized - edit name and description %s" % cfbs_filename())
+    print("To add your first module, type: cfbs add masterfiles")
 
     return 0
 
@@ -115,19 +115,19 @@ def init_command(index_path=None) -> int:
 def status_command() -> int:
 
     definition = get_definition()
-    print(f'Name:        {definition["name"]}')
-    print(f'Description: {definition["description"]}')
-    print(f"File:        {cfbs_filename()}")
+    print('Name:        %s' % definition["name"])
+    print('Description: %s' % definition["description"])
+    print("File:        %s" % cfbs_filename())
 
     modules = definition["build"]
-    print(f"\nModules:")
+    print("\nModules:")
     max_length = longest_module_name()
     counter = 1
     for m in modules:
         path = get_download_path(m)
         status = "Downloaded" if os.path.exists(path) else "Not downloaded"
         name = pad_right(m["name"], max_length)
-        print(f"{counter:03d} {name} @ {m['commit']} ({status})")
+        print("%03d %s @ %s (%s)" % (counter, name, m["commit"], status))
         counter += 1
 
     return 0
@@ -198,12 +198,12 @@ def local_module_name(module_path):
         module = "./" + module
     if not module.startswith("./"):
         user_error(
-            f"Please prepend local files or folders with './' to avoid ambiguity"
+            "Please prepend local files or folders with './' to avoid ambiguity"
         )
 
     for illegal in ["//", "..", " ", "\n", "\t", " "]:
         if illegal in module:
-            user_error(f"Module path cannot contain {repr(illegal)}")
+            user_error("Module path cannot contain %s" % repr(illegal))
 
     if os.path.isdir(module) and not module.endswith("/"):
         module = module + "/"
@@ -216,7 +216,7 @@ def local_module_name(module_path):
             user_error("Only .cf and .json files supported currently")
     else:
         if not os.path.isdir(module):
-            user_error(f"'{module}' must be either a directory or a file")
+            user_error("'%s' must be either a directory or a file" % module)
 
     return module
 
@@ -237,12 +237,12 @@ def local_module_copy(module, counter, max_length):
     assert name.startswith("./")
     assert os.path.isfile(name) or os.path.isdir(name)
     pretty_name = prettify_name(name)
-    target = f"out/steps/{counter:03d}_{pretty_name}_local/"
+    target = "out/steps/%03d_%s_local/" % (counter, pretty_name)
     module["_directory"] = target
     module["_counter"] = counter
     cp(name, target + name)
     print(
-        f"{counter:03d} {pad_right(name, max_length)} @ local                                    (Copied)"
+        "%03d %s @ local                                    (Copied)" % (counter, pad_right(name, max_length))
     )
 
 
@@ -427,13 +427,13 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
     translated = []
     for module in to_add:
         if not index.exists(module):
-            user_error(f"Module '{module}' does not exist")
+            user_error("Module '%s' does not exist" % module)
         if not module in index and os.path.exists(module):
             translated.append(local_module_name(module))
             continue
         data = index[module]
         if "alias" in data:
-            print(f'{module} is an alias for {data["alias"]}')
+            print('%s is an alias for %s' % (module, data["alias"]))
             module = data["alias"]
         translated.append(module)
         if not default_index:
@@ -462,7 +462,7 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
     # Print error and exit if there are unknown modules:
     missing = [m for m in to_add if not m.startswith("./") and m not in index]
     if missing:
-        user_error(f"Module(s) could not be found: {', '.join(missing)}")
+        user_error("Module(s) could not be found: %s" % ', '.join(missing))
 
     definition = get_definition()
 
@@ -481,7 +481,7 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
         user_requested = added_by[module] == "cfbs add"
         if module in [*added, *filtered]:
             if user_requested:
-                print(f"Skipping already added module: {module}")
+                print("Skipping already added module: %s" % module)
             continue
         filtered.append(module)
 
@@ -508,9 +508,9 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
         new_module = {"name": module, **data, "added_by": added_by[module]}
         definition["build"].append(new_module)
         if user_requested:
-            print(f"Added module: {module}")
+            print("Added module: %s" % module)
         else:
-            print(f"Added module: {module} (Dependency of {added_by[module]})")
+            print("Added module: %s (Dependency of %s)" % (module, added_by[module]))
         added.append(module)
 
     put_definition(definition)
@@ -664,8 +664,8 @@ def download_dependencies(prefer_offline=False, redownload=False):
             if url.endswith(_SUPPORTED_ARCHIVES):
                 _fetch_archive(url, commit)
             elif "index" in module:
-                sh(f"git clone {url} {commit_dir}")
-                sh(f"(cd {commit_dir} && git checkout {commit})")
+                sh("git clone %s %s" % (url, commit_dir))
+                sh("(cd %s && git checkout %s)" % (commit_dir, commit))
             else:
                 versions = get_json(_VERSION_INDEX)
                 try:
@@ -674,7 +674,7 @@ def download_dependencies(prefer_offline=False, redownload=False):
                     user_error("Cannot verify checksum of the '%s' module" % name)
                 module_archive_url = os.path.join(_MODULES_URL, name, commit + ".tar.gz")
                 _fetch_archive(module_archive_url, checksum, directory=commit_dir, with_index=False)
-        target = f"out/steps/{counter:03d}_{module['name']}_{commit}/"
+        target = "out/steps/%03d_%s_%s/" % (counter, module["name"], commit)
         module["_directory"] = target
         module["_counter"] = counter
         subdirectory = module.get("subdirectory", None)
@@ -682,7 +682,7 @@ def download_dependencies(prefer_offline=False, redownload=False):
             cp(commit_dir, target)
         else:
             cp(os.path.join(commit_dir, subdirectory), target)
-        print(f"{counter:03d} {pad_right(name, max_length)} @ {commit} (Downloaded)")
+        print("%03d %s @ %s (Downloaded)" % (counter, pad_right(name, max_length), commit))
         counter += 1
 
 
@@ -697,36 +697,36 @@ def build_step(module, step, max_length):
     counter = module["_counter"]
     destination = "out/masterfiles"
 
-    prefix = f"{counter:03d} {pad_right(module['name'], max_length)} :"
+    prefix = "%03d %s :" % (counter, pad_right(module["name"], max_length))
 
     if operation == "copy":
         src, dst = args
         if dst in [".", "./"]:
             dst = ""
-        print(f"{prefix} copy '{src}' 'masterfiles/{dst}'")
+        print("%s copy '%s' 'masterfiles/%s'" % (prefix, src, dst))
         src, dst = os.path.join(source, src), os.path.join(destination, dst)
         cp(src, dst)
     elif operation == "run":
         shell_command = " ".join(args)
-        print(f"{prefix} run '{shell_command}'")
+        print("%s run '%s'" % (prefix, shell_command))
         sh(shell_command, source)
     elif operation == "delete":
         files = [args] if type(args) is str else args
         assert len(files) > 0
-        as_string = " ".join([f"'{f}'" for f in files])
-        print(f"{prefix} delete {as_string}")
+        as_string = " ".join(["'%s'" % f for f in files])
+        print("%s delete %s" % (prefix, as_string))
         for file in files:
             rm(os.path.join(source, file))
     elif operation == "json":
         src, dst = args
         if dst in [".", "./"]:
             dst = ""
-        print(f"{prefix} json '{src}' 'masterfiles/{dst}'")
+        print("%s json '%s' 'masterfiles/%s'" % (prefix, src, dst))
         src, dst = os.path.join(source, src), os.path.join(destination, dst)
         extras, original = read_json(src), read_json(dst)
         assert extras is not None
         if not extras:
-            print(f"Warning: '{os.path.basename(src)}' looks empty, adding nothing")
+            print("Warning: '%s' looks empty, adding nothing" % os.path.basename(src))
         if original:
             merged = merge_json(original, extras)
         else:
@@ -736,12 +736,12 @@ def build_step(module, step, max_length):
         src, dst = args
         if dst in [".", "./"]:
             dst = ""
-        print(f"{prefix} append '{src}' 'masterfiles/{dst}'")
+        print("%s append '%s' 'masterfiles/%s'" % (prefix, src, dst))
         src, dst = os.path.join(source, src), os.path.join(destination, dst)
         if not os.path.exists(dst):
             touch(dst)
         assert os.path.isfile(dst)
-        sh(f"cat '{src}' >> '{dst}'")
+        sh("cat '%s' >> '%s'" % (src, dst))
     elif operation == "directory":
         src, dst = args
         if dst in [".", "./"]:
@@ -775,7 +775,7 @@ def build_step(module, step, max_length):
             merged["inputs"] = inputs
         write_json(defjson, merged)
     else:
-        user_error(f"Unknown build step operation: {operation}")
+        user_error("Unknown build step operation: %s" % operation)
 
 
 def build_steps() -> int:

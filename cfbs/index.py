@@ -27,7 +27,7 @@ def _local_module_data_cf_file(module):
         "description": "Local policy file added using cfbs command line",
         "tags": ["local"],
         "dependencies": ["autorun"],
-        "steps": [f"copy {module} services/autorun/{target}"],
+        "steps": ["copy %s services/autorun/%s" % (module, target)],
         "added_by": "cfbs add",
     }
 
@@ -36,7 +36,7 @@ def _local_module_data_json_file(module):
     return {
         "description": "Local augments file added using cfbs command line",
         "tags": ["local"],
-        "steps": [f"json {module} def.json"],
+        "steps": ["json %s def.json" % module],
         "added_by": "cfbs add",
     }
 
@@ -95,7 +95,7 @@ class Index:
                     print("Warning: Downloading index failed, using cache")
         else:
             if not os.path.isfile(path):
-                sys.exit(f"Index does not exist at: '{path}'")
+                sys.exit("Index does not exist at: '%s'" % path)
             index = read_json(path)
         if not index:
             sys.exit("Could not download or find module index")

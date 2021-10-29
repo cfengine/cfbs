@@ -7,7 +7,7 @@ assert "." in cfbs_version
 
 assert os.path.isfile("cfbs/version.py")
 with open("cfbs/VERSION", "w", encoding="utf-8") as fh:
-    fh.write(f"{cfbs_version}\n")
+    fh.write("%s\n" % cfbs_version)
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -29,7 +29,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.5',
     entry_points={
         "console_scripts": [
             "cfbs = cfbs.main:main"

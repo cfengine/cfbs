@@ -22,18 +22,18 @@ def _sh(cmd: str):
     try:
         r = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        user_error(f"Command failed - {cmd}\n{e.stdout.decode('utf-8')}")
+        user_error("Command failed - %s\n%s" % (cmd, e.stdout.decode('utf-8')))
 
 
 def sh(cmd: str, directory=None):
     if directory:
-        _sh(f"cd {directory} && {cmd}")
+        _sh("cd %s && %s" % (directory, cmd))
         return
-    _sh(f"{cmd}")
+    _sh("%s" % cmd)
 
 
 def mkdir(path: str):
-    sh(f"mkdir -p {path}")
+    sh("mkdir -p %s" % path)
 
 
 def touch(path: str):
@@ -41,7 +41,7 @@ def touch(path: str):
         above = os.path.dirname(path)
         if not os.path.exists(above):
             mkdir(above)
-    sh(f"touch {path}")
+    sh("touch %s" % path)
 
 
 def rm(path: str, missing_ok=False):
@@ -60,9 +60,9 @@ def cp(src, dst):
     if dst.endswith("/") and not os.path.exists(dst):
         mkdir(dst)
     if os.path.isfile(src):
-        sh(f"rsync -r {src} {dst}")
+        sh("rsync -r %s %s" % (src, dst))
         return
-    sh(f"rsync -r {src}/ {dst}")
+    sh("rsync -r %s/ %s" % (src, dst))
 
 
 def pad_left(s, n) -> int:
