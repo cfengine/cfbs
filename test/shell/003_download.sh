@@ -7,4 +7,6 @@ touch cfbs.json && rm cfbs.json
 
 cfbs init
 cfbs add masterfiles
-grep masterfiles cfbs.json
+cfbs download
+
+ls ~/.cfengine/cfbs/downloads/*

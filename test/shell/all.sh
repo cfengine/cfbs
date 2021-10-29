@@ -5,3 +5,7 @@ set -x
 
 bash test/shell/001_init.sh
 bash test/shell/002_add.sh
+bash test/shell/003_download.sh
+bash test/shell/004_build.sh
+bash test/shell/005_alias.sh
+bash test/shell/006_search.sh
