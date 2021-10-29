@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
 import sys
+from collections import OrderedDict
+from copy import deepcopy
 
 from cfbs.utils import (
     cfbs_dir,
@@ -20,6 +22,7 @@ from cfbs.utils import (
     sh,
     cfengine_dir,
 )
+from cfbs.pretty import pretty
 
 
 def _local_module_data_cf_file(module):
@@ -131,11 +134,13 @@ def _expand_index(thing):
 
 
 class CFBSConfig:
-    def __init__(self, index_argument=None, path="./cfbs.json"):
-        if not os.path.exists(path):
-            user_error("Could not find required configuration file: '{}'".format(path))
+    def __init__(self, index_argument=None, path="./cfbs.json", data=None, url=None):
         self.path = path
-        self._data = read_json(self.path)
+        self.url = url
+        if data:
+            self._data = data
+        else:
+            self._data = read_json(self.path)
         self._default_index = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/cfbs.json"
         if index_argument:
             self._unexpanded_index = index_argument
@@ -160,3 +165,36 @@ class CFBSConfig:
         if key == "index":
             return self.index
         return self._data[key]
+
+    def get_provides(self):
+        print(pretty(self._data))
+        modules = OrderedDict()
+        for k,v in self._data["provides"].items():
+            module = OrderedDict()
+            module["name"] = k
+            module["description"] = v["description"]
+            module["provided_by"] = self.url
+            module["steps"] = v["steps"]
+            modules[k] = module
+        return modules
+
+    def save(self, data=None):
+        if data:
+            if type(data) is CFBSConfig:
+                data = data._data
+            self._data = data
+        with open(self.path, "w") as f:
+            f.write(pretty(self._data) + "\n")
+
+    def _module_is_in_build(self, module):
+        return module["name"] in (m["name"] for m in self["build"])
+
+    def add(self, module):
+        assert "name" in module
+        assert "steps" in module
+        if self._module_is_in_build(module):
+            print("Skipping already added module '%s'" % module["name"])
+            return
+        self._data["build"].append(module)
+        self.save()
+        print("Added module: %s" % module["name"])

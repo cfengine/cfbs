@@ -29,7 +29,7 @@ from cfbs.utils import (
     is_a_commit_hash,
 )
 
-from cfbs.pretty import pretty_check_file, pretty_file, pretty
+from cfbs.pretty import pretty_check_file, pretty_file
 from cfbs.index import CFBSConfig
 from cfbs.validate import CFBSIndexException, validate_index
 
@@ -52,20 +52,20 @@ def clear_definition():
 
 
 # TODO: Move this to CFBSConfig
-def get_definition() -> dict:
+def get_definition() -> CFBSConfig:
     global definition
     if not definition:
-        definition = read_json(cfbs_filename())
+        definition = CFBSConfig()
     if not definition:
         user_error("Unable to read {}".format(cfbs_filename()))
     return definition
 
 # TODO: Move this to CFBSConfig
-def put_definition(data: dict):
+def put_definition(data=None):
     global definition
-    definition = data
-    with open(cfbs_filename(), "w") as f:
-        f.write(pretty(data) + "\n")
+    if not definition:
+        definition = CFBSConfig(data=data)
+    definition.save(data)
 
 
 def pretty_command(filenames: list, check) -> int:
@@ -267,7 +267,7 @@ def _get_git_repo_commit_sha(repo_path):
         return f.read().strip()
 
 
-def _clone_index_repo(repo_url):
+def _clone_url_repo(repo_url):
     assert repo_url.startswith(("https://", "ssh://", "git://"))
 
     commit = None
@@ -299,9 +299,9 @@ def _clone_index_repo(repo_url):
         else:
             sh("mv %s %s" % (master_path, commit_path))
 
-    index_path = os.path.join(commit_path, "cfbs.json")
-    if os.path.exists(index_path):
-        return (index_path, commit)
+    json_path = os.path.join(commit_path, "cfbs.json")
+    if os.path.exists(json_path):
+        return (json_path, commit)
     else:
         user_error(
             "Repository '%s' doesn't contain a valid cfbs.json index file" % repo_url
@@ -381,32 +381,9 @@ def _fetch_archive(url, checksum=None, directory=None, with_index=True):
             return (directory, archive_checksum)
         return (content_dir, archive_checksum)
 
-def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=None) -> int:
-    if not to_add:
-        user_error("Must specify at least one module to add")
-
-    index_commit = None
-    index_repo = None
-    if to_add[0].endswith(_SUPPORTED_ARCHIVES):
-        archive_url = index_repo = to_add.pop(0)
-        index_path, index_commit = _fetch_archive(archive_url, checksum)
-    elif to_add[0].startswith(("https://", "git://", "ssh://")):
-        index_repo = to_add.pop(0)
-        index_path, index_commit = _clone_index_repo(index_repo)
-
+def _add_modules(to_add: list, added_by="cfbs add", index_path=None, checksum=None) -> int:
     config = CFBSConfig(index_path)
     index = config.index
-    default_index = index_path == None
-
-    # URL specified in to_add, but no specific modules => let's add all (with a prompt)
-    if len(to_add) == 0:
-        modules = index.get_modules()
-        answer = input(
-            "Do you want to add all %d modules from '%s'? [y/N] " % (len(modules), index_repo)
-        )
-        if answer.lower() not in ("y", "yes"):
-            return 0
-        to_add = modules.keys()
 
     # Translate all aliases and remote paths
     translated = []
@@ -421,12 +398,6 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
             print('%s is an alias for %s' % (module, data["alias"]))
             module = data["alias"]
         translated.append(module)
-        if not default_index:
-            if index_repo:
-                index[module]["index"] = index_repo
-                index[module]["repo"] = index_repo
-            if index_commit:
-                index[module]["commit"] = index_commit
 
     to_add = translated
 
@@ -499,6 +470,52 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
         added.append(module)
 
     put_definition(definition)
+    return 0
+
+
+def _add_using_url(url, to_add: list, added_by="cfbs add", index_path=None, checksum=None):
+    url_repo_commit = None
+    if url.endswith(_SUPPORTED_ARCHIVES):
+        config_path, url_repo_commit = _fetch_archive(url, checksum)
+    else:
+        assert url.startswith(("https://", "git://", "ssh://"))
+        config_path, url_repo_commit = _clone_url_repo(url)
+
+    remote_config = CFBSConfig(path=config_path, url=url)
+    config = CFBSConfig(index_argument=index_path)
+
+    provides = remote_config.get_provides()
+    # URL specified in to_add, but no specific modules => let's add all (with a prompt)
+    if len(to_add) == 0:
+        modules = list(provides.values())
+        print("Found %d modules in '%s':" % (len(modules), url))
+        for m in modules:
+            print("  - " + m["name"])
+        answer = input(
+            "Do you want to add all %d of them? [y/N] " % (len(modules))
+        )
+        if answer.lower() not in ("y", "yes"):
+            return 0
+    else:
+        missing = [k for k in to_add if k not in provides]
+        if missing:
+            user_error("Missing modules: " + ", ".join(missing))
+        modules = [provides[k] for k in to_add]
+
+    for module in modules:
+        config.add(module)
+
+    return 0
+
+
+def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=None) -> int:
+    if not to_add:
+        user_error("Must specify at least one module to add")
+
+    if (to_add[0].endswith(_SUPPORTED_ARCHIVES) or to_add[0].startswith(("https://", "git://", "ssh://"))):
+        return _add_using_url(to_add[0], to_add[1:], added_by, index_path, checksum)
+
+    return _add_modules(to_add, added_by, index_path, checksum)
 
 
 def clean_command():
