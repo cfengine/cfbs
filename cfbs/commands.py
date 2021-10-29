@@ -30,7 +30,7 @@ from cfbs.utils import (
 )
 
 from cfbs.pretty import pretty_check_file, pretty_file, pretty
-from cfbs.index import Index
+from cfbs.index import CFBSConfig
 from cfbs.validate import CFBSIndexException, validate_index
 
 
@@ -40,16 +40,18 @@ _SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
 _MODULES_URL = "https://cfbs.s3.amazonaws.com/modules"
 _VERSION_INDEX = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/versions.json"
 
-
+# TODO: Move this to CFBSConfig
 definition = None
 
 
 # This function is for clearing the global for pytest cases when it should be changing
+# TODO: Move this to CFBSConfig
 def clear_definition():
     global definition
     definition = None
 
 
+# TODO: Move this to CFBSConfig
 def get_definition() -> dict:
     global definition
     if not definition:
@@ -58,7 +60,7 @@ def get_definition() -> dict:
         user_error("Unable to read {}".format(cfbs_filename()))
     return definition
 
-
+# TODO: Move this to CFBSConfig
 def put_definition(data: dict):
     global definition
     definition = data
@@ -133,23 +135,9 @@ def status_command() -> int:
     return 0
 
 
-def get_index_from_config():
-    if not os.path.isfile(cfbs_filename()):
-        return None
-    conf = get_definition()
-    if not "index" in conf:
-        return None
-    if type(conf["index"]) == str:
-        return Index(conf["index"])
-    else:
-        return Index(data=conf["index"])
-
-
 def search_command(terms: list, index_path=None) -> int:
-    if index_path:
-        index = Index(index_path)
-    else:
-        index = get_index_from_config() or Index()
+    config = CFBSConfig(index_path)
+    index = config.index
     results = {}
 
     # in order to gather all aliases, we must iterate over everything first
@@ -406,12 +394,9 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
         index_repo = to_add.pop(0)
         index_path, index_commit = _clone_index_repo(index_repo)
 
-    if index_path:
-        default_index = False
-        index = Index(index_path)
-    else:
-        default_index = True
-        index = get_index_from_config() or Index()
+    config = CFBSConfig(index_path)
+    index = config.index
+    default_index = index_path == None
 
     # URL specified in to_add, but no specific modules => let's add all (with a prompt)
     if len(to_add) == 0:
@@ -517,8 +502,8 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
 
 
 def update_command():
-    cfg_index = get_index_from_config()
-    index = Index(cfg_index)
+    config = CFBSConfig()
+    index = config.index
 
     new_deps = []
     new_deps_added_by = dict()
@@ -592,10 +577,8 @@ def update_command():
 
 
 def validate_command(index_path=None):
-    if index_path:
-        index = Index(index_path)
-    else:
-        index = get_index_from_config() or Index()
+    config = CFBSConfig(index_path)
+    index = config.index
     if not index:
         user_error("Index not found")
 
@@ -846,10 +829,8 @@ def print_module_info(data):
 
 
 def info_command(modules, index_path=None):
-    if index_path:
-        index = Index(index_path)
-    else:
-        index = get_index_from_config() or Index()
+    config = CFBSConfig(index_path)
+    index = config.index
 
     if os.path.isfile(cfbs_filename()):
         build = get_definition()["build"]
