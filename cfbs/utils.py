@@ -8,7 +8,6 @@ import hashlib
 import urllib
 from collections import OrderedDict
 from shutil import rmtree
-from cf_remote.paths import cfengine_dir
 
 import requests
 
@@ -156,6 +155,15 @@ def cfbs_filename() -> str:
 
 def is_cfbs_repo() -> bool:
     return os.path.isfile(cfbs_filename())
+
+
+def path_append(dir, subdir):
+    dir = os.path.abspath(os.path.expanduser(dir))
+    return dir if not subdir else os.path.join(dir, subdir)
+
+
+def cfengine_dir(subdir=None):
+    return path_append("~/.cfengine/", subdir)
 
 
 def cfbs_dir(append=None) -> str:

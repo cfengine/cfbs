@@ -22,13 +22,17 @@ pip install cfbs
 
 (or `sudo pip3 install cfbs` or whatever works with Python 3 on your system).
 
+It is also **recommended** to install `cf-remote` if you want to deploy the policy set to remote hub(s):
+
+```
+pip install cf-remote
+```
+
 ### Dependencies
 
 `cfbs` is implemented in Python and has some dependencies on python version and libraries:
 
 * Python 3.6 or newer
-* `cf-remote` and its dependencies
-  * Installed automatically by `pip`
 
 Additionally, some command line tools are required (not installed by pip):
 

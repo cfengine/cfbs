@@ -2,8 +2,6 @@
 import os
 import sys
 
-from cf_remote.paths import cfengine_dir
-
 from cfbs.utils import (
     cfbs_dir,
     user_error,
@@ -19,6 +17,7 @@ from cfbs.utils import (
     rm,
     cp,
     sh,
+    cfengine_dir,
 )
 
 
