@@ -267,7 +267,7 @@ def _get_git_repo_commit_sha(repo_path):
         return f.read().strip()
 
 
-def _clone_index_repo(repo_url):
+def _clone_url_repo(repo_url):
     assert repo_url.startswith(("https://", "ssh://", "git://"))
 
     commit = None
@@ -299,9 +299,9 @@ def _clone_index_repo(repo_url):
         else:
             sh("mv %s %s" % (master_path, commit_path))
 
-    index_path = os.path.join(commit_path, "cfbs.json")
-    if os.path.exists(index_path):
-        return (index_path, commit)
+    json_path = os.path.join(commit_path, "cfbs.json")
+    if os.path.exists(json_path):
+        return (json_path, commit)
     else:
         user_error(
             "Repository '%s' doesn't contain a valid cfbs.json index file" % repo_url
@@ -385,14 +385,14 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
     if not to_add:
         user_error("Must specify at least one module to add")
 
-    index_commit = None
-    index_repo = None
+    url_repo_commit = None
+    url_repo = None
     if to_add[0].endswith(_SUPPORTED_ARCHIVES):
-        archive_url = index_repo = to_add.pop(0)
-        index_path, index_commit = _fetch_archive(archive_url, checksum)
+        archive_url = url_repo = to_add.pop(0)
+        index_path, url_repo_commit = _fetch_archive(archive_url, checksum)
     elif to_add[0].startswith(("https://", "git://", "ssh://")):
-        index_repo = to_add.pop(0)
-        index_path, index_commit = _clone_index_repo(index_repo)
+        url_repo = to_add.pop(0)
+        index_path, url_repo_commit = _clone_url_repo(url_repo)
 
     config = CFBSConfig(index_path)
     index = config.index
@@ -402,7 +402,7 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
     if len(to_add) == 0:
         modules = index.get_modules()
         answer = input(
-            "Do you want to add all %d modules from '%s'? [y/N] " % (len(modules), index_repo)
+            "Do you want to add all %d modules from '%s'? [y/N] " % (len(modules), url_repo)
         )
         if answer.lower() not in ("y", "yes"):
             return 0
@@ -422,11 +422,11 @@ def add_command(to_add: list, added_by="cfbs add", index_path=None, checksum=Non
             module = data["alias"]
         translated.append(module)
         if not default_index:
-            if index_repo:
-                index[module]["index"] = index_repo
-                index[module]["repo"] = index_repo
-            if index_commit:
-                index[module]["commit"] = index_commit
+            if url_repo:
+                index[module]["index"] = url_repo
+                index[module]["repo"] = url_repo
+            if url_repo_commit:
+                index[module]["commit"] = url_repo_commit
 
     to_add = translated
 
