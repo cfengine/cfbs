@@ -6,4 +6,4 @@ import pytest
 def chdir(request):
     os.chdir(os.path.join(os.path.dirname(__file__), request.param))
     yield
-    os.chdir(request.config.invocation_dir)
+    os.chdir(str(request.config.invocation_dir))

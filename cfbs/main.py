@@ -72,7 +72,7 @@ def main() -> int:
     set_log_level(args.loglevel)
 
     if args.version:
-        print(f"cfbs {version()}")
+        print("cfbs %s" % version())
         return 0
 
     if not args.command:
@@ -108,4 +108,4 @@ def main() -> int:
     if args.command == "update":
         return commands.update_command()
 
-    user_error(f"Command '{args.command}' not found")
+    user_error("Command '%s' not found" % args.command)
