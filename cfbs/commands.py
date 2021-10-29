@@ -97,7 +97,7 @@ def pretty_command(filenames: list, check) -> int:
     return 0
 
 
-def init_command(index_path=None) -> int:
+def init_command(index_path=None, non_interactive=False) -> int:
     if is_cfbs_repo():
         user_error("Already initialized - look at %s" % cfbs_filename())
 
@@ -396,7 +396,11 @@ def _fetch_archive(url, checksum=None, directory=None, with_index=True):
 
 
 def _add_modules(
-    to_add: list, added_by="cfbs add", index_path=None, checksum=None
+    to_add: list,
+    added_by="cfbs add",
+    index_path=None,
+    checksum=None,
+    non_interactive=False,
 ) -> int:
     config = CFBSConfig(index_path)
     index = config.index
@@ -490,7 +494,12 @@ def _add_modules(
 
 
 def _add_using_url(
-    url, to_add: list, added_by="cfbs add", index_path=None, checksum=None
+    url,
+    to_add: list,
+    added_by="cfbs add",
+    index_path=None,
+    checksum=None,
+    non_interactive=False,
 ):
     url_repo_commit = None
     if url.endswith(_SUPPORTED_ARCHIVES):
@@ -509,9 +518,10 @@ def _add_using_url(
         print("Found %d modules in '%s':" % (len(modules), url))
         for m in modules:
             print("  - " + m["name"])
-        answer = input("Do you want to add all %d of them? [y/N] " % (len(modules)))
-        if answer.lower() not in ("y", "yes"):
-            return 0
+        if not non_interactive:
+            answer = input("Do you want to add all %d of them? [y/N] " % (len(modules)))
+            if answer.lower() not in ("y", "yes"):
+                return 0
     else:
         missing = [k for k in to_add if k not in provides]
         if missing:
@@ -525,7 +535,11 @@ def _add_using_url(
 
 
 def add_command(
-    to_add: list, added_by="cfbs add", index_path=None, checksum=None
+    to_add: list,
+    added_by="cfbs add",
+    index_path=None,
+    checksum=None,
+    non_interactive=False,
 ) -> int:
     if not to_add:
         user_error("Must specify at least one module to add")
@@ -533,12 +547,14 @@ def add_command(
     if to_add[0].endswith(_SUPPORTED_ARCHIVES) or to_add[0].startswith(
         ("https://", "git://", "ssh://")
     ):
-        return _add_using_url(to_add[0], to_add[1:], added_by, index_path, checksum)
+        return _add_using_url(
+            to_add[0], to_add[1:], added_by, index_path, checksum, non_interactive
+        )
 
-    return _add_modules(to_add, added_by, index_path, checksum)
+    return _add_modules(to_add, added_by, index_path, checksum, non_interactive)
 
 
-def clean_command():
+def clean_command(non_interactive=False):
     definition = get_definition()
     modules = definition["build"]
 
@@ -567,7 +583,11 @@ def clean_command():
             % (module["name"], module["description"], module["added_by"])
         )
 
-    answer = input("Do you wish to remove these modules? [y/N] ")
+    answer = (
+        "yes"
+        if non_interactive
+        else input("Do you wish to remove these modules? [y/N] ")
+    )
     if answer.lower() in ("yes", "y"):
         for module in to_remove:
             modules.remove(module)
@@ -576,7 +596,7 @@ def clean_command():
     return 0
 
 
-def update_command():
+def update_command(non_interactive=False):
     config = CFBSConfig()
     index = config.index
 
