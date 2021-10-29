@@ -20,3 +20,4 @@ dist/
 # Test Outputs
 test/add_folder_sample/cfbs.json
 test/add_folder_sample/out
+test/tmp/
