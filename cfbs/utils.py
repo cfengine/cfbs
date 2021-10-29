@@ -20,9 +20,15 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 def _sh(cmd: str):
     # print(cmd)
     try:
-        r = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        r = subprocess.run(
+            cmd,
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
     except subprocess.CalledProcessError as e:
-        user_error("Command failed - %s\n%s" % (cmd, e.stdout.decode('utf-8')))
+        user_error("Command failed - %s\n%s" % (cmd, e.stdout.decode("utf-8")))
 
 
 def sh(cmd: str, directory=None):
@@ -82,10 +88,12 @@ def get_json(url: str) -> dict:
     assert r.status_code >= 200 and r.status_code < 300
     return r.json()
 
+
 def get_or_read_json(path: str) -> dict:
     if path.startswith("https://"):
         return get_json(path)
     return read_json(path)
+
 
 def strip_right(string, ending):
     if not string.endswith(ending):
@@ -185,7 +193,9 @@ def fetch_url(url, target, checksum=None):
         elif SHA256_RE.match(checksum):
             sha = hashlib.sha256()
         else:
-            raise FetchError("Invalid checksum or unsupported checksum algorithm: '%s'" % checksum)
+            raise FetchError(
+                "Invalid checksum or unsupported checksum algorithm: '%s'" % checksum
+            )
     else:
         sha = hashlib.sha1()
 
@@ -196,7 +206,7 @@ def fetch_url(url, target, checksum=None):
                     raise FetchError("Failed to fetch '%s': %s" % (url, u.reason))
                 done = False
                 while not done:
-                    chunk = u.read(512 * 1024) # 512 KiB
+                    chunk = u.read(512 * 1024)  # 512 KiB
                     if len(chunk) == 0:
                         done = True
                     else:
@@ -209,7 +219,10 @@ def fetch_url(url, target, checksum=None):
             else:
                 if os.path.exists(target):
                     os.unlink(target)
-                raise FetchError("Checksum mismatch in fetched '%s': %s != %s" % (url, digest, checksum))
+                raise FetchError(
+                    "Checksum mismatch in fetched '%s': %s != %s"
+                    % (url, digest, checksum)
+                )
         else:
             return digest
     except urllib.error.URLError as e:

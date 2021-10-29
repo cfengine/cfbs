@@ -38,12 +38,21 @@ def get_args():
     parser.add_argument(
         "--force", help="Force rebuild / redownload", action="store_true"
     )
+    parser.add_argument(
+        "--non-interactive",
+        help="Don't prompt, use defaults (only for testing)",
+        action="store_true",
+    )
     parser.add_argument("--index", help="Specify alternate index", type=str)
     parser.add_argument(
         "--check", help="Check if file(s) would be reformatted", action="store_true"
     )
-    parser.add_argument("--checksum", type=str, default=None,
-                        help="Expected checksum of the downloaded file")
+    parser.add_argument(
+        "--checksum",
+        type=str,
+        default=None,
+        help="Expected checksum of the downloaded file",
+    )
 
     args = parser.parse_args()
     if args.command == "help":
@@ -78,11 +87,33 @@ def main() -> int:
     if not args.command:
         user_error("Usage: cfbs COMMAND")
 
+    if args.non_interactive and args.command not in (
+        "init",
+        "add",
+        "remove",
+        "clean",
+        "update",
+    ):
+        user_error("The option --non-interactive is not for cfbs " % (args.command))
+
+    if args.non_interactive:
+        print(
+            """
+Warning: The --non-interactive option is only meant for testing (!)
+         DO NOT run commands with --non-interactive as part of your deployment
+         pipeline. Instead, run cfbs commands manually, commit the resulting
+         cfbs.json and only run cfbs build + cfbs install when deploying your
+         policy set. Thank you for your cooperation.
+""".strip()
+        )
+
     # Commands you can run outside a cfbs repo:
     if args.command == "help":
         return 0
     if args.command == "init":
-        return commands.init_command(index_path=args.index)
+        return commands.init_command(
+            index_path=args.index, non_interactive=args.non_interactive
+        )
     if args.command == "search":
         return commands.search_command(args.args, index_path=args.index)
     if args.command == "pretty":
@@ -98,9 +129,14 @@ def main() -> int:
     if args.command == "status":
         return commands.status_command()
     if args.command == "add":
-        return commands.add_command(args.args, index_path=args.index, checksum=args.checksum)
+        return commands.add_command(
+            args.args,
+            index_path=args.index,
+            checksum=args.checksum,
+            non_interactive=args.non_interactive,
+        )
     if args.command == "clean":
-        return commands.clean_command()
+        return commands.clean_command(non_interactive=args.non_interactive)
     if args.command == "download":
         return commands.download_command(args.force)
     if args.command == "build":
@@ -108,6 +144,6 @@ def main() -> int:
     if args.command == "install":
         return commands.install_command(args.args)
     if args.command == "update":
-        return commands.update_command()
+        return commands.update_command(non_interactive=args.non_interactive)
 
     user_error("Command '%s' not found" % args.command)
