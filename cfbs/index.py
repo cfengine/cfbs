@@ -126,17 +126,20 @@ class Index:
         module.update(self.get_modules()[name])
         return module
 
+
 def _expand_index(thing):
     assert type(thing) in (dict, list, str)
     if type(thing) is str:
         return get_or_read_json(thing)["index"]
     return thing
 
-def _construct_provided_module(name, data, url):
+
+def _construct_provided_module(name, data, url, url_commit):
     module = OrderedDict()
     module["name"] = name
     module["description"] = data["description"]
-    module["provided_by"] = url
+    module["url"] = url
+    module["commit"] = url_commit
     subdirectory = data.get("subdirectory")
     if subdirectory:
         module["subdirectory"] = subdirectory
@@ -146,10 +149,19 @@ def _construct_provided_module(name, data, url):
     module["steps"] = data["steps"]
     return module
 
+
 class CFBSConfig:
-    def __init__(self, index_argument=None, path="./cfbs.json", data=None, url=None):
+    def __init__(
+        self,
+        index_argument=None,
+        path="./cfbs.json",
+        data=None,
+        url=None,
+        url_commit=None,
+    ):
         self.path = path
         self.url = url
+        self.url_commit = url_commit
         if data:
             self._data = data
         else:
@@ -186,14 +198,14 @@ class CFBSConfig:
     def get_provides(self):
         modules = OrderedDict()
         for k, v in self._data["provides"].items():
-            module = _construct_provided_module(k, v, self.url)
+            module = _construct_provided_module(k, v, self.url, self.url_commit)
             modules[k] = module
         return modules
 
     def get_module_for_build(self, name, dependent):
         if "provides" in self._data and name in self._data["provides"]:
             module = self._data["provides"][name]
-            return _construct_provided_module(name, module, self.url)
+            return _construct_provided_module(name, module, self.url, self.url_commit)
         if name in self.index:
             return self.index.get_build_step(name)
         return None

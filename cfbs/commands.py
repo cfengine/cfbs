@@ -501,14 +501,14 @@ def _add_using_url(
     checksum=None,
     non_interactive=False,
 ):
-    url_repo_commit = None
+    url_commit = None
     if url.endswith(_SUPPORTED_ARCHIVES):
-        config_path, url_repo_commit = _fetch_archive(url, checksum)
+        config_path, url_commit = _fetch_archive(url, checksum)
     else:
         assert url.startswith(("https://", "git://", "ssh://"))
-        config_path, url_repo_commit = _clone_url_repo(url)
+        config_path, url_commit = _clone_url_repo(url)
 
-    remote_config = CFBSConfig(path=config_path, url=url)
+    remote_config = CFBSConfig(path=config_path, url=url, url_commit=url_commit)
     config = CFBSConfig(index_argument=index_path)
 
     provides = remote_config.get_provides()
@@ -726,7 +726,7 @@ def get_download_path(module) -> str:
     if not is_a_commit_hash(commit):
         user_error("'%s' is not a commit reference" % commit)
 
-    url = module["repo"]
+    url = module.get("url") or module["repo"]
     if url.endswith(_SUPPORTED_ARCHIVES):
         url = os.path.dirname(url)
     else:
@@ -753,7 +753,8 @@ def download_dependencies(prefer_offline=False, redownload=False):
         if not is_a_commit_hash(commit):
             user_error("'%s' is not a commit reference" % commit)
 
-        url = strip_right(module["repo"], ".git")
+        url = module.get("url") or module["repo"]
+        url = strip_right(url, ".git")
         commit_dir = get_download_path(module)
         if redownload:
             rm(commit_dir, missing_ok=True)
