@@ -529,7 +529,7 @@ def _add_using_url(
         modules = [provides[k] for k in to_add]
 
     for module in modules:
-        config.add(module)
+        config.add(module, remote_config)
 
     return 0
 

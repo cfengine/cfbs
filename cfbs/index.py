@@ -118,12 +118,12 @@ class Index:
     def exists(self, module):
         return os.path.exists(module) or (module in self)
 
-    def get_build_step(self, module):
-        return (
-            self.get_modules()[module]
-            if not module.startswith("./")
-            else generate_index_for_local_module(module)
-        )
+    def get_build_step(self, name):
+        if name.startswith("./"):
+            return generate_index_for_local_module(name)
+
+        module = OrderedDict({"name": name})
+        module.update(self.get_modules()[name])
 
 
 def _expand_index(thing):
@@ -132,6 +132,16 @@ def _expand_index(thing):
         return get_or_read_json(thing)["index"]
     return thing
 
+def _construct_provided_module(name, data, url):
+    module = OrderedDict()
+    module["name"] = name
+    module["description"] = data["description"]
+    module["provided_by"] = url
+    dependencies = data.get("dependencies")
+    if dependencies:
+        module["dependencies"] = dependencies
+    module["steps"] = data["steps"]
+    return module
 
 class CFBSConfig:
     def __init__(self, index_argument=None, path="./cfbs.json", data=None, url=None):
@@ -164,21 +174,27 @@ class CFBSConfig:
         return self._unexpanded_index == self._default_index
 
     def __getitem__(self, key):
-        if key == "index":
-            return self.index
+        assert key != "index"
         return self._data[key]
+
+    def __contains__(self, key):
+        return key in self._data
 
     def get_provides(self):
         print(pretty(self._data))
         modules = OrderedDict()
         for k, v in self._data["provides"].items():
-            module = OrderedDict()
-            module["name"] = k
-            module["description"] = v["description"]
-            module["provided_by"] = self.url
-            module["steps"] = v["steps"]
+            module = _construct_provided_module(k, v, self.url)
             modules[k] = module
         return modules
+
+    def get_module_for_build(self, name, dependent):
+        if "provides" in self._data and name in self._data["provides"]:
+            module = self._data["provides"][name]
+            return _construct_provided_module(name, module, self.url)
+        if name in self.index:
+            return self.index.get_build_step(name)
+        return None
 
     def save(self, data=None):
         if data:
@@ -191,12 +207,23 @@ class CFBSConfig:
     def _module_is_in_build(self, module):
         return module["name"] in (m["name"] for m in self["build"])
 
-    def add(self, module):
+    def add(self, module, remote_config=None, dependent=None):
+        if type(module) is str:
+            module_str = module
+            module = (remote_config or self).get_module_for_build(module, dependent)
+        if not module:
+            user_error("Module '%s' not found" % module_str)
         assert "name" in module
         assert "steps" in module
         if self._module_is_in_build(module):
             print("Skipping already added module '%s'" % module["name"])
             return
+        if "dependencies" in module:
+            for dep in module["dependencies"]:
+                self.add(dep, remote_config, dependent)
         self._data["build"].append(module)
         self.save()
-        print("Added module: %s" % module["name"])
+        if dependent:
+            print("Added module: %s (Dependency of %s)" % (module["name"], dependent))
+        else:
+            print("Added module: %s" % module["name"])
