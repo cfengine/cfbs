@@ -124,7 +124,7 @@ class Index:
 
         module = OrderedDict({"name": name})
         module.update(self.get_modules()[name])
-
+        return module
 
 def _expand_index(thing):
     assert type(thing) in (dict, list, str)
@@ -137,6 +137,9 @@ def _construct_provided_module(name, data, url):
     module["name"] = name
     module["description"] = data["description"]
     module["provided_by"] = url
+    subdirectory = data.get("subdirectory")
+    if subdirectory:
+        module["subdirectory"] = subdirectory
     dependencies = data.get("dependencies")
     if dependencies:
         module["dependencies"] = dependencies
@@ -181,7 +184,6 @@ class CFBSConfig:
         return key in self._data
 
     def get_provides(self):
-        print(pretty(self._data))
         modules = OrderedDict()
         for k, v in self._data["provides"].items():
             module = _construct_provided_module(k, v, self.url)
@@ -220,7 +222,7 @@ class CFBSConfig:
             return
         if "dependencies" in module:
             for dep in module["dependencies"]:
-                self.add(dep, remote_config, dependent)
+                self.add(dep, remote_config, module["name"])
         self._data["build"].append(module)
         self.save()
         if dependent:
