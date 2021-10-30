@@ -14,7 +14,7 @@ The modules you use can be written by the CFEngine team, others in the community
 
 ## Installation
 
-Requires Python 3.6 or newer and `pip`.
+Requires Python 3.5 or newer and `pip`.
 
 ```
 pip install cfbs
@@ -30,12 +30,10 @@ pip install cf-remote
 
 ### Dependencies
 
-`cfbs` is implemented in Python and has some dependencies on python version and libraries:
+`cfbs` is implemented in Python and has a few dependencies:
 
-* Python 3.6 or newer
-
-Additionally, some command line tools are required (not installed by pip):
-
+* Python 3.5 or newer
+* `requests` python library
 * `git` CLI installed and in PATH
 
 ## Usage

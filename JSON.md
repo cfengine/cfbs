@@ -138,10 +138,8 @@ If you put your modules in a repo and don't have them in the index (yet), you ca
   "type": "module",
   "provides": {
     "example-module": {
-      "name": "example-module",
       "description": "Just an example",
       "tags": ["local"],
-      "version": "1.0.0",
       "dependencies": ["autorun"],
       "steps": ["copy ./test.cf services/autorun/test.cf"]
     }
@@ -165,8 +163,7 @@ cfbs init && cfbs add https://github.com/cfengine/some-repo
       "name": "example-module",
       "description": "Just an example",
       "tags": ["local"],
-      "repo": "https://github.com/cfengine/some-repo",
-      "version": "1.0.0",
+      "url": "https://github.com/cfengine/some-repo",
       "commit": "be3bc015f6a19e945bb7a9fa0ed78c97e2cecf61",
       "dependencies": ["autorun"],
       "steps": ["copy ./test.cf services/autorun/test.cf"],
