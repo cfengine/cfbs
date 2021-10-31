@@ -135,6 +135,8 @@ Warning: The --non-interactive option is only meant for testing (!)
             checksum=args.checksum,
             non_interactive=args.non_interactive,
         )
+    if args.command == "remove":
+        return commands.remove_command(args.args, non_interactive=args.non_interactive)
     if args.command == "clean":
         return commands.clean_command(non_interactive=args.non_interactive)
     if args.command == "download":
