@@ -171,7 +171,7 @@ class CFBSConfig:
         )
         if index_argument:
             self._unexpanded_index = index_argument
-        elif "index" in self._data:
+        elif self._data and "index" in self._data:
             self._unexpanded_index = self._data["index"]
         else:
             self._unexpanded_index = self._default_index
