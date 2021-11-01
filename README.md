@@ -78,6 +78,12 @@ cfbs build
 cfbs install /var/cfengine/masterfiles
 ```
 
+### Remove added modules
+
+```
+cfbs remove promise-type-git
+```
+
 ### Remove unused dependencies
 
 ```

@@ -554,6 +554,32 @@ def add_command(
     return _add_modules(to_add, added_by, index_path, checksum, non_interactive)
 
 
+def remove_command(to_remove: list, non_interactive=False):
+    definition = get_definition()
+    modules = definition["build"]
+
+    def _get_module_by_name(name) -> dict:
+        for module in modules:
+            if module["name"] == name:
+                return module
+        return None
+
+    num_removed = 0
+    for name in to_remove:
+        module = _get_module_by_name(name)
+        if module:
+            print("Removing module '%s'" % name)
+            modules.remove(module)
+            num_removed += 1
+        else:
+            print("Module '%s' not found" % name)
+
+    put_definition(definition)
+    if num_removed:
+        clean_command(non_interactive=non_interactive)
+    return 0
+
+
 def clean_command(non_interactive=False):
     definition = get_definition()
     modules = definition["build"]
