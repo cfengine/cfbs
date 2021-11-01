@@ -938,16 +938,29 @@ def build_command() -> int:
     build_steps()
 
 
-def install_command(destination=None) -> int:
+def install_command(args) -> int:
+    if len(args) > 1:
+        user_error(
+            "Only one destination is allowed for command: cfbs install [destination]"
+        )
     if not os.path.exists("out/masterfiles"):
         r = build_command()
         if r != 0:
             return r
 
-    if not destination:
+    if os.getuid() == 0:
         destination = "/var/cfengine/masterfiles"
+    if len(args) > 0:
+        destination = args[0]
+    elif os.getuid() == 0:
+        destination = "/var/cfengine/masterfiles"
+    else:
+        destination = os.path.join(os.environ["HOME"], ".cfagent/inputs")
+    if not destination.startswith("/") and not destination.startswith("./"):
+        destination = "./" + destination
     rm(destination, missing_ok=True)
     cp("out/masterfiles", destination)
+    print("Installed to %s" % destination)
     return 0
 
 
