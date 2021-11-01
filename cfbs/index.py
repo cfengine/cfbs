@@ -233,6 +233,10 @@ class CFBSConfig:
             f.write(pretty(self._data) + "\n")
 
     def _module_is_in_build(self, module):
+        if "build" not in self:
+            user_error(
+                "missing required 'build' key in cfbs.json, move aside and start over with 'cfbs init'"
+            )
         return module["name"] in (m["name"] for m in self["build"])
 
     def add(self, module, remote_config=None, dependent=None):
