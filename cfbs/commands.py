@@ -520,6 +520,8 @@ def _add_using_url(
         print("Found %d modules in '%s':" % (len(modules), url))
         for m in modules:
             print("  - " + m["name"])
+        if not any(modules):
+            user_error("no modules available, nothing to do")
         if not non_interactive:
             answer = input("Do you want to add all %d of them? [y/N] " % (len(modules)))
             if answer.lower() not in ("y", "yes"):
@@ -587,7 +589,7 @@ def clean_command(non_interactive=False):
     modules = definition["build"]
 
     def _someone_needs_me(this) -> bool:
-        if this["added_by"] == "cfbs add":
+        if "added_by" not in this or this["added_by"] == "cfbs add":
             return True
         for other in modules:
             if not "dependencies" in other:
@@ -606,10 +608,10 @@ def clean_command(non_interactive=False):
 
     print("The following modules were added as dependencies but are no longer needed:")
     for module in to_remove:
-        print(
-            "%s - %s - added by: %s"
-            % (module["name"], module["description"], module["added_by"])
-        )
+        name = module["name"] if "name" in module else ""
+        description = module["description"] if "description" in module else ""
+        added_by = module["added_by"] if "added_by" in module else ""
+        print("%s - %s - added by: %s" % (name, description, added_by))
 
     answer = (
         "yes"

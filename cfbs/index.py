@@ -137,6 +137,10 @@ def _expand_index(thing):
 def _construct_provided_module(name, data, url, url_commit):
     module = OrderedDict()
     module["name"] = name
+    if "description" not in data:
+        user_error(
+            "missing required key 'description' in module definition: %s" % pretty(data)
+        )
     module["description"] = data["description"]
     module["url"] = url
     module["commit"] = url_commit
@@ -146,6 +150,10 @@ def _construct_provided_module(name, data, url, url_commit):
     dependencies = data.get("dependencies")
     if dependencies:
         module["dependencies"] = dependencies
+    if "steps" not in data:
+        user_error(
+            "missing required key 'steps' in module definition: %s" % pretty(data)
+        )
     module["steps"] = data["steps"]
     return module
 
@@ -197,6 +205,11 @@ class CFBSConfig:
 
     def get_provides(self):
         modules = OrderedDict()
+        if "provides" not in self._data:
+            user_error(
+                "missing required key 'provides' in module definition: %s"
+                % pretty(self._data)
+            )
         for k, v in self._data["provides"].items():
             module = _construct_provided_module(k, v, self.url, self.url_commit)
             modules[k] = module
