@@ -44,7 +44,7 @@ Description: Enable autorun functionality
 Version: \d+\.\d+\.\d+
 Status: Not Added
 By: https:\/\/github.com\/cfengine
-Tags: official, base, supported
+Tags: supported, base
 Repo: https:\/\/github.com\/cfengine\/masterfiles
 Commit: [a-zA-Z0-9]+
 Description: Official CFEngine Masterfiles Policy Framework \(MPF\)
