@@ -60,6 +60,10 @@ def get_definition() -> CFBSConfig:
         definition = CFBSConfig()
     if not definition:
         user_error("Unable to read {}".format(cfbs_filename()))
+    if "build" not in definition:
+        user_error(
+            "missing 'build' key in cfbs.json, move aside and restart with 'cfbs init'"
+        )
     return definition
 
 
