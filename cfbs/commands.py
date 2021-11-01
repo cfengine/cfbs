@@ -589,7 +589,7 @@ def clean_command(non_interactive=False):
     modules = definition["build"]
 
     def _someone_needs_me(this) -> bool:
-        if "added_by" in this and this["added_by"] == "cfbs add":
+        if "added_by" not in this or this["added_by"] == "cfbs add":
             return True
         for other in modules:
             if not "dependencies" in other:
