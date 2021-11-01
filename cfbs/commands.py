@@ -224,8 +224,10 @@ def prettify_name(name):
 
 def local_module_copy(module, counter, max_length):
     name = module["name"]
-    assert name.startswith("./")
-    assert os.path.isfile(name) or os.path.isdir(name)
+    if not name.startswith("./"):
+        user_error("module %s must start with ./" % name)
+    if not os.path.isfile(name) and not os.path.isdir(name):
+        user_error("module %s does not exist" % name)
     pretty_name = prettify_name(name)
     target = "out/steps/%03d_%s_local/" % (counter, pretty_name)
     module["_directory"] = target
@@ -775,6 +777,8 @@ def download_dependencies(prefer_offline=False, redownload=False):
             local_module_copy(module, counter, max_length)
             counter += 1
             continue
+        if "commit" not in module:
+            user_error("module %s must have a commit property" % name)
         commit = module["commit"]
         if not is_a_commit_hash(commit):
             user_error("'%s' is not a commit reference" % commit)
