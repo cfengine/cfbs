@@ -155,6 +155,7 @@ def _construct_provided_module(name, data, url, url_commit):
             "missing required key 'steps' in module definition: %s" % pretty(data)
         )
     module["steps"] = data["steps"]
+    module["added_by"] = "cfbs add"
     return module
 
 
