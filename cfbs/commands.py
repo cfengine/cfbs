@@ -6,6 +6,7 @@ import os
 import re
 import distutils.spawn
 import logging as log
+import shutil
 
 from cfbs.utils import (
     cfbs_dir,
@@ -39,7 +40,7 @@ _SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
 
 _MODULES_URL = "https://cfbs.s3.amazonaws.com/modules"
 _VERSION_INDEX = (
-    "https://raw.githubusercontent.com/cfengine/cfbs-index/master/versions.json"
+    "https://raw.githubusercontent.com/cfengine/build-index/master/versions.json"
 )
 
 # TODO: Move this to CFBSConfig
@@ -382,7 +383,7 @@ def _fetch_archive(url, checksum=None, directory=None, with_index=True):
         # the archive contains a top-level folder, let's just move things one
         # level up from inside it
         sh("mv %s %s" % (os.path.join(content_root_items[0], "*"), content_dir))
-        os.rmdir(content_root_items[0])
+        shutil.rmtree(content_root_items[0])
 
     if with_index:
         if os.path.exists(index_path):
