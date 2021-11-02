@@ -39,7 +39,7 @@ _SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
 
 _MODULES_URL = "https://cfbs.s3.amazonaws.com/modules"
 _VERSION_INDEX = (
-    "https://raw.githubusercontent.com/cfengine/cfbs-index/master/versions.json"
+    "https://raw.githubusercontent.com/cfengine/build-index/master/versions.json"
 )
 
 # TODO: Move this to CFBSConfig

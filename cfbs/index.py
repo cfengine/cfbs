@@ -78,7 +78,7 @@ class Index:
             if path:
                 self.path = path
             else:
-                self.path = "https://raw.githubusercontent.com/cfengine/cfbs-index/master/cfbs.json"
+                self.path = "https://raw.githubusercontent.com/cfengine/build-index/master/cfbs.json"
 
     def __contains__(self, key):
         return key in self.get_modules()
@@ -176,7 +176,7 @@ class CFBSConfig:
         else:
             self._data = read_json(self.path)
         self._default_index = (
-            "https://raw.githubusercontent.com/cfengine/cfbs-index/master/cfbs.json"
+            "https://raw.githubusercontent.com/cfengine/build-index/master/cfbs.json"
         )
         if index_argument:
             self._unexpanded_index = index_argument
