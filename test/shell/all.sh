@@ -9,4 +9,5 @@ bash test/shell/003_download.sh
 bash test/shell/004_build.sh
 bash test/shell/005_alias.sh
 bash test/shell/006_search.sh
+bash test/shell/007_install.sh
 bash test/shell/008_remove.sh
