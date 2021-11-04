@@ -45,4 +45,4 @@ jobs:
         pip install dist/cfbs-*.whl
     - name: Run bash tests
       run: |
-        bash test/shell/all.sh
+        UNSAFE_TESTS=1 bash test/shell/all.sh
