@@ -11,3 +11,4 @@ bash test/shell/005_alias.sh
 bash test/shell/006_search.sh
 bash test/shell/007_install.sh
 bash test/shell/008_remove.sh
+bash test/shell/009_clean.sh
