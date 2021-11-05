@@ -39,7 +39,7 @@ from cfbs.validate import CFBSIndexException, validate_index
 _SUPPORTED_TAR_TYPES = (".tar.gz", ".tgz")
 _SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
 
-_MODULES_URL = "https://cfbs.s3.amazonaws.com/modules"
+_MODULES_URL = "https://archive.build.cfengine.com/modules"
 _VERSION_INDEX = (
     "https://raw.githubusercontent.com/cfengine/build-index/master/versions.json"
 )
