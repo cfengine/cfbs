@@ -576,15 +576,37 @@ def remove_command(to_remove: list, non_interactive=False):
                 return module
         return None
 
+    def _get_modules_by_url(name) -> list:
+        r = []
+        for module in modules:
+            if "url" in module and module["url"] == name:
+                r.append(module)
+        return r
+
     num_removed = 0
     for name in to_remove:
-        module = _get_module_by_name(name)
-        if module:
-            print("Removing module '%s'" % name)
-            modules.remove(module)
-            num_removed += 1
+        if name.startswith(("https://", "ssh://", "git://")):
+            matches = _get_modules_by_url(name)
+            if not matches:
+                user_error("Could not find module with URL '%s'" % name)
+            for module in matches:
+                answer = (
+                    "yes"
+                    if non_interactive
+                    else input("Do you wish to remove '%s'? [y/N] " % module["name"])
+                )
+                if answer.lower() in ("yes", "y"):
+                    print("Removing module '%s'" % module["name"])
+                    modules.remove(module)
+                    num_removed += 1
         else:
-            print("Module '%s' not found" % name)
+            module = _get_module_by_name(name)
+            if module:
+                print("Removing module '%s'" % name)
+                modules.remove(module)
+                num_removed += 1
+            else:
+                print("Module '%s' not found" % name)
 
     put_definition(definition)
     if num_removed:
