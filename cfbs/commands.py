@@ -870,9 +870,10 @@ def build_step(module, step, max_length):
         if dst in [".", "./"]:
             dst = ""
         print("%s json '%s' 'masterfiles/%s'" % (prefix, src, dst))
+        if not os.path.isfile(os.path.join(source, src)):
+            user_error("'%s' is not a file" % src)
         src, dst = os.path.join(source, src), os.path.join(destination, dst)
         extras, original = read_json(src), read_json(dst)
-        assert extras is not None
         if not extras:
             print("Warning: '%s' looks empty, adding nothing" % os.path.basename(src))
         if original:
