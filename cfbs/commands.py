@@ -138,10 +138,15 @@ def status_command() -> int:
     max_length = longest_module_name()
     counter = 1
     for m in modules:
-        path = get_download_path(m)
-        status = "Downloaded" if os.path.exists(path) else "Not downloaded"
+        if m["name"].startswith("./"):
+            status = "Copied"
+            commit = pad_right("local", 40)
+        else:
+            path = get_download_path(m)
+            status = "Downloaded" if os.path.exists(path) else "Not downloaded"
+            commit = m["commit"]
         name = pad_right(m["name"], max_length)
-        print("%03d %s @ %s (%s)" % (counter, name, m["commit"], status))
+        print("%03d %s @ %s (%s)" % (counter, name, commit, status))
         counter += 1
 
     return 0
