@@ -6,7 +6,9 @@ cd ./tmp/
 touch cfbs.json && rm cfbs.json
 
 cfbs init
+cfbs status
 cfbs add mpf
+cfbs status
 echo '
 bundle agent test_bundle
 {

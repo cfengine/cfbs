@@ -134,6 +134,8 @@ def status_command() -> int:
     print("File:        %s" % cfbs_filename())
 
     modules = definition["build"]
+    if not modules:
+        return 0
     print("\nModules:")
     max_length = longest_module_name()
     counter = 1
