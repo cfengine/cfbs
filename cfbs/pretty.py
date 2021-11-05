@@ -16,9 +16,9 @@ def pretty_check_string(s):
 
 def pretty_file(filename):
     with open(filename) as f:
-        data = f.read()
+        data = pretty_string(f.read())
     with open(filename, "w") as f:
-        f.write(pretty_string(data))
+        f.write(data)
         f.write("\n")
 
 
