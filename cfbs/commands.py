@@ -77,9 +77,53 @@ def put_definition(data=None):
     definition.save(data)
 
 
-def pretty_command(filenames: list, check) -> int:
+def _item_index(iterable, item, extra_at_end=True):
+    try:
+        return iterable.index(item)
+    except ValueError:
+        if extra_at_end:
+            return len(iterable)
+        else:
+            return -1
+
+
+def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     if not filenames:
         user_error("Filenames missing for cfbs pretty command")
+
+    cfbs_sorting_rules = None
+    if not keep_order:
+        top_level_keys = ("name", "description", "type", "index")
+        module_keys = (
+            "name",
+            "description",
+            "tags",
+            "repo",
+            "by",
+            "version",
+            "commit",
+            "subdirectory",
+            "dependencies",
+            "steps",
+        )
+        cfbs_sorting_rules = {
+            None: (
+                lambda child_item: _item_index(top_level_keys, child_item[0]),
+                {
+                    "index": (
+                        lambda child_item: child_item[0],
+                        {
+                            ".*": (
+                                lambda child_item: _item_index(
+                                    module_keys, child_item[0]
+                                ),
+                                None,
+                            )
+                        },
+                    )
+                },
+            ),
+        }
 
     num_files = 0
     for f in filenames:
@@ -90,11 +134,11 @@ def pretty_command(filenames: list, check) -> int:
             )
         try:
             if check:
-                if not pretty_check_file(f):
+                if not pretty_check_file(f, cfbs_sorting_rules):
                     num_files += 1
                     print("Would reformat %s" % f)
             else:
-                pretty_file(f)
+                pretty_file(f, cfbs_sorting_rules)
         except FileNotFoundError:
             user_error("File '%s' not found" % f)
         except json.decoder.JSONDecodeError as ex:

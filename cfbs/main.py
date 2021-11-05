@@ -53,6 +53,11 @@ def get_args():
         default=None,
         help="Expected checksum of the downloaded file",
     )
+    parser.add_argument(
+        "--keep-order",
+        help="Keep order of items in the JSON in 'cfbs pretty'",
+        action="store_true",
+    )
 
     args = parser.parse_args()
     if args.command == "help":
@@ -117,7 +122,7 @@ Warning: The --non-interactive option is only meant for testing (!)
     if args.command == "search":
         return commands.search_command(args.args, index_path=args.index)
     if args.command == "pretty":
-        return commands.pretty_command(args.args, args.check)
+        return commands.pretty_command(args.args, args.check, args.keep_order)
     if args.command == "validate":
         return commands.validate_command(index_path=args.index)
     if args.command in ("info", "show"):
