@@ -7,6 +7,7 @@ import re
 import distutils.spawn
 import logging as log
 import shutil
+import json
 
 from cfbs.utils import (
     cfbs_dir,
@@ -96,6 +97,8 @@ def pretty_command(filenames: list, check) -> int:
                 pretty_file(f)
         except FileNotFoundError:
             user_error("File '%s' not found" % f)
+        except json.decoder.JSONDecodeError as ex:
+            user_error("Error reading json file '{}': {}".format(f, ex))
     if check:
         print("Would reformat %d file(s)" % num_files)
         return 1 if num_files > 0 else 0
