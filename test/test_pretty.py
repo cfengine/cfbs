@@ -196,3 +196,110 @@ def test_pretty_check_string():
         == False
     )
     assert pretty_check_string('{ "name": "lars", "age": 27 }') == True
+
+
+def _item_index(iterable, item, extra_at_end=True):
+    try:
+        return iterable.index(item)
+    except ValueError:
+        if extra_at_end:
+            return len(iterable)
+        else:
+            return -1
+
+
+def test_pretty_sorting():
+    test_json = """{
+  "description": "The official (default) index of modules for CFEngine Build",
+  "type": "index",
+  "name": "index",
+  "index": {
+    "autorun": {
+      "description": "Enable autorun functionality",
+      "version": "1.0.1",
+      "tags": ["supported", "management"],
+      "by": "https://github.com/olehermanse",
+      "repo": "https://github.com/cfengine/modules",
+      "subdirectory": "management/autorun",
+      "commit": "c3b7329b240cf7ad062a0a64ee8b607af2cb912a",
+      "steps": ["json def.json def.json"]
+    },
+    "ansible": { "alias": "promise-type-ansible" },
+    "cir": { "alias": "client-initiated-reporting" },
+    "bash-lib": { "alias": "library-for-promise-types-in-bash" },
+    "client-initiated": { "alias": "client-initiated-reporting" },
+    "client-initiated-reporting": {
+      "description": "Enable client initiated reporting and disable pull collection",
+      "repo": "https://github.com/cfengine/modules",
+      "tags": ["experimental", "reporting"],
+      "by": "https://github.com/cfengine",
+      "version": "0.1.1",
+      "commit": "c3b7329b240cf7ad062a0a64ee8b607af2cb912a",
+      "steps": ["json def.json def.json"],
+      "subdirectory": "reporting/client-initiated-reporting"
+    }
+  }
+}"""
+    top_level_keys = ("name", "description", "type", "index")
+    module_keys = (
+        "name",
+        "description",
+        "tags",
+        "repo",
+        "by",
+        "version",
+        "commit",
+        "subdirectory",
+        "dependencies",
+        "steps",
+    )
+    cfbs_sorting_rules = {
+        None: (
+            lambda child_item: _item_index(top_level_keys, child_item[0]),
+            {
+                "index": (
+                    lambda child_item: child_item[0],
+                    {
+                        ".*": (
+                            lambda child_item: _item_index(module_keys, child_item[0]),
+                            None,
+                        )
+                    },
+                )
+            },
+        ),
+    }
+
+    expected = """{
+  "name": "index",
+  "description": "The official (default) index of modules for CFEngine Build",
+  "type": "index",
+  "index": {
+    "ansible": { "alias": "promise-type-ansible" },
+    "autorun": {
+      "description": "Enable autorun functionality",
+      "tags": ["supported", "management"],
+      "repo": "https://github.com/cfengine/modules",
+      "by": "https://github.com/olehermanse",
+      "version": "1.0.1",
+      "commit": "c3b7329b240cf7ad062a0a64ee8b607af2cb912a",
+      "subdirectory": "management/autorun",
+      "steps": ["json def.json def.json"]
+    },
+    "bash-lib": { "alias": "library-for-promise-types-in-bash" },
+    "cir": { "alias": "client-initiated-reporting" },
+    "client-initiated": { "alias": "client-initiated-reporting" },
+    "client-initiated-reporting": {
+      "description": "Enable client initiated reporting and disable pull collection",
+      "tags": ["experimental", "reporting"],
+      "repo": "https://github.com/cfengine/modules",
+      "by": "https://github.com/cfengine",
+      "version": "0.1.1",
+      "commit": "c3b7329b240cf7ad062a0a64ee8b607af2cb912a",
+      "subdirectory": "reporting/client-initiated-reporting",
+      "steps": ["json def.json def.json"]
+    }
+  }
+}"""
+
+    assert pretty_string(test_json, cfbs_sorting_rules) == expected
