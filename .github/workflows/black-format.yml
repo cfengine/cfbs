@@ -23,7 +23,7 @@ jobs:
             python -m pip install black
         - name: Reformat with black
           run: |
-            black cfbs/*.py test/*.py > black_output.txt
+            black cfbs/*.py test/*.py > black_output.txt 2>&1
         - name: Check if there are changes
           run: |
             git diff --exit-code || touch git_diff_exists
