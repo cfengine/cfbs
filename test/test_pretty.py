@@ -6,7 +6,7 @@ def test_pretty():
     # Test primitives
     assert pretty(None) == "null"
     assert pretty(True) == "true"
-    assert pretty(False) ==  "false"
+    assert pretty(False) == "false"
     assert pretty(123) == "123"
     assert pretty(123.456) == "123.456"
     assert pretty("Hello World!") == '"Hello World!"'
