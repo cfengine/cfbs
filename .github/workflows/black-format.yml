@@ -31,6 +31,8 @@ jobs:
         - name: Create commit message
           if: hashFiles('git_diff_exists') != ''
           run: |
+            echo "Reformatted python code using Black formatter" >> commit_message.txt
+            echo "" >> commit_message.txt
             echo "Output from black:" >> commit_message.txt
             echo "" >> commit_message.txt
             echo '```' >> commit_message.txt
@@ -54,7 +56,6 @@ jobs:
           if: hashFiles('git_diff_exists') != ''
           uses: cfengine/create-pull-request@v3
           with:
-            title: Reformatted python code using Black formatter
             body: ${{ steps.commit-message-from-file.outputs.body }}
             reviewers: |
               olehermanse
