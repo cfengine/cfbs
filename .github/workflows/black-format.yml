@@ -61,4 +61,5 @@ jobs:
             reviewers: |
               olehermanse
               larsewi
+              vpodzime
             branch: formatting-action
