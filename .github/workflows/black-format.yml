@@ -10,18 +10,13 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [3.6]
     steps:
         - name: Checks-out repository
           uses: actions/checkout@v2
-
-        - name: Set up Python ${{ matrix.python-version }}
+        - name: Set up Python 3.6
           uses: actions/setup-python@v2
           with:
-            python-version: ${{ matrix.python-version }}
+            python-version: "3.6"
         - name: Install black
           run: |
             python -m pip install --upgrade pip
@@ -32,6 +27,7 @@ jobs:
         - name: Check if there are changes
           run: |
             git diff --exit-code || touch git_diff_exists
+            if [ -f git_diff_exists ]; then echo "Changes need to be commited"; else echo "No changes to commit"; fi
         - name: Create commit message
           if: hashFiles('git_diff_exists') != ''
           run: |
