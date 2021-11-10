@@ -550,6 +550,9 @@ def _add_modules(
             print("Added module: %s (Dependency of %s)" % (module, added_by[module]))
         added.append(module)
 
+        # TODO: add_command should be refactored to use CFBSConfig.add()
+        CFBSConfig.validate_added_module(new_module)
+
     put_definition(definition)
     return 0
 
