@@ -32,7 +32,7 @@ from cfbs.utils import (
 )
 
 from cfbs.pretty import pretty_check_file, pretty_file
-from cfbs.index import CFBSJson
+from cfbs.index import CFBSJson, CFBSConfig
 from cfbs.validate import CFBSIndexException, validate_index
 
 
@@ -43,38 +43,6 @@ _MODULES_URL = "https://archive.build.cfengine.com/modules"
 _VERSION_INDEX = (
     "https://raw.githubusercontent.com/cfengine/build-index/master/versions.json"
 )
-
-# TODO: Move this to index.py
-definition = None
-
-
-# This function is for clearing the global for pytest cases when it should be changing
-# TODO: Move this to index.py
-def clear_definition():
-    global definition
-    definition = None
-
-
-# TODO: Move this to index.py
-def get_definition() -> CFBSJson:
-    global definition
-    if not definition:
-        definition = CFBSJson()
-    if not definition:
-        user_error("Unable to read {}".format(cfbs_filename()))
-    if "build" not in definition:
-        user_error(
-            "missing 'build' key in cfbs.json, move aside and restart with 'cfbs init'"
-        )
-    return definition
-
-
-# TODO: Move this to index.py
-def put_definition(data=None):
-    global definition
-    if not definition:
-        definition = CFBSJson(data=data)
-    definition.save(data)
 
 
 def _item_index(iterable, item, extra_at_end=True):
@@ -172,7 +140,7 @@ def init_command(index_path=None, non_interactive=False) -> int:
 
 def status_command() -> int:
 
-    definition = get_definition()
+    definition = CFBSConfig.get()
     print("Name:        %s" % definition["name"])
     print("Description: %s" % definition["description"])
     print("File:        %s" % cfbs_filename())
@@ -501,7 +469,7 @@ def _add_modules(
     if missing:
         user_error("Module(s) could not be found: %s" % ", ".join(missing))
 
-    definition = get_definition()
+    definition = CFBSConfig.get()
 
     # If some modules were added as deps previously, mark them as user requested:
     for module in definition["build"]:
@@ -509,7 +477,7 @@ def _add_modules(
             new_added_by = added_by[module["name"]]
             if new_added_by == "cfbs add":
                 module["added_by"] = "cfbs add"
-                put_definition(definition)
+                CFBSConfig.put(definition)
 
     # Filter modules which are already added:
     added = [m["name"] for m in definition["build"]]
@@ -537,7 +505,7 @@ def _add_modules(
 
     if dependencies:
         add_command(dependencies, dependencies_added_by)
-        definition = get_definition()
+        definition = CFBSConfig.get()
 
     for module in filtered:
         assert index.exists(module)
@@ -553,7 +521,7 @@ def _add_modules(
         # TODO: add_command should be refactored to use CFBSConfig.add()
         definition.validate_added_module(new_module)
 
-    put_definition(definition)
+    CFBSConfig.put(definition)
     return 0
 
 
@@ -621,7 +589,7 @@ def add_command(
 
 
 def remove_command(to_remove: list, non_interactive=False):
-    definition = get_definition()
+    definition = CFBSConfig.get()
     modules = definition["build"]
 
     def _get_module_by_name(name) -> dict:
@@ -662,14 +630,14 @@ def remove_command(to_remove: list, non_interactive=False):
             else:
                 print("Module '%s' not found" % name)
 
-    put_definition(definition)
+    CFBSConfig.put(definition)
     if num_removed:
         clean_command(non_interactive=non_interactive)
     return 0
 
 
 def clean_command(non_interactive=False):
-    definition = get_definition()
+    definition = CFBSConfig.get()
     modules = definition["build"]
 
     def _someone_needs_me(this) -> bool:
@@ -705,7 +673,7 @@ def clean_command(non_interactive=False):
     if answer.lower() in ("yes", "y"):
         for module in to_remove:
             modules.remove(module)
-        put_definition(definition)
+        CFBSConfig.put(definition)
 
     return 0
 
@@ -716,7 +684,7 @@ def update_command(non_interactive=False):
 
     new_deps = []
     new_deps_added_by = dict()
-    definition = get_definition()
+    definition = CFBSConfig.get()
     index_modules = index.get_modules()
     for module in definition["build"]:
         if "index" in module:
@@ -802,7 +770,7 @@ def update_command(non_interactive=False):
                 new_deps.extend(extra)
                 new_deps_added_by.update({item: module["name"] for item in extra})
 
-    put_definition(definition)
+    CFBSConfig.put(definition)
 
     if new_deps:
         add_command(new_deps, new_deps_added_by)
@@ -830,7 +798,7 @@ def init_build_folder():
 
 
 def longest_module_name() -> int:
-    return max((len(m["name"]) for m in get_definition()["build"]))
+    return max((len(m["name"]) for m in CFBSConfig.get()["build"]))
 
 
 def get_download_path(module) -> str:
@@ -854,7 +822,7 @@ def get_download_path(module) -> str:
 def download_dependencies(prefer_offline=False, redownload=False):
     print("\nModules:")
     counter = 1
-    definition = get_definition()
+    definition = CFBSConfig.get()
     max_length = longest_module_name()
     downloads = os.path.join(cfbs_dir(), "downloads")
     for module in definition["build"]:
@@ -1006,7 +974,7 @@ def build_step(module, step, max_length):
 def build_steps() -> int:
     print("\nSteps:")
     module_name_length = longest_module_name()
-    for module in get_definition()["build"]:
+    for module in CFBSConfig.get()["build"]:
         for step in module["steps"]:
             build_step(module, step, module_name_length)
     if os.path.isfile("out/masterfiles/def.json"):
@@ -1088,7 +1056,7 @@ def info_command(modules, index_path=None):
     index = config.index
 
     if os.path.isfile(cfbs_filename()):
-        build = get_definition()["build"]
+        build = CFBSConfig.get()["build"]
     else:
         build = {}
 

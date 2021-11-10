@@ -7,6 +7,7 @@ from copy import deepcopy
 
 from cfbs.utils import (
     cfbs_dir,
+    cfbs_filename,
     user_error,
     strip_left,
     strip_right,
@@ -291,3 +292,30 @@ class CFBSJson:
         else:
             print("Added module: %s" % module["name"])
         self.validate_added_module(module)
+
+
+class CFBSConfig:
+    definition = None
+
+    # This function is for clearing the global for pytest cases when it should be changing
+    @staticmethod
+    def clear():
+        CFBSConfig.definition = None
+
+    @staticmethod
+    def get() -> CFBSJson:
+        if not CFBSConfig.definition:
+            CFBSConfig.definition = CFBSJson()
+        if not CFBSConfig.definition:
+            user_error("Unable to read {}".format(cfbs_filename()))
+        if "build" not in CFBSConfig.definition:
+            user_error(
+                "missing 'build' key in cfbs.json, move aside and restart with 'cfbs init'"
+            )
+        return CFBSConfig.definition
+
+    @staticmethod
+    def put(data=None):
+        if not CFBSConfig.definition:
+            CFBSConfig.definition = CFBSJson(data=data)
+        CFBSConfig.definition.save(data)
