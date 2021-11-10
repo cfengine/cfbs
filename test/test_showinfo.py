@@ -2,7 +2,7 @@ import os
 import re
 import pytest
 from cfbs.commands import info_command
-from cfbs.index import CFBSConfig
+from cfbs.core import CFBSConfig
 
 
 @pytest.mark.parametrize("chdir", ["sample"], indirect=True)
