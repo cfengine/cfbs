@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
+import logging as log
 from collections import OrderedDict
 from copy import deepcopy
 
@@ -15,6 +16,8 @@ from cfbs.utils import (
     read_json,
     get_or_read_json,
     merge_json,
+    read_file,
+    find,
     mkdir,
     touch,
     rm,
@@ -159,6 +162,18 @@ def _construct_provided_module(name, data, url, url_commit):
     return module
 
 
+def _has_autorun_tag(filename):
+    assert os.path.isfile(filename)
+    content = read_file(filename)
+
+    return (
+        "meta:" in content
+        and "tags" in content
+        and "slist" in content
+        and "autorun" in content
+    )
+
+
 class CFBSConfig:
     def __init__(
         self,
@@ -235,6 +250,26 @@ class CFBSConfig:
     def _module_is_in_build(self, module):
         return module["name"] in (m["name"] for m in self["build"])
 
+    def validate_added_module(module):
+        """Try to help the user with warnings in appropriate cases"""
+
+        name = module["name"]
+        if name.startswith("./") and name.endswith(".cf"):
+            assert os.path.isfile(name)
+            if not _has_autorun_tag(name):
+                log.warning("No autorun tag found in policy file: '%s'" % name)
+                log.warning("Tag the bundle(s) you want evaluated:")
+                log.warning('  meta: "tags" slist => { "autorun" };')
+            return
+        if name.startswith("./") and name.endswith("/"):
+            assert os.path.isdir(name)
+            policy_files = list(find(name, extension=".cf"))
+            with_autorun = (x for x in policy_files if _has_autorun_tag(x))
+            if any(policy_files) and not any(with_autorun):
+                log.warning("No bundles tagged with autorun found in: '%s'" % name)
+                log.warning("Tag the bundle(s) you want evaluated in .cf policy files:")
+                log.warning('  meta: "tags" slist => { "autorun" };')
+
     def add(self, module, remote_config=None, dependent=None):
         if type(module) is str:
             module_str = module
@@ -255,3 +290,4 @@ class CFBSConfig:
             print("Added module: %s (Dependency of %s)" % (module["name"], dependent))
         else:
             print("Added module: %s" % module["name"])
+        self.validate_added_module(module)
