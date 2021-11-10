@@ -32,7 +32,7 @@ from cfbs.utils import (
 )
 
 from cfbs.pretty import pretty_check_file, pretty_file
-from cfbs.index import CFBSConfig
+from cfbs.index import CFBSJson
 from cfbs.validate import CFBSIndexException, validate_index
 
 
@@ -44,22 +44,22 @@ _VERSION_INDEX = (
     "https://raw.githubusercontent.com/cfengine/build-index/master/versions.json"
 )
 
-# TODO: Move this to CFBSConfig
+# TODO: Move this to index.py
 definition = None
 
 
 # This function is for clearing the global for pytest cases when it should be changing
-# TODO: Move this to CFBSConfig
+# TODO: Move this to index.py
 def clear_definition():
     global definition
     definition = None
 
 
-# TODO: Move this to CFBSConfig
-def get_definition() -> CFBSConfig:
+# TODO: Move this to index.py
+def get_definition() -> CFBSJson:
     global definition
     if not definition:
-        definition = CFBSConfig()
+        definition = CFBSJson()
     if not definition:
         user_error("Unable to read {}".format(cfbs_filename()))
     if "build" not in definition:
@@ -69,11 +69,11 @@ def get_definition() -> CFBSConfig:
     return definition
 
 
-# TODO: Move this to CFBSConfig
+# TODO: Move this to index.py
 def put_definition(data=None):
     global definition
     if not definition:
-        definition = CFBSConfig(data=data)
+        definition = CFBSJson(data=data)
     definition.save(data)
 
 
@@ -199,7 +199,7 @@ def status_command() -> int:
 
 
 def search_command(terms: list, index_path=None) -> int:
-    config = CFBSConfig(index_path)
+    config = CFBSJson(index_path)
     index = config.index
     results = {}
 
@@ -463,7 +463,7 @@ def _add_modules(
     checksum=None,
     non_interactive=False,
 ) -> int:
-    config = CFBSConfig(index_path)
+    config = CFBSJson(index_path)
     index = config.index
 
     # Translate all aliases and remote paths
@@ -572,8 +572,8 @@ def _add_using_url(
         assert url.startswith(("https://", "git://", "ssh://"))
         config_path, url_commit = _clone_url_repo(url)
 
-    remote_config = CFBSConfig(path=config_path, url=url, url_commit=url_commit)
-    config = CFBSConfig(index_argument=index_path)
+    remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
+    config = CFBSJson(index_argument=index_path)
 
     provides = remote_config.get_provides()
     # URL specified in to_add, but no specific modules => let's add all (with a prompt)
@@ -711,7 +711,7 @@ def clean_command(non_interactive=False):
 
 
 def update_command(non_interactive=False):
-    config = CFBSConfig()
+    config = CFBSJson()
     index = config.index
 
     new_deps = []
@@ -809,7 +809,7 @@ def update_command(non_interactive=False):
 
 
 def validate_command(index_path=None):
-    config = CFBSConfig(index_path)
+    config = CFBSJson(index_path)
     index = config.index
     if not index:
         user_error("Index not found")
@@ -1084,7 +1084,7 @@ def print_module_info(data):
 
 
 def info_command(modules, index_path=None):
-    config = CFBSConfig(index_path)
+    config = CFBSJson(index_path)
     index = config.index
 
     if os.path.isfile(cfbs_filename()):

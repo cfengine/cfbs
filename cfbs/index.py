@@ -174,7 +174,7 @@ def _has_autorun_tag(filename):
     )
 
 
-class CFBSConfig:
+class CFBSJson:
     def __init__(
         self,
         index_argument=None,
@@ -241,7 +241,7 @@ class CFBSConfig:
 
     def save(self, data=None):
         if data:
-            if type(data) is CFBSConfig:
+            if type(data) is CFBSJson:
                 data = data._data
             self._data = data
         with open(self.path, "w") as f:
