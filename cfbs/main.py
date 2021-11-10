@@ -65,25 +65,29 @@ def get_args():
     return args
 
 
-def set_log_level(level):
+def init_logging(level):
+    # Warning: logging.basicConfig() cannot be called multiple times to set
+    #          different parameters. We have to set both format and level in
+    #          the same call
+    format = "%(levelname)s: %(message)s"
     level = level.strip().lower()
     if level == "critical":
-        log.basicConfig(level=log.CRITICAL)
+        log.basicConfig(level=log.CRITICAL, format=format)
     elif level == "error":
-        log.basicConfig(level=log.ERROR)
+        log.basicConfig(level=log.ERROR, format=format)
     elif level == "warning":
-        log.basicConfig(level=log.WARNING)
+        log.basicConfig(level=log.WARNING, format=format)
     elif level == "info":
-        log.basicConfig(level=log.INFO)
+        log.basicConfig(level=log.INFO, format=format)
     elif level == "debug":
-        log.basicConfig(level=log.DEBUG)
+        log.basicConfig(level=log.DEBUG, format=format)
     else:
         raise ValueError("Unknown log level: {}".format(level))
 
 
 def main() -> int:
     args = get_args()
-    set_log_level(args.loglevel)
+    init_logging(args.loglevel)
 
     if args.version:
         print("cfbs %s" % version())
