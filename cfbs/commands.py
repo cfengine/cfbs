@@ -26,18 +26,19 @@ from cfbs.utils import (
     rm,
     cp,
     sh,
-    fetch_url,
-    FetchError,
     is_a_commit_hash,
 )
 
 from cfbs.pretty import pretty_check_file, pretty_file
 from cfbs.index import CFBSJson, CFBSConfig
 from cfbs.validate import CFBSIndexException, validate_index
+from cfbs.internal_file_management import (
+    fetch_archive,
+    get_download_path,
+    local_module_copy,
+    SUPPORTED_ARCHIVES,
+)
 
-
-_SUPPORTED_TAR_TYPES = (".tar.gz", ".tgz")
-_SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
 _VERSION_INDEX = (
@@ -209,365 +210,6 @@ def search_command(terms: list, index_path=None) -> int:
     return 0 if any(results) else 1
 
 
-def local_module_name(module_path):
-    assert os.path.exists(module_path)
-    module = module_path
-
-    if module.endswith((".cf", ".json", "/")) and not module.startswith("./"):
-        module = "./" + module
-    if not module.startswith("./"):
-        user_error("Please prepend local files or folders with './' to avoid ambiguity")
-
-    for illegal in ["//", "..", " ", "\n", "\t", " "]:
-        if illegal in module:
-            user_error("Module path cannot contain %s" % repr(illegal))
-
-    if os.path.isdir(module) and not module.endswith("/"):
-        module = module + "/"
-    while "/./" in module:
-        module = module.replace("/./", "/")
-
-    assert os.path.exists(module)
-    if os.path.isfile(module):
-        if not module.endswith((".cf", ".json")):
-            user_error("Only .cf and .json files supported currently")
-    else:
-        if not os.path.isdir(module):
-            user_error("'%s' must be either a directory or a file" % module)
-
-    return module
-
-
-def prettify_name(name):
-    if "/" not in name:
-        return name
-    while name.endswith("/"):
-        name = name[:-1]
-    if "/" in name:
-        name = name.split("/")[-1]
-    assert name
-    return name
-
-
-def local_module_copy(module, counter, max_length):
-    name = module["name"]
-    if not name.startswith("./"):
-        user_error("module %s must start with ./" % name)
-    if not os.path.isfile(name) and not os.path.isdir(name):
-        user_error("module %s does not exist" % name)
-    pretty_name = prettify_name(name)
-    target = "out/steps/%03d_%s_local/" % (counter, pretty_name)
-    module["_directory"] = target
-    module["_counter"] = counter
-    cp(name, target + name)
-    print(
-        "%03d %s @ local                                    (Copied)"
-        % (counter, pad_right(name, max_length))
-    )
-
-
-def _get_path_from_url(url):
-    if not url.startswith(("https://", "ssh://", "git://")):
-        if "://" in url:
-            return user_error("Unsupported URL protocol in '%s'" % url)
-        else:
-            # It's a path already, just remove trailing slashes (if any).
-            return url.rstrip("/")
-
-    path = None
-    if url.startswith("ssh://"):
-        match = re.match(r"ssh://(\w+)@(.+)", url)
-        if match is not None:
-            path = match[2]
-    path = path or url[url.index("://") + 3 :]
-    path = strip_right(path, ".git")
-    path = path.rstrip("/")
-
-    return path
-
-
-def _get_git_repo_commit_sha(repo_path):
-    assert os.path.isdir(os.path.join(repo_path, ".git"))
-
-    with open(os.path.join(repo_path, ".git", "HEAD"), "r") as f:
-        head_ref_info = f.read()
-
-    assert head_ref_info.startswith("ref: ")
-    head_ref = head_ref_info[5:].strip()
-
-    with open(os.path.join(repo_path, ".git", head_ref)) as f:
-        return f.read().strip()
-
-
-def _clone_url_repo(repo_url):
-    assert repo_url.startswith(("https://", "ssh://", "git://"))
-
-    commit = None
-    if "@" in repo_url and (repo_url.rindex("@") > repo_url.rindex(".")):
-        # commit specified in the url
-        repo_url, commit = repo_url.rsplit("@", 1)
-        if not is_a_commit_hash(commit):
-            user_error("'%s' is not a commit reference" % commit)
-
-    downloads = os.path.join(cfbs_dir(), "downloads")
-
-    repo_path = _get_path_from_url(repo_url)
-    repo_dir = os.path.join(downloads, repo_path)
-    os.makedirs(repo_dir, exist_ok=True)
-
-    if commit is not None:
-        commit_path = os.path.join(repo_dir, commit)
-        sh("git clone --no-checkout %s %s" % (repo_url, commit_path))
-        sh("cd %s; git checkout %s" % (commit_path, commit))
-    else:
-        master_path = os.path.join(repo_dir, "master")
-        sh("git clone %s %s" % (repo_url, master_path))
-        commit = _get_git_repo_commit_sha(master_path)
-
-        commit_path = os.path.join(repo_dir, commit)
-        if os.path.exists(commit_path):
-            # Already cloned in the commit dir, just remove the 'master' clone
-            sh("rm -rf %s" % master_path)
-        else:
-            sh("mv %s %s" % (master_path, commit_path))
-
-    json_path = os.path.join(commit_path, "cfbs.json")
-    if os.path.exists(json_path):
-        return (json_path, commit)
-    else:
-        user_error(
-            "Repository '%s' doesn't contain a valid cfbs.json index file" % repo_url
-        )
-
-
-def _fetch_archive(url, checksum=None, directory=None, with_index=True):
-    assert url.endswith(_SUPPORTED_ARCHIVES)
-
-    url_path = url[url.index("://") + 3 :]
-    archive_dirname = os.path.dirname(url_path)
-    archive_filename = os.path.basename(url_path)
-
-    for ext in _SUPPORTED_ARCHIVES:
-        if archive_filename.endswith(ext):
-            archive_type = ext
-            break
-    else:
-        user_error("Unsupported archive type: '%s'" % url)
-
-    archive_name = strip_right(archive_filename, archive_type)
-    downloads = os.path.join(cfbs_dir(), "downloads")
-
-    archive_dir = os.path.join(downloads, archive_dirname)
-    mkdir(archive_dir)
-
-    archive_path = os.path.join(downloads, archive_dir, archive_filename)
-    try:
-        archive_checksum = fetch_url(url, archive_path, checksum)
-    except FetchError as e:
-        user_error(str(e))
-
-    content_dir = os.path.join(downloads, archive_dir, archive_checksum)
-    index_path = os.path.join(content_dir, "cfbs.json")
-    if with_index and os.path.exists(index_path):
-        # available already
-        return (index_path, archive_checksum)
-    else:
-        mkdir(content_dir)
-
-    # TODO: use Python modules instead of CLI tools?
-    if archive_type.startswith(_SUPPORTED_TAR_TYPES):
-        if distutils.spawn.find_executable("tar"):
-            sh("cd %s; tar -xf %s" % (content_dir, archive_path))
-        else:
-            user_error("Working with .tar archives requires the 'tar' utility")
-    elif archive_type == (".zip"):
-        if distutils.spawn.find_executable("unzip"):
-            sh("cd %s; unzip %s" % (content_dir, archive_path))
-        else:
-            user_error("Working with .zip archives requires the 'unzip' utility")
-    else:
-        raise RuntimeError(
-            "Unhandled archive type: '%s'. Please report this at %s."
-            % (url, "https://github.com/cfengine/cfbs/issues")
-        )
-
-    os.unlink(archive_path)
-
-    content_root_items = [
-        os.path.join(content_dir, item) for item in os.listdir(content_dir)
-    ]
-    if (
-        with_index
-        and len(content_root_items) == 1
-        and os.path.isdir(content_root_items[0])
-        and os.path.exists(os.path.join(content_root_items[0], "cfbs.json"))
-    ):
-        # the archive contains a top-level folder, let's just move things one
-        # level up from inside it
-        sh("mv %s %s" % (os.path.join(content_root_items[0], "*"), content_dir))
-        shutil.rmtree(content_root_items[0])
-
-    if with_index:
-        if os.path.exists(index_path):
-            return (index_path, archive_checksum)
-        else:
-            user_error(
-                "Archive '%s' doesn't contain a valid cfbs.json index file" % url
-            )
-    else:
-        if directory is not None:
-            directory = directory.rstrip("/")
-            mkdir(os.path.dirname(directory))
-            sh("rsync -a %s/ %s/" % (content_dir, directory))
-            rm(content_dir)
-            return (directory, archive_checksum)
-        return (content_dir, archive_checksum)
-
-
-def _add_modules(
-    to_add: list,
-    added_by="cfbs add",
-    index_path=None,
-    checksum=None,
-    non_interactive=False,
-) -> int:
-    config = CFBSJson(index_path)
-    index = config.index
-
-    # Translate all aliases and remote paths
-    translated = []
-    for module in to_add:
-        if not index.exists(module):
-            user_error("Module '%s' does not exist" % module)
-        if not module in index and os.path.exists(module):
-            translated.append(local_module_name(module))
-            continue
-        data = index[module]
-        if "alias" in data:
-            print("%s is an alias for %s" % (module, data["alias"]))
-            module = data["alias"]
-        translated.append(module)
-
-    to_add = translated
-
-    # added_by can be string, list of strings, or dictionary
-
-    # Convert string -> list:
-    if type(added_by) is str:
-        added_by = [added_by] * len(to_add)
-
-    # Convert list -> dict:
-    if not isinstance(added_by, dict):
-        assert len(added_by) == len(to_add)
-        added_by = {k: v for k, v in zip(to_add, added_by)}
-
-    # Should have a dict with keys for everything in to_add:
-    assert not any((k not in added_by for k in to_add))
-
-    # Print error and exit if there are unknown modules:
-    missing = [m for m in to_add if not m.startswith("./") and m not in index]
-    if missing:
-        user_error("Module(s) could not be found: %s" % ", ".join(missing))
-
-    definition = CFBSConfig.get()
-
-    # If some modules were added as deps previously, mark them as user requested:
-    for module in definition["build"]:
-        if module["name"] in to_add:
-            new_added_by = added_by[module["name"]]
-            if new_added_by == "cfbs add":
-                module["added_by"] = "cfbs add"
-                CFBSConfig.put(definition)
-
-    # Filter modules which are already added:
-    added = [m["name"] for m in definition["build"]]
-    filtered = []
-    for module in to_add:
-        user_requested = added_by[module] == "cfbs add"
-        if module in [*added, *filtered]:
-            if user_requested:
-                print("Skipping already added module: %s" % module)
-            continue
-        filtered.append(module)
-
-    # Find all unmet dependencies:
-    dependencies = []
-    dependencies_added_by = []
-    for module in filtered:
-        assert index.exists(module)
-        data = index.get_build_step(module)
-        assert "alias" not in data
-        if "dependencies" in data:
-            for dep in data["dependencies"]:
-                if dep not in [*added, *filtered, *dependencies]:
-                    dependencies.append(dep)
-                    dependencies_added_by.append(module)
-
-    if dependencies:
-        add_command(dependencies, dependencies_added_by)
-        definition = CFBSConfig.get()
-
-    for module in filtered:
-        assert index.exists(module)
-        data = index.get_build_step(module)
-        new_module = {"name": module, **data, "added_by": added_by[module]}
-        definition["build"].append(new_module)
-        if user_requested:
-            print("Added module: %s" % module)
-        else:
-            print("Added module: %s (Dependency of %s)" % (module, added_by[module]))
-        added.append(module)
-
-        # TODO: add_command should be refactored to use CFBSConfig.add()
-        definition.validate_added_module(new_module)
-
-    CFBSConfig.put(definition)
-    return 0
-
-
-def _add_using_url(
-    url,
-    to_add: list,
-    added_by="cfbs add",
-    index_path=None,
-    checksum=None,
-    non_interactive=False,
-):
-    url_commit = None
-    if url.endswith(_SUPPORTED_ARCHIVES):
-        config_path, url_commit = _fetch_archive(url, checksum)
-    else:
-        assert url.startswith(("https://", "git://", "ssh://"))
-        config_path, url_commit = _clone_url_repo(url)
-
-    remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
-    config = CFBSJson(index_argument=index_path)
-
-    provides = remote_config.get_provides()
-    # URL specified in to_add, but no specific modules => let's add all (with a prompt)
-    if len(to_add) == 0:
-        modules = list(provides.values())
-        print("Found %d modules in '%s':" % (len(modules), url))
-        for m in modules:
-            print("  - " + m["name"])
-        if not any(modules):
-            user_error("no modules available, nothing to do")
-        if not non_interactive:
-            answer = input("Do you want to add all %d of them? [y/N] " % (len(modules)))
-            if answer.lower() not in ("y", "yes"):
-                return 0
-    else:
-        missing = [k for k in to_add if k not in provides]
-        if missing:
-            user_error("Missing modules: " + ", ".join(missing))
-        modules = [provides[k] for k in to_add]
-
-    for module in modules:
-        config.add(module, remote_config)
-
-    return 0
-
-
 def add_command(
     to_add: list,
     added_by="cfbs add",
@@ -575,17 +217,9 @@ def add_command(
     checksum=None,
     non_interactive=False,
 ) -> int:
-    if not to_add:
-        user_error("Must specify at least one module to add")
-
-    if to_add[0].endswith(_SUPPORTED_ARCHIVES) or to_add[0].startswith(
-        ("https://", "git://", "ssh://")
-    ):
-        return _add_using_url(
-            to_add[0], to_add[1:], added_by, index_path, checksum, non_interactive
-        )
-
-    return _add_modules(to_add, added_by, index_path, checksum, non_interactive)
+    return CFBSConfig.add_command(
+        to_add, added_by, index_path, checksum, non_interactive
+    )
 
 
 def remove_command(to_remove: list, non_interactive=False):
@@ -801,24 +435,6 @@ def longest_module_name() -> int:
     return max((len(m["name"]) for m in CFBSConfig.get()["build"]))
 
 
-def get_download_path(module) -> str:
-    downloads = os.path.join(cfbs_dir(), "downloads")
-
-    commit = module["commit"]
-    if not is_a_commit_hash(commit):
-        user_error("'%s' is not a commit reference" % commit)
-
-    url = module.get("url") or module["repo"]
-    if url.endswith(_SUPPORTED_ARCHIVES):
-        url = os.path.dirname(url)
-    else:
-        url = strip_right(url, ".git")
-    repo = url[url.index("://") + 3 :]
-    repo_dir = os.path.join(downloads, repo)
-    mkdir(repo_dir)
-    return os.path.join(repo_dir, commit)
-
-
 def download_dependencies(prefer_offline=False, redownload=False):
     print("\nModules:")
     counter = 1
@@ -847,8 +463,8 @@ def download_dependencies(prefer_offline=False, redownload=False):
         else:
             module_dir = commit_dir
         if not os.path.exists(module_dir):
-            if url.endswith(_SUPPORTED_ARCHIVES):
-                _fetch_archive(url, commit)
+            if url.endswith(SUPPORTED_ARCHIVES):
+                fetch_archive(url, commit)
             elif "index" in module:
                 sh("git clone %s %s" % (url, commit_dir))
                 sh("(cd %s && git checkout %s)" % (commit_dir, commit))
@@ -861,7 +477,7 @@ def download_dependencies(prefer_offline=False, redownload=False):
                 module_archive_url = os.path.join(
                     _MODULES_URL, name, commit + ".tar.gz"
                 )
-                _fetch_archive(
+                fetch_archive(
                     module_archive_url, checksum, directory=commit_dir, with_index=False
                 )
         target = "out/steps/%03d_%s_%s/" % (counter, module["name"], commit)

@@ -26,6 +26,12 @@ from cfbs.utils import (
     sh,
     cfengine_dir,
 )
+from cfbs.internal_file_management import (
+    clone_url_repo,
+    fetch_archive,
+    local_module_name,
+    SUPPORTED_ARCHIVES,
+)
 from cfbs.pretty import pretty
 
 
@@ -294,6 +300,150 @@ class CFBSJson:
         self.validate_added_module(module)
 
 
+def _add_modules(
+    to_add: list,
+    added_by="cfbs add",
+    index_path=None,
+    checksum=None,
+    non_interactive=False,
+) -> int:
+    config = CFBSJson(index_path)
+    index = config.index
+
+    # Translate all aliases and remote paths
+    translated = []
+    for module in to_add:
+        if not index.exists(module):
+            user_error("Module '%s' does not exist" % module)
+        if not module in index and os.path.exists(module):
+            translated.append(local_module_name(module))
+            continue
+        data = index[module]
+        if "alias" in data:
+            print("%s is an alias for %s" % (module, data["alias"]))
+            module = data["alias"]
+        translated.append(module)
+
+    to_add = translated
+
+    # added_by can be string, list of strings, or dictionary
+
+    # Convert string -> list:
+    if type(added_by) is str:
+        added_by = [added_by] * len(to_add)
+
+    # Convert list -> dict:
+    if not isinstance(added_by, dict):
+        assert len(added_by) == len(to_add)
+        added_by = {k: v for k, v in zip(to_add, added_by)}
+
+    # Should have a dict with keys for everything in to_add:
+    assert not any((k not in added_by for k in to_add))
+
+    # Print error and exit if there are unknown modules:
+    missing = [m for m in to_add if not m.startswith("./") and m not in index]
+    if missing:
+        user_error("Module(s) could not be found: %s" % ", ".join(missing))
+
+    definition = CFBSConfig.get()
+
+    # If some modules were added as deps previously, mark them as user requested:
+    for module in definition["build"]:
+        if module["name"] in to_add:
+            new_added_by = added_by[module["name"]]
+            if new_added_by == "cfbs add":
+                module["added_by"] = "cfbs add"
+                CFBSConfig.put(definition)
+
+    # Filter modules which are already added:
+    added = [m["name"] for m in definition["build"]]
+    filtered = []
+    for module in to_add:
+        user_requested = added_by[module] == "cfbs add"
+        if module in [*added, *filtered]:
+            if user_requested:
+                print("Skipping already added module: %s" % module)
+            continue
+        filtered.append(module)
+
+    # Find all unmet dependencies:
+    dependencies = []
+    dependencies_added_by = []
+    for module in filtered:
+        assert index.exists(module)
+        data = index.get_build_step(module)
+        assert "alias" not in data
+        if "dependencies" in data:
+            for dep in data["dependencies"]:
+                if dep not in [*added, *filtered, *dependencies]:
+                    dependencies.append(dep)
+                    dependencies_added_by.append(module)
+
+    if dependencies:
+        CFBSConfig.add_command(dependencies, dependencies_added_by)
+        definition = CFBSConfig.get()
+
+    for module in filtered:
+        assert index.exists(module)
+        data = index.get_build_step(module)
+        new_module = {"name": module, **data, "added_by": added_by[module]}
+        definition["build"].append(new_module)
+        if user_requested:
+            print("Added module: %s" % module)
+        else:
+            print("Added module: %s (Dependency of %s)" % (module, added_by[module]))
+        added.append(module)
+
+        # TODO: add_command should be refactored to use CFBSJson.add()
+        CFBSJson.validate_added_module(new_module)
+
+    CFBSConfig.put(definition)
+    return 0
+
+
+def _add_using_url(
+    url,
+    to_add: list,
+    added_by="cfbs add",
+    index_path=None,
+    checksum=None,
+    non_interactive=False,
+):
+    url_commit = None
+    if url.endswith(SUPPORTED_ARCHIVES):
+        config_path, url_commit = fetch_archive(url, checksum)
+    else:
+        assert url.startswith(("https://", "git://", "ssh://"))
+        config_path, url_commit = clone_url_repo(url)
+
+    remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
+    config = CFBSJson(index_argument=index_path)
+
+    provides = remote_config.get_provides()
+    # URL specified in to_add, but no specific modules => let's add all (with a prompt)
+    if len(to_add) == 0:
+        modules = list(provides.values())
+        print("Found %d modules in '%s':" % (len(modules), url))
+        for m in modules:
+            print("  - " + m["name"])
+        if not any(modules):
+            user_error("no modules available, nothing to do")
+        if not non_interactive:
+            answer = input("Do you want to add all %d of them? [y/N] " % (len(modules)))
+            if answer.lower() not in ("y", "yes"):
+                return 0
+    else:
+        missing = [k for k in to_add if k not in provides]
+        if missing:
+            user_error("Missing modules: " + ", ".join(missing))
+        modules = [provides[k] for k in to_add]
+
+    for module in modules:
+        config.add(module, remote_config)
+
+    return 0
+
+
 class CFBSConfig:
     definition = None
 
@@ -319,3 +469,23 @@ class CFBSConfig:
         if not CFBSConfig.definition:
             CFBSConfig.definition = CFBSJson(data=data)
         CFBSConfig.definition.save(data)
+
+    @staticmethod
+    def add_command(
+        to_add: list,
+        added_by="cfbs add",
+        index_path=None,
+        checksum=None,
+        non_interactive=False,
+    ) -> int:
+        if not to_add:
+            user_error("Must specify at least one module to add")
+
+        if to_add[0].endswith(SUPPORTED_ARCHIVES) or to_add[0].startswith(
+            ("https://", "git://", "ssh://")
+        ):
+            return _add_using_url(
+                to_add[0], to_add[1:], added_by, index_path, checksum, non_interactive
+            )
+
+        return _add_modules(to_add, added_by, index_path, checksum, non_interactive)
