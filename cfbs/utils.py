@@ -237,3 +237,19 @@ def fetch_url(url, target, checksum=None):
 
 def is_a_commit_hash(commit):
     return bool(SHA1_RE.match(commit) or SHA256_RE.match(commit))
+
+
+def find(name, recursive=True, directories=False, files=True, extension=None):
+    assert files or directories
+    assert os.path.isdir(name)
+    for root, subdirs, subfiles in os.walk(name):
+        if directories:
+            for dir in subdirs:
+                if not extension or (extension and dir.endswith(extension)):
+                    yield os.path.join(root, dir) + "/"
+        if files:
+            for file in subfiles:
+                if not extension or (extension and file.endswith(extension)):
+                    yield os.path.join(root, file)
+        if not recursive:
+            return  # End iteration after looking through first (top) level
