@@ -415,7 +415,7 @@ def validate_command(index_path=None):
         user_error("Index not found")
 
     try:
-        validate_index(index.get())
+        validate_index(index.get_data())
     except CFBSIndexException as e:
         print(e)
         return 1

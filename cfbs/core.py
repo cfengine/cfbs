@@ -99,7 +99,7 @@ class Index:
     def _cache_path(self) -> str:
         return cfbs_dir("cache.json")
 
-    def _get(self) -> dict:
+    def _get_data(self) -> dict:
         path = self.path
         if path.startswith("https://"):
             index = get_json(path)
@@ -117,13 +117,13 @@ class Index:
             sys.exit("Empty or invalid module index")
         return index
 
-    def get(self) -> dict:
+    def get_data(self) -> dict:
         if not self._data:
-            self._data = self._get()
+            self._data = self._get_data()
         return self._data
 
     def get_modules(self) -> dict:
-        return self.get()["index"]
+        return self.get_data()["index"]
 
     def exists(self, module):
         return os.path.exists(module) or (module in self)
