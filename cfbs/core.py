@@ -285,6 +285,15 @@ class CFBSJson:
                 log.warning("Tag the bundle(s) you want evaluated in .cf policy files:")
                 log.warning('  meta: "tags" slist => { "autorun" };')
 
+
+class CFBSConfig(CFBSJson):
+    @staticmethod
+    def exists(path="./cfbs.json"):
+        return os.path.exists(path)
+
+    def __init__(self, index=None):
+        super().__init__(path="./cfbs.json", index_argument=index)
+
     def add_with_dependencies(self, module, remote_config=None, dependent=None):
         if type(module) is str:
             module_str = module
@@ -305,15 +314,6 @@ class CFBSJson:
         else:
             print("Added module: %s" % module["name"])
         self.validate_added_module(module)
-
-
-class CFBSConfig(CFBSJson):
-    @staticmethod
-    def exists(path="./cfbs.json"):
-        return os.path.exists(path)
-
-    def __init__(self, index=None):
-        super().__init__(path="./cfbs.json", index_argument=index)
 
     def _add_using_url(
         self,
@@ -451,7 +451,7 @@ class CFBSConfig(CFBSJson):
                 )
             added.append(module)
 
-            # TODO: add_command should be refactored to use CFBSJson.add_with_dependencies()
+            # TODO: add_command should be refactored to use CFBSConfig.add_with_dependencies()
             CFBSJson.validate_added_module(new_module)
 
         return 0
