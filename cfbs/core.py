@@ -34,6 +34,10 @@ from cfbs.internal_file_management import (
 )
 from cfbs.pretty import pretty
 
+_DEFAULT_INDEX = (
+    "https://raw.githubusercontent.com/cfengine/build-index/master/cfbs.json"
+)
+
 
 def _local_module_data_cf_file(module):
     target = os.path.basename(module)
@@ -80,15 +84,17 @@ def generate_index_for_local_module(module):
 
 
 class Index:
-    def __init__(self, path=None, data=None):
-        """If data is not None, path is ignored"""
-        self._data = {"type": "index", "index": data} if data else None
+    """Class representing the cfbs.json containing the index of available modules"""
 
-        if not self._data:
+    def __init__(self, path=None, data=None):
+        if data:
+            self._data = {"type": "index", "index": data}
+        else:
+            self._data = None
             if path:
                 self.path = path
             else:
-                self.path = "https://raw.githubusercontent.com/cfengine/build-index/master/cfbs.json"
+                self.path = _DEFAULT_INDEX
 
     def __contains__(self, key):
         return key in self.get_modules()
@@ -198,9 +204,6 @@ class CFBSJson:
             self._data = data
         else:
             self._data = read_json(self.path)
-        self._default_index = (
-            "https://raw.githubusercontent.com/cfengine/build-index/master/cfbs.json"
-        )
 
         if index_argument:
             self._unexpanded_index = index_argument
@@ -208,7 +211,7 @@ class CFBSJson:
             assert type(self._data["index"]) in (OrderedDict, dict, list, str)
             self._unexpanded_index = self._data["index"]
         else:
-            self._unexpanded_index = self._default_index
+            self._unexpanded_index = _DEFAULT_INDEX
 
         self._index = None
 
@@ -220,7 +223,7 @@ class CFBSJson:
 
     @property
     def using_default_index(self):
-        return self._unexpanded_index == self._default_index
+        return self._unexpanded_index == _DEFAULT_INDEX
 
     def get(self, key, default=None):
         if not key in self:
