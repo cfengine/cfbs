@@ -265,7 +265,14 @@ class CFBSJson:
     def _module_is_in_build(self, module):
         return module["name"] in (m["name"] for m in self["build"])
 
-    def validate_added_module(self, module):
+
+class CFBSConfig(CFBSJson):
+    @staticmethod
+    def exists(path="./cfbs.json"):
+        return os.path.exists(path)
+
+    @staticmethod
+    def validate_added_module(module):
         """Try to help the user with warnings in appropriate cases"""
 
         name = module["name"]
@@ -284,12 +291,6 @@ class CFBSJson:
                 log.warning("No bundles tagged with autorun found in: '%s'" % name)
                 log.warning("Tag the bundle(s) you want evaluated in .cf policy files:")
                 log.warning('  meta: "tags" slist => { "autorun" };')
-
-
-class CFBSConfig(CFBSJson):
-    @staticmethod
-    def exists(path="./cfbs.json"):
-        return os.path.exists(path)
 
     def __init__(self, index=None):
         super().__init__(path="./cfbs.json", index_argument=index)
@@ -452,7 +453,7 @@ class CFBSConfig(CFBSJson):
             added.append(module)
 
             # TODO: add_command should be refactored to use CFBSConfig.add_with_dependencies()
-            CFBSJson.validate_added_module(new_module)
+            self.validate_added_module(new_module)
 
         return 0
 
