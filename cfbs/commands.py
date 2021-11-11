@@ -417,7 +417,7 @@ def validate_command(index_path=None):
     else:
         user_error("Index not found")
 
-    data = index.get_data()
+    data = index.data
     if "type" not in data:
         user_error("Index is missing a type field")
 

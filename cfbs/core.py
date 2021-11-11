@@ -115,13 +115,14 @@ class Index:
         if "index" not in self._data:
             sys.exit("Empty or invalid module index")
 
-    def get_data(self) -> dict:
+    @property
+    def data(self) -> dict:
         if not self._data:
             self._expand_index()
         return self._data
 
     def get_modules(self) -> dict:
-        return self.get_data()["index"]
+        return self.data["index"]
 
     def exists(self, module):
         return os.path.exists(module) or (module in self)
