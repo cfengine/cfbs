@@ -138,7 +138,7 @@ class Index:
 
 
 def _expand_index(thing):
-    assert type(thing) in (dict, list, str)
+    assert type(thing) in (OrderedDict, dict, list, str)
     if type(thing) is str:
         return get_or_read_json(thing)["index"]
     return thing
@@ -201,9 +201,11 @@ class CFBSJson:
         self._default_index = (
             "https://raw.githubusercontent.com/cfengine/build-index/master/cfbs.json"
         )
+
         if index_argument:
             self._unexpanded_index = index_argument
         elif self._data and "index" in self._data:
+            assert type(self._data["index"]) in (OrderedDict, dict, list, str)
             self._unexpanded_index = self._data["index"]
         else:
             self._unexpanded_index = self._default_index
