@@ -104,9 +104,6 @@ class Index:
             return default
         return self[key]
 
-    def _cache_path(self) -> str:
-        return cfbs_dir("cache.json")
-
     def _expand_index(self):
         index = self._unexpanded
         if type(index) in (dict, OrderedDict):
