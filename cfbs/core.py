@@ -126,7 +126,7 @@ class Index:
     def exists(self, module):
         return os.path.exists(module) or (module in self)
 
-    def get_build_step(self, name):
+    def get_module_object(self, name):
         if name.startswith("./"):
             return _generate_local_module_object(name)
 
@@ -226,7 +226,7 @@ class CFBSJson:
             module = self._data["provides"][name]
             return _construct_provided_module(name, module, self.url, self.url_commit)
         if name in self.index:
-            return self.index.get_build_step(name)
+            return self.index.get_module_object(name)
         return None
 
     def _module_is_in_build(self, module):
@@ -400,7 +400,7 @@ class CFBSConfig(CFBSJson):
         dependencies_added_by = []
         for module in filtered:
             assert index.exists(module)
-            data = index.get_build_step(module)
+            data = index.get_module_object(module)
             assert "alias" not in data
             if "dependencies" in data:
                 for dep in data["dependencies"]:
@@ -413,7 +413,7 @@ class CFBSConfig(CFBSJson):
 
         for module in filtered:
             assert index.exists(module)
-            data = index.get_build_step(module)
+            data = index.get_module_object(module)
             new_module = {"name": module, **data, "added_by": added_by[module]}
             self["build"].append(new_module)
             if user_requested:
