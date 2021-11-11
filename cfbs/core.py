@@ -70,7 +70,7 @@ def _local_module_data_subdir(module):
     }
 
 
-def generate_index_for_local_module(module):
+def _generate_local_module_object(module):
     assert module.startswith("./")
     assert module.endswith((".cf", ".json", "/"))
     assert os.path.isfile(module) or os.path.isdir(module)
@@ -128,7 +128,7 @@ class Index:
 
     def get_build_step(self, name):
         if name.startswith("./"):
-            return generate_index_for_local_module(name)
+            return _generate_local_module_object(name)
 
         module = OrderedDict({"name": name})
         module.update(self.get_modules()[name])
