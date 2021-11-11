@@ -285,7 +285,7 @@ class CFBSJson:
                 log.warning("Tag the bundle(s) you want evaluated in .cf policy files:")
                 log.warning('  meta: "tags" slist => { "autorun" };')
 
-    def add(self, module, remote_config=None, dependent=None):
+    def add_with_dependencies(self, module, remote_config=None, dependent=None):
         if type(module) is str:
             module_str = module
             module = (remote_config or self).get_module_for_build(module, dependent)
@@ -298,7 +298,7 @@ class CFBSJson:
             return
         if "dependencies" in module:
             for dep in module["dependencies"]:
-                self.add(dep, remote_config, module["name"])
+                self.add_with_dependencies(dep, remote_config, module["name"])
         self._data["build"].append(module)
         if dependent:
             print("Added module: %s (Dependency of %s)" % (module["name"], dependent))
@@ -355,7 +355,7 @@ class CFBSConfig(CFBSJson):
             modules = [provides[k] for k in to_add]
 
         for module in modules:
-            self.add(module, remote_config)
+            self.add_with_dependencies(module, remote_config)
 
         return 0
 
@@ -451,7 +451,7 @@ class CFBSConfig(CFBSJson):
                 )
             added.append(module)
 
-            # TODO: add_command should be refactored to use CFBSJson.add()
+            # TODO: add_command should be refactored to use CFBSJson.add_with_dependencies()
             CFBSJson.validate_added_module(new_module)
 
         return 0
