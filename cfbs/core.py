@@ -254,14 +254,6 @@ class CFBSJson:
             return self.index.get_build_step(name)
         return None
 
-    def save(self, data=None):
-        if data:
-            if type(data) is CFBSJson:
-                data = data._data
-            self._data = data
-        with open(self.path, "w") as f:
-            f.write(pretty(self._data) + "\n")
-
     def _module_is_in_build(self, module):
         return module["name"] in (m["name"] for m in self["build"])
 
@@ -294,6 +286,11 @@ class CFBSConfig(CFBSJson):
 
     def __init__(self, index=None):
         super().__init__(path="./cfbs.json", index_argument=index)
+
+    def save(self):
+        data = pretty(self._data) + "\n"
+        with open(self.path, "w") as f:
+            f.write(data)
 
     def add_with_dependencies(self, module, remote_config=None, dependent=None):
         if type(module) is str:
