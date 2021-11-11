@@ -218,7 +218,9 @@ def add_command(
     non_interactive=False,
 ) -> int:
     config = CFBSConfig()
-    return config.add_command(to_add, added_by, index_path, checksum, non_interactive)
+    r = config.add_command(to_add, added_by, index_path, checksum, non_interactive)
+    config.save()
+    return r
 
 
 def remove_command(to_remove: list, non_interactive=False):
@@ -402,10 +404,9 @@ def update_command(non_interactive=False):
                 new_deps.extend(extra)
                 new_deps_added_by.update({item: module["name"] for item in extra})
 
-    definition.save()
-
     if new_deps:
         definition.add_command(new_deps, new_deps_added_by)
+    definition.save()
 
 
 def validate_command(index_path=None):

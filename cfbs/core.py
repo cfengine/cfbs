@@ -300,7 +300,6 @@ class CFBSJson:
             for dep in module["dependencies"]:
                 self.add(dep, remote_config, module["name"])
         self._data["build"].append(module)
-        self.save()
         if dependent:
             print("Added module: %s (Dependency of %s)" % (module["name"], dependent))
         else:
@@ -411,7 +410,6 @@ class CFBSConfig(CFBSJson):
                 new_added_by = added_by[module["name"]]
                 if new_added_by == "cfbs add":
                     module["added_by"] = "cfbs add"
-                    self.save()
 
         # Filter modules which are already added:
         added = [m["name"] for m in self["build"]]
@@ -456,7 +454,6 @@ class CFBSConfig(CFBSJson):
             # TODO: add_command should be refactored to use CFBSJson.add()
             CFBSJson.validate_added_module(new_module)
 
-        self.save()
         return 0
 
     def add_command(
