@@ -219,6 +219,11 @@ class CFBSJson:
     def using_default_index(self):
         return self._unexpanded_index == self._default_index
 
+    def get(self, key, default=None):
+        if not key in self:
+            return default
+        return self[key]
+
     def __getitem__(self, key):
         assert key != "index"
         return self._data[key]
@@ -301,13 +306,13 @@ class CFBSJson:
 
 
 def _add_modules(
+    config,
     to_add: list,
     added_by="cfbs add",
     index_path=None,
     checksum=None,
     non_interactive=False,
 ) -> int:
-    config = CFBSJson(index_path)
     index = config.index
 
     # Translate all aliases and remote paths
@@ -345,18 +350,16 @@ def _add_modules(
     if missing:
         user_error("Module(s) could not be found: %s" % ", ".join(missing))
 
-    definition = CFBSConfig.get()
-
     # If some modules were added as deps previously, mark them as user requested:
-    for module in definition["build"]:
+    for module in config["build"]:
         if module["name"] in to_add:
             new_added_by = added_by[module["name"]]
             if new_added_by == "cfbs add":
                 module["added_by"] = "cfbs add"
-                CFBSConfig.put(definition)
+                config.save()
 
     # Filter modules which are already added:
-    added = [m["name"] for m in definition["build"]]
+    added = [m["name"] for m in config["build"]]
     filtered = []
     for module in to_add:
         user_requested = added_by[module] == "cfbs add"
@@ -380,14 +383,13 @@ def _add_modules(
                     dependencies_added_by.append(module)
 
     if dependencies:
-        CFBSConfig.add_command(dependencies, dependencies_added_by)
-        definition = CFBSConfig.get()
+        config.add_command(dependencies, dependencies_added_by)
 
     for module in filtered:
         assert index.exists(module)
         data = index.get_build_step(module)
         new_module = {"name": module, **data, "added_by": added_by[module]}
-        definition["build"].append(new_module)
+        config["build"].append(new_module)
         if user_requested:
             print("Added module: %s" % module)
         else:
@@ -397,11 +399,12 @@ def _add_modules(
         # TODO: add_command should be refactored to use CFBSJson.add()
         CFBSJson.validate_added_module(new_module)
 
-    CFBSConfig.put(definition)
+    config.save()
     return 0
 
 
 def _add_using_url(
+    config,
     url,
     to_add: list,
     added_by="cfbs add",
@@ -417,7 +420,6 @@ def _add_using_url(
         config_path, url_commit = clone_url_repo(url)
 
     remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
-    config = CFBSJson(index_argument=index_path)
 
     provides = remote_config.get_provides()
     # URL specified in to_add, but no specific modules => let's add all (with a prompt)
@@ -444,34 +446,12 @@ def _add_using_url(
     return 0
 
 
-class CFBSConfig:
-    definition = None
+class CFBSConfig(CFBSJson):
+    def __init__(self, index=None):
+        super().__init__(path="./cfbs.json", index_argument=index)
 
-    # This function is for clearing the global for pytest cases when it should be changing
-    @staticmethod
-    def clear():
-        CFBSConfig.definition = None
-
-    @staticmethod
-    def get() -> CFBSJson:
-        if not CFBSConfig.definition:
-            CFBSConfig.definition = CFBSJson()
-        if not CFBSConfig.definition:
-            user_error("Unable to read {}".format(cfbs_filename()))
-        if "build" not in CFBSConfig.definition:
-            user_error(
-                "missing 'build' key in cfbs.json, move aside and restart with 'cfbs init'"
-            )
-        return CFBSConfig.definition
-
-    @staticmethod
-    def put(data=None):
-        if not CFBSConfig.definition:
-            CFBSConfig.definition = CFBSJson(data=data)
-        CFBSConfig.definition.save(data)
-
-    @staticmethod
     def add_command(
+        self,
         to_add: list,
         added_by="cfbs add",
         index_path=None,
@@ -485,7 +465,12 @@ class CFBSConfig:
             ("https://", "git://", "ssh://")
         ):
             return _add_using_url(
-                to_add[0], to_add[1:], added_by, index_path, checksum, non_interactive
+                config=self,
+                url=to_add[0],
+                to_add=to_add[1:],
+                added_by=added_by,
+                checksum=checksum,
+                non_interactive=non_interactive,
             )
 
-        return _add_modules(to_add, added_by, index_path, checksum, non_interactive)
+        return _add_modules(self, to_add, added_by, checksum, non_interactive)

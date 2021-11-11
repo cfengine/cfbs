@@ -141,7 +141,7 @@ def init_command(index_path=None, non_interactive=False) -> int:
 
 def status_command() -> int:
 
-    definition = CFBSConfig.get()
+    definition = CFBSConfig()
     print("Name:        %s" % definition["name"])
     print("Description: %s" % definition["description"])
     print("File:        %s" % cfbs_filename())
@@ -150,7 +150,7 @@ def status_command() -> int:
     if not modules:
         return 0
     print("\nModules:")
-    max_length = longest_module_name()
+    max_length = longest_module_name(definition)
     counter = 1
     for m in modules:
         if m["name"].startswith("./"):
@@ -168,7 +168,7 @@ def status_command() -> int:
 
 
 def search_command(terms: list, index_path=None) -> int:
-    config = CFBSJson(index_path)
+    config = CFBSConfig(index=index_path)
     index = config.index
     results = {}
 
@@ -217,13 +217,12 @@ def add_command(
     checksum=None,
     non_interactive=False,
 ) -> int:
-    return CFBSConfig.add_command(
-        to_add, added_by, index_path, checksum, non_interactive
-    )
+    config = CFBSConfig()
+    return config.add_command(to_add, added_by, index_path, checksum, non_interactive)
 
 
 def remove_command(to_remove: list, non_interactive=False):
-    definition = CFBSConfig.get()
+    definition = CFBSConfig()
     modules = definition["build"]
 
     def _get_module_by_name(name) -> dict:
@@ -264,14 +263,15 @@ def remove_command(to_remove: list, non_interactive=False):
             else:
                 print("Module '%s' not found" % name)
 
-    CFBSConfig.put(definition)
+    definition.save()
     if num_removed:
-        clean_command(non_interactive=non_interactive)
+        clean_command(non_interactive=non_interactive, definition=definition)
     return 0
 
 
-def clean_command(non_interactive=False):
-    definition = CFBSConfig.get()
+def clean_command(non_interactive=False, definition=None):
+    if not definition:
+        definition = CFBSConfig()
     modules = definition["build"]
 
     def _someone_needs_me(this) -> bool:
@@ -307,18 +307,16 @@ def clean_command(non_interactive=False):
     if answer.lower() in ("yes", "y"):
         for module in to_remove:
             modules.remove(module)
-        CFBSConfig.put(definition)
+        definition.save()
 
     return 0
 
 
 def update_command(non_interactive=False):
-    config = CFBSJson()
-    index = config.index
-
     new_deps = []
     new_deps_added_by = dict()
-    definition = CFBSConfig.get()
+    definition = CFBSConfig()
+    index = definition.index
     index_modules = index.get_modules()
     for module in definition["build"]:
         if "index" in module:
@@ -404,10 +402,10 @@ def update_command(non_interactive=False):
                 new_deps.extend(extra)
                 new_deps_added_by.update({item: module["name"] for item in extra})
 
-    CFBSConfig.put(definition)
+    definition.save()
 
     if new_deps:
-        add_command(new_deps, new_deps_added_by)
+        definition.add_command(new_deps, new_deps_added_by)
 
 
 def validate_command(index_path=None):
@@ -424,24 +422,23 @@ def validate_command(index_path=None):
     return 0
 
 
-def init_build_folder():
+def init_build_folder(config):
     rm("out", missing_ok=True)
     mkdir("out")
     mkdir("out/masterfiles")
     mkdir("out/steps")
 
 
-def longest_module_name() -> int:
-    return max((len(m["name"]) for m in CFBSConfig.get()["build"]))
+def longest_module_name(config) -> int:
+    return max((len(m["name"]) for m in config["build"]))
 
 
-def download_dependencies(prefer_offline=False, redownload=False):
+def download_dependencies(config, prefer_offline=False, redownload=False):
     print("\nModules:")
     counter = 1
-    definition = CFBSConfig.get()
-    max_length = longest_module_name()
+    max_length = longest_module_name(config)
     downloads = os.path.join(cfbs_dir(), "downloads")
-    for module in definition["build"]:
+    for module in config["build"]:
         name = module["name"]
         if name.startswith("./"):
             local_module_copy(module, counter, max_length)
@@ -495,7 +492,8 @@ def download_dependencies(prefer_offline=False, redownload=False):
 
 
 def download_command(force):
-    download_dependencies(redownload=force)
+    config = CFBSConfig()
+    download_dependencies(config, redownload=force)
 
 
 def build_step(module, step, max_length):
@@ -587,10 +585,10 @@ def build_step(module, step, max_length):
         user_error("Unknown build step operation: %s" % operation)
 
 
-def build_steps() -> int:
+def build_steps(config) -> int:
     print("\nSteps:")
-    module_name_length = longest_module_name()
-    for module in CFBSConfig.get()["build"]:
+    module_name_length = longest_module_name(config)
+    for module in config["build"]:
         for step in module["steps"]:
             build_step(module, step, module_name_length)
     if os.path.isfile("out/masterfiles/def.json"):
@@ -608,9 +606,10 @@ def build_steps() -> int:
 
 
 def build_command() -> int:
-    init_build_folder()
-    download_dependencies(prefer_offline=True)
-    build_steps()
+    config = CFBSConfig()
+    init_build_folder(config)
+    download_dependencies(config, prefer_offline=True)
+    build_steps(config)
 
 
 def install_command(args) -> int:
@@ -668,13 +667,10 @@ def print_module_info(data):
 
 
 def info_command(modules, index_path=None):
-    config = CFBSJson(index_path)
+    config = CFBSConfig(index=index_path)
     index = config.index
 
-    if os.path.isfile(cfbs_filename()):
-        build = CFBSConfig.get()["build"]
-    else:
-        build = {}
+    build = config.get("build", {})
 
     alias = None
 
