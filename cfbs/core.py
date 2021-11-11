@@ -308,147 +308,6 @@ class CFBSJson:
         self.validate_added_module(module)
 
 
-def _add_modules(
-    config,
-    to_add: list,
-    added_by="cfbs add",
-    index_path=None,
-    checksum=None,
-    non_interactive=False,
-) -> int:
-    index = config.index
-
-    # Translate all aliases and remote paths
-    translated = []
-    for module in to_add:
-        if not index.exists(module):
-            user_error("Module '%s' does not exist" % module)
-        if not module in index and os.path.exists(module):
-            translated.append(local_module_name(module))
-            continue
-        data = index[module]
-        if "alias" in data:
-            print("%s is an alias for %s" % (module, data["alias"]))
-            module = data["alias"]
-        translated.append(module)
-
-    to_add = translated
-
-    # added_by can be string, list of strings, or dictionary
-
-    # Convert string -> list:
-    if type(added_by) is str:
-        added_by = [added_by] * len(to_add)
-
-    # Convert list -> dict:
-    if not isinstance(added_by, dict):
-        assert len(added_by) == len(to_add)
-        added_by = {k: v for k, v in zip(to_add, added_by)}
-
-    # Should have a dict with keys for everything in to_add:
-    assert not any((k not in added_by for k in to_add))
-
-    # Print error and exit if there are unknown modules:
-    missing = [m for m in to_add if not m.startswith("./") and m not in index]
-    if missing:
-        user_error("Module(s) could not be found: %s" % ", ".join(missing))
-
-    # If some modules were added as deps previously, mark them as user requested:
-    for module in config["build"]:
-        if module["name"] in to_add:
-            new_added_by = added_by[module["name"]]
-            if new_added_by == "cfbs add":
-                module["added_by"] = "cfbs add"
-                config.save()
-
-    # Filter modules which are already added:
-    added = [m["name"] for m in config["build"]]
-    filtered = []
-    for module in to_add:
-        user_requested = added_by[module] == "cfbs add"
-        if module in [*added, *filtered]:
-            if user_requested:
-                print("Skipping already added module: %s" % module)
-            continue
-        filtered.append(module)
-
-    # Find all unmet dependencies:
-    dependencies = []
-    dependencies_added_by = []
-    for module in filtered:
-        assert index.exists(module)
-        data = index.get_build_step(module)
-        assert "alias" not in data
-        if "dependencies" in data:
-            for dep in data["dependencies"]:
-                if dep not in [*added, *filtered, *dependencies]:
-                    dependencies.append(dep)
-                    dependencies_added_by.append(module)
-
-    if dependencies:
-        config.add_command(dependencies, dependencies_added_by)
-
-    for module in filtered:
-        assert index.exists(module)
-        data = index.get_build_step(module)
-        new_module = {"name": module, **data, "added_by": added_by[module]}
-        config["build"].append(new_module)
-        if user_requested:
-            print("Added module: %s" % module)
-        else:
-            print("Added module: %s (Dependency of %s)" % (module, added_by[module]))
-        added.append(module)
-
-        # TODO: add_command should be refactored to use CFBSJson.add()
-        CFBSJson.validate_added_module(new_module)
-
-    config.save()
-    return 0
-
-
-def _add_using_url(
-    config,
-    url,
-    to_add: list,
-    added_by="cfbs add",
-    index_path=None,
-    checksum=None,
-    non_interactive=False,
-):
-    url_commit = None
-    if url.endswith(SUPPORTED_ARCHIVES):
-        config_path, url_commit = fetch_archive(url, checksum)
-    else:
-        assert url.startswith(("https://", "git://", "ssh://"))
-        config_path, url_commit = clone_url_repo(url)
-
-    remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
-
-    provides = remote_config.get_provides()
-    # URL specified in to_add, but no specific modules => let's add all (with a prompt)
-    if len(to_add) == 0:
-        modules = list(provides.values())
-        print("Found %d modules in '%s':" % (len(modules), url))
-        for m in modules:
-            print("  - " + m["name"])
-        if not any(modules):
-            user_error("no modules available, nothing to do")
-        if not non_interactive:
-            answer = input("Do you want to add all %d of them? [y/N] " % (len(modules)))
-            if answer.lower() not in ("y", "yes"):
-                return 0
-    else:
-        missing = [k for k in to_add if k not in provides]
-        if missing:
-            user_error("Missing modules: " + ", ".join(missing))
-        modules = [provides[k] for k in to_add]
-
-    for module in modules:
-        config.add(module, remote_config)
-
-    return 0
-
-
 class CFBSConfig(CFBSJson):
     @staticmethod
     def exists(path="./cfbs.json"):
@@ -456,6 +315,149 @@ class CFBSConfig(CFBSJson):
 
     def __init__(self, index=None):
         super().__init__(path="./cfbs.json", index_argument=index)
+
+    def _add_using_url(
+        self,
+        url,
+        to_add: list,
+        added_by="cfbs add",
+        index_path=None,
+        checksum=None,
+        non_interactive=False,
+    ):
+        url_commit = None
+        if url.endswith(SUPPORTED_ARCHIVES):
+            config_path, url_commit = fetch_archive(url, checksum)
+        else:
+            assert url.startswith(("https://", "git://", "ssh://"))
+            config_path, url_commit = clone_url_repo(url)
+
+        remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
+
+        provides = remote_config.get_provides()
+        # URL specified in to_add, but no specific modules => let's add all (with a prompt)
+        if len(to_add) == 0:
+            modules = list(provides.values())
+            print("Found %d modules in '%s':" % (len(modules), url))
+            for m in modules:
+                print("  - " + m["name"])
+            if not any(modules):
+                user_error("no modules available, nothing to do")
+            if not non_interactive:
+                answer = input(
+                    "Do you want to add all %d of them? [y/N] " % (len(modules))
+                )
+                if answer.lower() not in ("y", "yes"):
+                    return 0
+        else:
+            missing = [k for k in to_add if k not in provides]
+            if missing:
+                user_error("Missing modules: " + ", ".join(missing))
+            modules = [provides[k] for k in to_add]
+
+        for module in modules:
+            self.add(module, remote_config)
+
+        return 0
+
+    def _add_modules(
+        self,
+        to_add: list,
+        added_by="cfbs add",
+        index_path=None,
+        checksum=None,
+        non_interactive=False,
+    ) -> int:
+        index = self.index
+
+        # Translate all aliases and remote paths
+        translated = []
+        for module in to_add:
+            if not index.exists(module):
+                user_error("Module '%s' does not exist" % module)
+            if not module in index and os.path.exists(module):
+                translated.append(local_module_name(module))
+                continue
+            data = index[module]
+            if "alias" in data:
+                print("%s is an alias for %s" % (module, data["alias"]))
+                module = data["alias"]
+            translated.append(module)
+
+        to_add = translated
+
+        # added_by can be string, list of strings, or dictionary
+
+        # Convert string -> list:
+        if type(added_by) is str:
+            added_by = [added_by] * len(to_add)
+
+        # Convert list -> dict:
+        if not isinstance(added_by, dict):
+            assert len(added_by) == len(to_add)
+            added_by = {k: v for k, v in zip(to_add, added_by)}
+
+        # Should have a dict with keys for everything in to_add:
+        assert not any((k not in added_by for k in to_add))
+
+        # Print error and exit if there are unknown modules:
+        missing = [m for m in to_add if not m.startswith("./") and m not in index]
+        if missing:
+            user_error("Module(s) could not be found: %s" % ", ".join(missing))
+
+        # If some modules were added as deps previously, mark them as user requested:
+        for module in self["build"]:
+            if module["name"] in to_add:
+                new_added_by = added_by[module["name"]]
+                if new_added_by == "cfbs add":
+                    module["added_by"] = "cfbs add"
+                    self.save()
+
+        # Filter modules which are already added:
+        added = [m["name"] for m in self["build"]]
+        filtered = []
+        for module in to_add:
+            user_requested = added_by[module] == "cfbs add"
+            if module in [*added, *filtered]:
+                if user_requested:
+                    print("Skipping already added module: %s" % module)
+                continue
+            filtered.append(module)
+
+        # Find all unmet dependencies:
+        dependencies = []
+        dependencies_added_by = []
+        for module in filtered:
+            assert index.exists(module)
+            data = index.get_build_step(module)
+            assert "alias" not in data
+            if "dependencies" in data:
+                for dep in data["dependencies"]:
+                    if dep not in [*added, *filtered, *dependencies]:
+                        dependencies.append(dep)
+                        dependencies_added_by.append(module)
+
+        if dependencies:
+            self.add_command(dependencies, dependencies_added_by)
+
+        for module in filtered:
+            assert index.exists(module)
+            data = index.get_build_step(module)
+            new_module = {"name": module, **data, "added_by": added_by[module]}
+            self["build"].append(new_module)
+            if user_requested:
+                print("Added module: %s" % module)
+            else:
+                print(
+                    "Added module: %s (Dependency of %s)" % (module, added_by[module])
+                )
+            added.append(module)
+
+            # TODO: add_command should be refactored to use CFBSJson.add()
+            CFBSJson.validate_added_module(new_module)
+
+        self.save()
+        return 0
 
     def add_command(
         self,
@@ -471,8 +473,7 @@ class CFBSConfig(CFBSJson):
         if to_add[0].endswith(SUPPORTED_ARCHIVES) or to_add[0].startswith(
             ("https://", "git://", "ssh://")
         ):
-            return _add_using_url(
-                config=self,
+            return self._add_using_url(
                 url=to_add[0],
                 to_add=to_add[1:],
                 added_by=added_by,
@@ -480,4 +481,4 @@ class CFBSConfig(CFBSJson):
                 non_interactive=non_interactive,
             )
 
-        return _add_modules(self, to_add, added_by, checksum, non_interactive)
+        return self._add_modules(to_add, added_by, checksum, non_interactive)
