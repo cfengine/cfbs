@@ -86,15 +86,9 @@ def generate_index_for_local_module(module):
 class Index:
     """Class representing the cfbs.json containing the index of available modules"""
 
-    def __init__(self, path=None, data=None):
-        if data:
-            self._data = {"type": "index", "index": data}
-        else:
-            self._data = None
-            if path:
-                self.path = path
-            else:
-                self.path = _DEFAULT_INDEX
+    def __init__(self, index=_DEFAULT_INDEX):
+        self._unexpanded = index
+        self._data = None
 
     def __contains__(self, key):
         return key in self.get_modules()
@@ -105,27 +99,25 @@ class Index:
     def _cache_path(self) -> str:
         return cfbs_dir("cache.json")
 
-    def _get_data(self) -> dict:
-        path = self.path
-        if path.startswith("https://"):
-            index = get_json(path)
-            if not index:
-                index = read_json(self._cache_path())
-                if index:
-                    print("Warning: Downloading index failed, using cache")
-        else:
-            if not os.path.isfile(path):
-                sys.exit("Index does not exist at: '%s'" % path)
-            index = read_json(path)
-        if not index:
+    def _expand_index(self):
+        index = self._unexpanded
+        if type(index) in (dict, OrderedDict):
+            self._data = {"type": "index", "index": index}
+            return
+
+        assert type(index) is not Index
+        assert type(index) is str
+
+        self._data = get_or_read_json(index)
+
+        if not self._data:
             sys.exit("Could not download or find module index")
-        if "index" not in index:
+        if "index" not in self._data:
             sys.exit("Empty or invalid module index")
-        return index
 
     def get_data(self) -> dict:
         if not self._data:
-            self._data = self._get_data()
+            self._expand_index()
         return self._data
 
     def get_modules(self) -> dict:
@@ -141,13 +133,6 @@ class Index:
         module = OrderedDict({"name": name})
         module.update(self.get_modules()[name])
         return module
-
-
-def _expand_index(thing):
-    assert type(thing) in (OrderedDict, dict, list, str)
-    if type(thing) is str:
-        return get_or_read_json(thing)["index"]
-    return thing
 
 
 def _construct_provided_module(name, data, url, url_commit):
@@ -206,24 +191,11 @@ class CFBSJson:
             self._data = read_json(self.path)
 
         if index_argument:
-            self._unexpanded_index = index_argument
+            self.index = Index(index_argument)
         elif self._data and "index" in self._data:
-            assert type(self._data["index"]) in (OrderedDict, dict, list, str)
-            self._unexpanded_index = self._data["index"]
+            self.index = Index(self._data["index"])
         else:
-            self._unexpanded_index = _DEFAULT_INDEX
-
-        self._index = None
-
-    @property
-    def index(self):
-        if not self._index:
-            self._index = Index(data=_expand_index(self._unexpanded_index))
-        return self._index
-
-    @property
-    def using_default_index(self):
-        return self._unexpanded_index == _DEFAULT_INDEX
+            self.index = Index()
 
     def get(self, key, default=None):
         if not key in self:
