@@ -82,7 +82,7 @@ def generate_index_for_local_module(module):
 class Index:
     def __init__(self, path=None, data=None):
         """If data is not None, path is ignored"""
-        self._data = {"index": data} if data else None
+        self._data = {"type": "index", "index": data} if data else None
 
         if not self._data:
             if path:
@@ -184,12 +184,13 @@ def _has_autorun_tag(filename):
 class CFBSJson:
     def __init__(
         self,
+        path,
         index_argument=None,
-        path="./cfbs.json",
         data=None,
         url=None,
         url_commit=None,
     ):
+        assert path
         self.path = path
         self.url = url
         self.url_commit = url_commit
@@ -447,6 +448,10 @@ def _add_using_url(
 
 
 class CFBSConfig(CFBSJson):
+    @staticmethod
+    def exists(path="./cfbs.json"):
+        return os.path.exists(path)
+
     def __init__(self, index=None):
         super().__init__(path="./cfbs.json", index_argument=index)
 

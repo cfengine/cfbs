@@ -409,13 +409,22 @@ def update_command(non_interactive=False):
 
 
 def validate_command(index_path=None):
-    config = CFBSJson(index_path)
-    index = config.index
-    if not index:
+    if index_path:
+        index = CFBSJson(path=index_path).index
+    elif CFBSConfig.exists():
+        index = CFBSConfig().index
+    else:
         user_error("Index not found")
 
+    data = index.get_data()
+    if "type" not in data:
+        user_error("Index is missing a type field")
+
+    if data["type"] != "index":
+        user_error("Only validation of index files is currently implemented")
+
     try:
-        validate_index(index.get_data())
+        validate_index(data)
     except CFBSIndexException as e:
         print(e)
         return 1
