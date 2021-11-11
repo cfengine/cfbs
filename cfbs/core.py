@@ -91,10 +91,18 @@ class Index:
         self._data = None
 
     def __contains__(self, key):
-        return key in self.get_modules()
+        return key in self.data["index"]
 
     def __getitem__(self, key):
-        return self.get_modules()[key]
+        return self.data["index"][key]
+
+    def items(self):
+        return self.data["index"].items()
+
+    def get(self, key, default=None):
+        if not key in self:
+            return default
+        return self[key]
 
     def _cache_path(self) -> str:
         return cfbs_dir("cache.json")
@@ -121,9 +129,6 @@ class Index:
             self._expand_index()
         return self._data
 
-    def get_modules(self) -> dict:
-        return self.data["index"]
-
     def exists(self, module):
         return os.path.exists(module) or (module in self)
 
@@ -132,7 +137,7 @@ class Index:
             return _generate_local_module_object(name)
 
         module = OrderedDict({"name": name})
-        module.update(self.get_modules()[name])
+        module.update(self[name])
         return module
 
 

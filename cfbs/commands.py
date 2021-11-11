@@ -173,7 +173,7 @@ def search_command(terms: list, index_path=None) -> int:
     results = {}
 
     # in order to gather all aliases, we must iterate over everything first
-    for name, data in index.get_modules().items():
+    for name, data in index.items():
         if "alias" in data:
             realname = data["alias"]
             if realname not in results:
@@ -319,13 +319,12 @@ def update_command(non_interactive=False):
     new_deps_added_by = dict()
     definition = CFBSConfig()
     index = definition.index
-    index_modules = index.get_modules()
     for module in definition["build"]:
         if "index" in module:
             # not a module from the default index, not updating
             continue
 
-        index_info = index_modules.get(module["name"])
+        index_info = index.get(module["name"])
         if not index_info:
             log.warning(
                 "Module '%s' not present in the index, cannot update it", module["name"]
