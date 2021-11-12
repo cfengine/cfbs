@@ -408,7 +408,8 @@ def update_command(non_interactive=False):
                 new_deps_added_by.update({item: module["name"] for item in extra})
 
     if new_deps:
-        definition.add_command(new_deps, new_deps_added_by)
+        objects = [index.get_module_object(d, new_deps_added_by[d]) for d in new_deps]
+        definition.add_with_dependencies(objects)
     definition.save()
 
 

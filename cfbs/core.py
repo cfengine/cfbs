@@ -293,6 +293,11 @@ class CFBSConfig(CFBSJson):
             f.write(data)
 
     def add_with_dependencies(self, module, remote_config=None, dependent=None):
+        if type(module) is list:
+            # TODO: reuse logic from _add_modules instead
+            for m in module:
+                self.add_with_dependencies(m, remote_config, dependent)
+            return
         if type(module) is str:
             module_str = module
             module = (remote_config or self).get_module_for_build(module, dependent)
