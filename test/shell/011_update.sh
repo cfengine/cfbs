@@ -5,31 +5,62 @@ mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
 
-cfbs init
-cfbs status
-cfbs add mpf
-cfbs add systemd
-cfbs status
 echo '
-bundle agent test_bundle
 {
-  meta:
-    "tags" slist => { "autorun" };
-  reports:
-    "test";
+  "name": "Example",
+  "type": "policy-set",
+  "description": "Example description",
+  "build": [
+    {
+      "name": "promise-type-ansible",
+      "version": "0.0.0",
+      "commit": "invalid",
+      "added_by": "cfbs add",
+      "steps": []
+    }
+  ]
 }
-' > test_policy.cf
-cfbs add ./test_policy.cf
+' > cfbs.json
 
-cfbs update
-# This test currently just checks that cfbs update runs succesfully,
-# and doesn't break the cfbs.json project config file
-# TODO: Expand this test once we can add a specific version, and
-#       check that update actually changes something
+cfbs update --non-interactive
 
+# This is not perfect, it relies on the JSON formatting, and it doesn't check
+# everything it could. Still, it tests a lot and was really easy to add.
+# Also, it should not break on new commits(!)
+# TODO: Use jq, a python script, cfbs validate or soething similar
+
+cat cfbs.json | grep -F "name" | grep -F "Example"
+cat cfbs.json | grep -F "type" | grep -F "policy-set"
+cat cfbs.json | grep -F "description" | grep -F "Example description"
+
+cat cfbs.json | grep -F "name" | grep -F "promise-type-ansible"
+cat cfbs.json | grep -F "version" | grep -F "."
+cat cfbs.json | grep -F "commit"
+cat cfbs.json | grep -F "added_by" | grep -F "cfbs add"
+cat cfbs.json | grep -F "steps"
+cat cfbs.json | grep -F "copy ansible_promise.py modules/promises/"
+cat cfbs.json | grep -F "append enable.cf services/init.cf"
+cat cfbs.json | grep -F "tags" | grep -F "supported" | grep -F "promise-type"
+cat cfbs.json | grep -F "by" | grep -F "https://github.com/tranchitella"
+cat cfbs.json | grep -F "repo" | grep -F "https://github.com/cfengine/modules"
+cat cfbs.json | grep -F "subdirectory" | grep -F "promise-types/ansible/"
+cat cfbs.json | grep -F "dependencies" | grep -F "library-for-promise-types-in-python"
+cat cfbs.json | grep -F "description" | grep -F "Promise type to run ansible playbooks"
+
+cat cfbs.json | grep -F "name" | grep -F "library-for-promise-types-in-python"
+cat cfbs.json | grep -F "description" | grep -F "Library enabling promise types implemented in python"
+cat cfbs.json | grep -F "tags" | grep -F "supported" | grep -F "library"
+cat cfbs.json | grep -F "repo" | grep -F "https://github.com/cfengine/modules"
+cat cfbs.json | grep -F "by" | grep -F "https://github.com/cfengine"
+cat cfbs.json | grep -F "version" | grep -F "."
+cat cfbs.json | grep -F "commit"
+cat cfbs.json | grep -F "subdirectory" | grep -F "libraries/python/"
+cat cfbs.json | grep -F "added_by" | grep -F "promise-type-ansible"
+cat cfbs.json | grep -F "steps" | grep -F "copy cfengine.py modules/promises/"
+
+cfbs add mpf
 cfbs status
 cfbs build
 
-grep '"name": "autorun"' cfbs.json
-grep '"name": "./test_policy.cf"' cfbs.json
-ls out/masterfiles/services/autorun/test_policy.cf
+ls out/masterfiles/promises.cf
+ls out/masterfiles/modules/promises/ansible_promise.py
