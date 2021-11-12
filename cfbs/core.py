@@ -129,12 +129,34 @@ class Index:
     def exists(self, module):
         return os.path.exists(module) or (module in self)
 
-    def get_module_object(self, name):
-        if name.startswith("./"):
-            return _generate_local_module_object(name)
+    def check_existence(self, modules):
+        for module in modules:
+            if not self.exists(module):
+                user_error("Module '%s' does not exist" % module)
 
+    def translate_aliases(self, modules):
+        translated = []
+        for module in modules:
+            if not module in self and os.path.exists(module):
+                translated.append(local_module_name(module))
+                continue
+            data = self[module]
+            if "alias" in data:
+                print("%s is an alias for %s" % (module, data["alias"]))
+                module = data["alias"]
+            translated.append(module)
+        return translated
+
+    def get_module_object(self, name, added_by=None):
         module = OrderedDict({"name": name})
-        module.update(self[name])
+        if name.startswith("./"):
+            object = _generate_local_module_object(name)
+        else:
+            object = self[name]
+        module.update(object)
+        if added_by:
+            module["added_by"] = added_by
+        module.move_to_end("steps")
         return module
 
 
@@ -335,34 +357,8 @@ class CFBSConfig(CFBSJson):
 
         return 0
 
-    def _add_modules(
-        self,
-        to_add: list,
-        added_by="cfbs add",
-        index_path=None,
-        checksum=None,
-        non_interactive=False,
-    ) -> int:
-        index = self.index
-
-        # Translate all aliases and remote paths
-        translated = []
-        for module in to_add:
-            if not index.exists(module):
-                user_error("Module '%s' does not exist" % module)
-            if not module in index and os.path.exists(module):
-                translated.append(local_module_name(module))
-                continue
-            data = index[module]
-            if "alias" in data:
-                print("%s is an alias for %s" % (module, data["alias"]))
-                module = data["alias"]
-            translated.append(module)
-
-        to_add = translated
-
-        # added_by can be string, list of strings, or dictionary
-
+    @staticmethod
+    def _convert_added_by(added_by, to_add):
         # Convert string -> list:
         if type(added_by) is str:
             added_by = [added_by] * len(to_add)
@@ -375,60 +371,95 @@ class CFBSConfig(CFBSJson):
         # Should have a dict with keys for everything in to_add:
         assert not any((k not in added_by for k in to_add))
 
-        # Print error and exit if there are unknown modules:
-        missing = [m for m in to_add if not m.startswith("./") and m not in index]
-        if missing:
-            user_error("Module(s) could not be found: %s" % ", ".join(missing))
+        return added_by
 
-        # If some modules were added as deps previously, mark them as user requested:
+    def _update_added_by(self, requested, added_by):
         for module in self["build"]:
-            if module["name"] in to_add:
+            if module["name"] in requested:
                 new_added_by = added_by[module["name"]]
                 if new_added_by == "cfbs add":
                     module["added_by"] = "cfbs add"
 
-        # Filter modules which are already added:
+    def _filter_modules_to_add(self, modules):
         added = [m["name"] for m in self["build"]]
         filtered = []
-        for module in to_add:
-            user_requested = added_by[module] == "cfbs add"
-            if module in [*added, *filtered]:
-                if user_requested:
-                    print("Skipping already added module: %s" % module)
-                continue
-            filtered.append(module)
+        for module in modules:
+            assert module not in filtered
+            if module in added:
+                print("Skipping already added module: %s" % module)
+            else:
+                filtered.append(module)
+        return filtered
+
+    def _find_dependencies(self, modules, exclude):
+        assert type(modules) is list
+        assert type(exclude) is list
+        exclude = modules + exclude
+        exclude_names = [m["name"] for m in exclude]
+        index = self.index
+        dependencies = []
+        for module in modules:
+            if "dependencies" in module:
+                for dep in module["dependencies"]:
+                    if dep not in exclude_names:
+                        m = index.get_module_object(dep, module["name"])
+                        dependencies.append(m)
+                        exclude_names.append(dep)
+        assert not any(d for d in dependencies if "alias" in d)
+        if dependencies:
+            dependencies += self._find_dependencies(dependencies, exclude)
+        return dependencies
+
+    def _add_without_dependencies(self, modules):
+        assert modules and len(modules) > 0 and modules[0]["name"]
+        for module in modules:
+            name = module["name"]
+            assert name not in (m["name"] for m in self["build"])
+            self["build"].append(module)
+            self.validate_added_module(module)
+
+            added_by = module["added_by"]
+            if added_by == "cfbs add":
+                print("Added module: %s" % name)
+            else:
+                print("Added module: %s (Dependency of %s)" % (name, added_by))
+
+    def _add_modules(
+        self,
+        names: list,
+        added_by="cfbs add",
+        index_path=None,
+        checksum=None,
+        non_interactive=False,
+    ) -> int:
+        index = self.index
+
+        names = index.translate_aliases(names)
+        index.check_existence(names)
+
+        # Convert added_by to dictionary:
+        added_by = self._convert_added_by(added_by, names)
+
+        # If some modules were added as deps previously, mark them as user requested:
+        self._update_added_by(names, added_by)
+
+        # Filter modules which are already added:
+        names = self._filter_modules_to_add(names)
+
+        # Convert names to objects:
+        modules_to_add = [index.get_module_object(m, added_by[m]) for m in names]
+        modules_already_added = self["build"]
+
+        assert not any(m for m in modules_to_add if "name" not in m)
+        assert not any(m for m in modules_already_added if "name" not in m)
 
         # Find all unmet dependencies:
-        dependencies = []
-        dependencies_added_by = []
-        for module in filtered:
-            assert index.exists(module)
-            data = index.get_module_object(module)
-            assert "alias" not in data
-            if "dependencies" in data:
-                for dep in data["dependencies"]:
-                    if dep not in [*added, *filtered, *dependencies]:
-                        dependencies.append(dep)
-                        dependencies_added_by.append(module)
+        dependencies = self._find_dependencies(modules_to_add, modules_already_added)
 
         if dependencies:
-            self.add_command(dependencies, dependencies_added_by)
+            self._add_without_dependencies(dependencies)
 
-        for module in filtered:
-            assert index.exists(module)
-            data = index.get_module_object(module)
-            new_module = {"name": module, **data, "added_by": added_by[module]}
-            self["build"].append(new_module)
-            if user_requested:
-                print("Added module: %s" % module)
-            else:
-                print(
-                    "Added module: %s (Dependency of %s)" % (module, added_by[module])
-                )
-            added.append(module)
-
-            # TODO: add_command should be refactored to use CFBSConfig.add_with_dependencies()
-            self.validate_added_module(new_module)
+        self._add_without_dependencies(modules_to_add)
 
         return 0
 
