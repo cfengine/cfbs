@@ -372,11 +372,15 @@ def update_command(non_interactive=False):
             if key == "steps":
                 # same commit => user modifications, don't revert them
                 if commit_differs:
-                    ans = input(
-                        "Module %s has different build steps now\n" % module["name"]
-                        + "old steps: %s\n" % module["steps"]
-                        + "new steps: %s\n" % index_info["steps"]
-                        + "Do you want to use the new build steps? [y/N]"
+                    ans = (
+                        input(
+                            "Module %s has different build steps now\n" % module["name"]
+                            + "old steps: %s\n" % module["steps"]
+                            + "new steps: %s\n" % index_info["steps"]
+                            + "Do you want to use the new build steps? [y/N]"
+                        )
+                        if not non_interactive
+                        else "yes"
                     )
                     if ans.lower() in ["y", "yes"]:
                         module["steps"] = index_info["steps"]
