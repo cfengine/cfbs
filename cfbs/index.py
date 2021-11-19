@@ -250,7 +250,7 @@ class CFBSConfig:
     def _module_is_in_build(self, module):
         return module["name"] in (m["name"] for m in self["build"])
 
-    def validate_added_module(module):
+    def validate_added_module(self, module):
         """Try to help the user with warnings in appropriate cases"""
 
         name = module["name"]
