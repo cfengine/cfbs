@@ -13,3 +13,4 @@ bash test/shell/007_install.sh
 bash test/shell/008_remove.sh
 bash test/shell/009_clean.sh
 bash test/shell/010_local_add.sh
+bash test/shell/012_prepend_dot_slash.sh
