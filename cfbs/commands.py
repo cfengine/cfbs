@@ -625,6 +625,9 @@ def remove_command(to_remove: list, non_interactive=False):
     modules = definition["build"]
 
     def _get_module_by_name(name) -> dict:
+        if not name.startswith("./") and name.endswith(".cf") and os.path.exists(name):
+            name = "./" + name
+
         for module in modules:
             if module["name"] == name:
                 return module
