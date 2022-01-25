@@ -83,13 +83,13 @@ def user_error(msg: str):
     sys.exit("Error: " + msg)
 
 
-def get_json(url: str) -> dict:
+def get_json(url: str) -> OrderedDict:
     r = requests.get(url)
     assert r.status_code >= 200 and r.status_code < 300
-    return r.json()
+    return r.json(object_pairs_hook=OrderedDict)
 
 
-def get_or_read_json(path: str) -> dict:
+def get_or_read_json(path: str) -> OrderedDict:
     if path.startswith("https://"):
         return get_json(path)
     return read_json(path)
