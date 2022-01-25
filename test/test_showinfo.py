@@ -1,12 +1,11 @@
 import os
 import re
 import pytest
-from cfbs.commands import info_command, clear_definition
+from cfbs.commands import info_command
 
 
 @pytest.mark.parametrize("chdir", ["sample"], indirect=True)
 def test_noargs(capfd, chdir):
-    clear_definition()
     info_command([])
     out, _ = capfd.readouterr()
     assert out == "\n"
@@ -14,7 +13,6 @@ def test_noargs(capfd, chdir):
 
 @pytest.mark.parametrize("chdir", ["sample"], indirect=True)
 def test_showinfo(capfd, chdir):
-    clear_definition()
     assert os.path.exists("cfbs.json")
     info_command(
         "autorun masterfiles foo/main.cf bar/my.json bar/baz/main.cf nosuchfile".split(
