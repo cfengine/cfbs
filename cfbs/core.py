@@ -100,9 +100,7 @@ class Index:
         return self.data["index"].items()
 
     def get(self, key, default=None):
-        if not key in self:
-            return default
-        return self[key]
+        return self.data["index"].get(key, default)
 
     def _expand_index(self):
         index = self._unexpanded
@@ -222,9 +220,7 @@ class CFBSJson:
             self.index = Index()
 
     def get(self, key, default=None):
-        if not key in self:
-            return default
-        return self[key]
+        return self._data.get(key, default)
 
     def __getitem__(self, key):
         assert key != "index"
