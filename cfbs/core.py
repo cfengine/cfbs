@@ -100,9 +100,7 @@ class Index:
         return self.data["index"].items()
 
     def get(self, key, default=None):
-        if not key in self:
-            return default
-        return self[key]
+        return self.data["index"].get(key, default)
 
     def _expand_index(self):
         index = self._unexpanded
@@ -110,7 +108,6 @@ class Index:
             self._data = {"type": "index", "index": index}
             return
 
-        assert type(index) is not Index
         assert type(index) is str
 
         self._data = get_or_read_json(index)
@@ -223,9 +220,7 @@ class CFBSJson:
             self.index = Index()
 
     def get(self, key, default=None):
-        if not key in self:
-            return default
-        return self[key]
+        return self._data.get(key, default)
 
     def __getitem__(self, key):
         assert key != "index"
@@ -404,12 +399,12 @@ class CFBSConfig(CFBSJson):
         index = self.index
         dependencies = []
         for module in modules:
-            if "dependencies" in module:
-                for dep in module["dependencies"]:
-                    if dep not in exclude_names:
-                        m = index.get_module_object(dep, module["name"])
-                        dependencies.append(m)
-                        exclude_names.append(dep)
+            for dep in module.get("dependencies", []):
+                if dep in exclude_names:
+                    continue
+                m = index.get_module_object(dep, module["name"])
+                dependencies.append(m)
+                exclude_names.append(dep)
         assert not any(d for d in dependencies if "alias" in d)
         if dependencies:
             dependencies += self._find_dependencies(dependencies, exclude)

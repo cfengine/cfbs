@@ -27,7 +27,7 @@ cfbs update --non-interactive
 # This is not perfect, it relies on the JSON formatting, and it doesn't check
 # everything it could. Still, it tests a lot and was really easy to add.
 # Also, it should not break on new commits(!)
-# TODO: Use jq, a python script, cfbs validate or soething similar
+# TODO: Use jq, a python script, cfbs validate or something similar
 
 cat cfbs.json | grep -F "name" | grep -F "Example"
 cat cfbs.json | grep -F "type" | grep -F "policy-set"
