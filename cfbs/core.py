@@ -110,7 +110,6 @@ class Index:
             self._data = {"type": "index", "index": index}
             return
 
-        assert type(index) is not Index
         assert type(index) is str
 
         self._data = get_or_read_json(index)
