@@ -399,12 +399,12 @@ class CFBSConfig(CFBSJson):
         index = self.index
         dependencies = []
         for module in modules:
-            if "dependencies" in module:
-                for dep in module["dependencies"]:
-                    if dep not in exclude_names:
-                        m = index.get_module_object(dep, module["name"])
-                        dependencies.append(m)
-                        exclude_names.append(dep)
+            for dep in module.get("dependencies", []):
+                if dep in exclude_names:
+                    continue
+                m = index.get_module_object(dep, module["name"])
+                dependencies.append(m)
+                exclude_names.append(dep)
         assert not any(d for d in dependencies if "alias" in d)
         if dependencies:
             dependencies += self._find_dependencies(dependencies, exclude)
