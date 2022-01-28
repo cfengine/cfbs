@@ -628,7 +628,7 @@ def build_command() -> int:
     build_steps(config)
 
 
-def install_command(args) -> int:
+def install_command(args, merge=False) -> int:
     if len(args) > 1:
         user_error(
             "Only one destination is allowed for command: cfbs install [destination]"
@@ -642,14 +642,27 @@ def install_command(args) -> int:
         destination = "/var/cfengine/masterfiles"
     if len(args) > 0:
         destination = args[0]
+        merge = True
     elif os.getuid() == 0:
         destination = "/var/cfengine/masterfiles"
     else:
         destination = os.path.join(os.environ["HOME"], ".cfagent/inputs")
     if not destination.startswith("/") and not destination.startswith("./"):
         destination = "./" + destination
-    rm(destination, missing_ok=True)
-    cp("out/masterfiles", destination)
+    if not merge and os.path.exists(os.path.join(destination, ".git")):
+        user_error( "destination, {}, has a .git directory, not installing. Destination should be a previously installed directory or non-existent." )
+
+    print( "destination is {}, merge is {}".format(destination, merge))
+#    return 0
+    if merge:
+      built, original = read_json("out/masterfiles/def.json"), read_json(os.path.join(destination, "def.json"))
+      merged = merge_json(original, built)
+      write_json(os.path.join(destination, "def.json.new"), merged)
+      cp("out/masterfiles", destination)
+      cp(os.path.join(destination, "def.json.new"), os.path.join(destination, "def.json"))
+    else:
+      rm(destination, missing_ok=True)
+      cp("out/masterfiles", destination)
     print("Installed to %s" % destination)
     return 0
 
