@@ -157,7 +157,8 @@ class Index:
         return module
 
 
-def _construct_provided_module(name, data, url, url_commit):
+def _construct_provided_module(name, data, url, commit):
+    assert "@" not in url  # Should already be split into url and commit
     module = OrderedDict()
     module["name"] = name
     if "description" not in data:
@@ -166,7 +167,7 @@ def _construct_provided_module(name, data, url, url_commit):
         )
     module["description"] = data["description"]
     module["url"] = url
-    module["commit"] = url_commit
+    module["commit"] = commit
     subdirectory = data.get("subdirectory")
     if subdirectory:
         module["subdirectory"] = subdirectory
@@ -328,6 +329,10 @@ class CFBSConfig(CFBSJson):
         else:
             assert url.startswith(("https://", "git://", "ssh://"))
             config_path, url_commit = clone_url_repo(url)
+
+        if "@" in url:
+            assert url.split("@")[1] == url_commit
+            url = url.split("@")[0]
 
         remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
 
