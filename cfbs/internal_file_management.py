@@ -139,6 +139,13 @@ def _get_git_repo_commit_sha(repo_path):
         return f.read().strip()
 
 
+def _clone_and_checkout(url, path, commit):
+    # NOTE: If any of these shell (git) commands fail, we will exit
+    if not os.path.exists(os.path.join(path, ".git")):
+        sh("git clone --no-checkout %s %s" % (url, path))
+    sh("git checkout " + commit, directory=path)
+
+
 def clone_url_repo(repo_url):
     assert repo_url.startswith(("https://", "ssh://", "git://"))
 
@@ -157,8 +164,7 @@ def clone_url_repo(repo_url):
 
     if commit is not None:
         commit_path = os.path.join(repo_dir, commit)
-        sh("git clone --no-checkout %s %s" % (repo_url, commit_path))
-        sh("cd %s; git checkout %s" % (commit_path, commit))
+        _clone_and_checkout(repo_url, commit_path, commit)
     else:
         master_path = os.path.join(repo_dir, "master")
         sh("git clone %s %s" % (repo_url, master_path))
