@@ -158,7 +158,11 @@ class Index:
 
 
 def _construct_provided_module(name, data, url, commit):
-    assert "@" not in url  # Should already be split into url and commit
+    # At this point the @commmit part should be removed from url so:
+    # either url should not have an @,
+    # or the @ should be for user@host.something
+    assert "@" not in url or url.rindex(".") > url.rindex("@")
+
     module = OrderedDict()
     module["name"] = name
     if "description" not in data:
@@ -330,9 +334,9 @@ class CFBSConfig(CFBSJson):
             assert url.startswith(("https://", "git://", "ssh://"))
             config_path, url_commit = clone_url_repo(url)
 
-        if "@" in url:
-            assert url.split("@")[1] == url_commit
-            url = url.split("@")[0]
+        if "@" in url and (url.rindex("@") > url.rindex(".")):
+            assert url.split("@")[-1] == url_commit
+            url = url[0 : url.rindex("@")]
 
         remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
 
