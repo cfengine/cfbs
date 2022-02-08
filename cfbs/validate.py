@@ -1,7 +1,6 @@
 import argparse
 import json
 import sys
-import requests
 import re
 
 from cfbs.utils import is_a_commit_hash
@@ -54,13 +53,6 @@ def validate_index(index):
             raise CFBSIndexException(name, "'repo' must be of type string")
         if not modules[name]["repo"]:
             raise CFBSIndexException(name, "'repo' must be non-empty")
-        response = requests.head(modules[name]["repo"])
-        if not response.ok:
-            raise CFBSIndexException(
-                name,
-                "HEAD request of repo responded with status code '%d'"
-                % response.status_code,
-            )
 
     def validate_by(name, modules):
         if not "by" in modules[name]:
@@ -126,38 +118,10 @@ def validate_index(index):
                     name, "'steps' must be a list of non-empty strings"
                 )
 
-    def validate_derived_url(name, modules):
-        url = modules[name]["repo"]
-        url += "/tree/" + modules[name]["commit"]
-        if "subdirectory" in modules[name]:
-            url += "/" + modules[name]["subdirectory"]
-        response = requests.head(url)
-        if not response.ok:
-            raise CFBSIndexException(
-                name,
-                "HEAD request of url '%s' responded with status code '%d'"
-                % (url, response.status_code),
-            )
-
     def validate_url_field(name, modules, field):
         url = modules[name].get(field)
-        if not url:
-            return
-
-        if not url.startswith("https://"):
+        if url and not url.startswith("https://"):
             raise CFBSIndexException(name, "'%s' must be an HTTPS URL" % field)
-        try:
-            response = requests.head(url)
-        except requests.RequestException as e:
-            raise CFBSIndexException(
-                name, "HEAD request of %s url '%s' failed: %s" % (field, url, e)
-            ) from e
-        if not response.ok:
-            raise CFBSIndexException(
-                name,
-                "HEAD request of %s url '%s' responded with status code '%d'"
-                % (field, url, response.status_code),
-            )
 
     # Make sure index has a collection named modules
     if not "index" in index:
@@ -180,7 +144,6 @@ def validate_index(index):
             if "subdirectory" in modules[name]:  # optional attribute
                 validate_subdirectory(name, modules)
             validate_steps(name, modules)
-            validate_derived_url(name, modules)
             validate_url_field(name, modules, "website")
             validate_url_field(name, modules, "documentation")
 
