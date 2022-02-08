@@ -137,6 +137,9 @@ class Index:
             if not module in self and os.path.exists(module):
                 translated.append(local_module_name(module))
                 continue
+            if module not in self:
+                translated.append(module)
+                continue  # Will error later
             data = self[module]
             if "alias" in data:
                 print("%s is an alias for %s" % (module, data["alias"]))
