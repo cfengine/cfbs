@@ -423,7 +423,10 @@ class CFBSConfig(CFBSJson):
         return dependencies
 
     def _add_without_dependencies(self, modules):
-        assert modules and len(modules) > 0 and modules[0]["name"]
+        assert modules
+        assert len(modules) > 0
+        assert modules[0]["name"]
+
         for module in modules:
             name = module["name"]
             assert name not in (m["name"] for m in self["build"])
