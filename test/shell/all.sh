@@ -16,3 +16,4 @@ bash test/shell/010_local_add.sh
 bash test/shell/011_update.sh
 bash test/shell/012_prepend_dot_slash.sh
 bash test/shell/013_add_url_commit.sh
+bash test/shell/014_add_nonexistent.sh
