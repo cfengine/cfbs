@@ -460,6 +460,8 @@ class CFBSConfig(CFBSJson):
 
         # Filter modules which are already added:
         names = self._filter_modules_to_add(names)
+        if not names:
+            return 0  # Everything already added
 
         # Convert names to objects:
         modules_to_add = [index.get_module_object(m, added_by[m]) for m in names]
