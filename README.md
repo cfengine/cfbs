@@ -95,10 +95,21 @@ cfbs clean
 ### Deploy your policy set to a remote hub
 
 ```
-cf-remote deploy -H hub out/masterfiles.tgz
+cf-remote deploy
 ```
 
-(Replace `hub` with the cf-remote group name or IP of your hub).
+This will default to the hub(s) you have spawned or saved in `cf-remote`.
+To specify a hub manually:
+
+```
+cf-remote deploy --hub hub
+```
+
+where `hub` is a `cf-remote` group name, or:
+
+```
+cf-remote deploy --hub root@1.2.3.4
+```
 
 ## Examples
 
@@ -161,15 +172,15 @@ If you are creating a new module or needing more control you can edit `cfbs.json
 
 An example of the result of `cfbs add ./policy.cf`:
 
-```
-    {
-      "name": "./policy.cf",
-      "description": "Local policy file added using cfbs command line",
-      "tags": ["local"],
-      "dependencies": ["autorun"],
-      "steps": ["copy ./policy.cf services/autorun/policy.cf"],
-      "added_by": "cfbs add"
-    }
+```json
+{
+  "name": "./policy.cf",
+  "description": "Local policy file added using cfbs command line",
+  "tags": ["local"],
+  "dependencies": ["autorun"],
+  "steps": ["copy ./policy.cf services/autorun/policy.cf"],
+  "added_by": "cfbs add"
+}
 ```
 
 In most cases the steps are designed to copy something locally to the resulting `out/masterfiles` output directory created when running `cfbs build`.
@@ -178,19 +189,19 @@ The `source` parameters in each step are relative either to the local cfbs proje
 
 Here is an example from the `client-initiated-reporting` module
 
-```
-    {
-      "name": "client-initiated-reporting",
-      "description": "Enable client initiated reporting and disable pull collection",
-      "tags": ["experimental", "reporting"],
-      "repo": "https://github.com/cfengine/modules",
-      "by": "https://github.com/cfengine",
-      "version": "0.1.1",
-      "commit": "c3b7329b240cf7ad062a0a64ee8b607af2cb912a",
-      "subdirectory": "reporting/client-initiated-reporting",
-      "steps": ["json def.json def.json"],
-      "added_by": "cfbs add"
-    }
+```json
+{
+  "name": "client-initiated-reporting",
+  "description": "Enable client initiated reporting and disable pull collection",
+  "tags": ["experimental", "reporting"],
+  "repo": "https://github.com/cfengine/modules",
+  "by": "https://github.com/cfengine",
+  "version": "0.1.1",
+  "commit": "c3b7329b240cf7ad062a0a64ee8b607af2cb912a",
+  "subdirectory": "reporting/client-initiated-reporting",
+  "steps": ["json def.json def.json"],
+  "added_by": "cfbs add"
+}
 ```
 
 The source `def.json` to be merged above will be located at `reporting/client-initiated-reporting/def.json`.
