@@ -253,3 +253,17 @@ def find(name, recursive=True, directories=False, files=True, extension=None):
                     yield os.path.join(root, file)
         if not recursive:
             return  # End iteration after looking through first (top) level
+
+
+def cache(func):
+    """Memoization decorator similar to functools.cache (Python 3.9+)"""
+    memo = {}
+
+    def wrapper(*args, **kwargs):
+        kwargs = OrderedDict(sorted(kwargs.items()))
+        key = str({"args": args, "kwargs": kwargs})
+        if key not in memo:
+            memo[key] = func(*args, **kwargs)
+        return memo[key]
+
+    return wrapper

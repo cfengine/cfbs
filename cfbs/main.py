@@ -8,11 +8,12 @@ import argparse
 import logging as log
 
 from cfbs.version import string as version
-from cfbs.utils import user_error, is_cfbs_repo
+from cfbs.utils import user_error, is_cfbs_repo, cache
 from cfbs import commands
 
 
-def get_args():
+@cache
+def _get_arg_parser():
     command_list = [
         cmd.split("_")[0] for cmd in dir(commands) if cmd.endswith("_command")
     ]
@@ -58,10 +59,12 @@ def get_args():
         help="Keep order of items in the JSON in 'cfbs pretty'",
         action="store_true",
     )
+    return parser
 
+
+def get_args():
+    parser = _get_arg_parser()
     args = parser.parse_args()
-    if args.command == "help":
-        parser.print_help()
     return args
 
 
@@ -94,7 +97,9 @@ def main() -> int:
         return 0
 
     if not args.command:
-        user_error("Usage: cfbs COMMAND")
+        _get_arg_parser().print_help()
+        print("")
+        user_error("No command given")
 
     if args.non_interactive and args.command not in (
         "init",
@@ -118,6 +123,7 @@ Warning: The --non-interactive option is only meant for testing (!)
 
     # Commands you can run outside a cfbs repo:
     if args.command == "help":
+        _get_arg_parser().print_help()
         return 0
     if args.command == "init":
         return commands.init_command(
@@ -157,4 +163,5 @@ Warning: The --non-interactive option is only meant for testing (!)
     if args.command == "update":
         return commands.update_command(non_interactive=args.non_interactive)
 
+    _get_arg_parser().print_help()
     user_error("Command '%s' not found" % args.command)
