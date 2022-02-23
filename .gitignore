@@ -17,6 +17,7 @@ build/
 dist/
 .cache
 cfbs.json
+out/*
 
 # Test Outputs
 test/add_folder_sample/cfbs.json
