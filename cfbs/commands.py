@@ -3,10 +3,7 @@ Functions ending in "_command" are dynamically included in the list of commands
 in main.py for -h/--help/help.
 """
 import os
-import re
-import distutils.spawn
 import logging as log
-import shutil
 import json
 
 from cfbs.utils import (
@@ -14,7 +11,6 @@ from cfbs.utils import (
     cfbs_filename,
     is_cfbs_repo,
     user_error,
-    strip_left,
     strip_right,
     pad_right,
     get_json,

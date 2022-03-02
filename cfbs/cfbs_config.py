@@ -1,35 +1,15 @@
 #!/usr/bin/env python3
 import os
-import sys
 import logging as log
-from collections import OrderedDict
-from copy import deepcopy
 
 from cfbs.utils import (
-    cfbs_dir,
-    cfbs_filename,
     user_error,
-    strip_left,
-    strip_right,
-    pad_right,
-    get_json,
-    write_json,
-    read_json,
-    get_or_read_json,
-    merge_json,
     read_file,
     find,
-    mkdir,
-    touch,
-    rm,
-    cp,
-    sh,
-    cfengine_dir,
 )
 from cfbs.internal_file_management import (
     clone_url_repo,
     fetch_archive,
-    local_module_name,
     SUPPORTED_ARCHIVES,
 )
 from cfbs.pretty import pretty
