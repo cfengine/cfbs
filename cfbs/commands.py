@@ -35,12 +35,10 @@ from cfbs.internal_file_management import (
     local_module_copy,
     SUPPORTED_ARCHIVES,
 )
+from cfbs.index import _VERSION_INDEX
 
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
-_VERSION_INDEX = (
-    "https://raw.githubusercontent.com/cfengine/build-index/master/versions.json"
-)
 
 
 def _item_index(iterable, item, extra_at_end=True):

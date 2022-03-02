@@ -7,6 +7,9 @@ from cfbs.internal_file_management import local_module_name
 _DEFAULT_INDEX = (
     "https://raw.githubusercontent.com/cfengine/build-index/master/cfbs.json"
 )
+_VERSION_INDEX = (
+    "https://raw.githubusercontent.com/cfengine/build-index/master/versions.json"
+)
 
 
 def _local_module_data_cf_file(module):
