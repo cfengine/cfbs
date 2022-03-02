@@ -30,7 +30,8 @@ from cfbs.utils import (
 )
 
 from cfbs.pretty import pretty_check_file, pretty_file
-from cfbs.core import CFBSJson, CFBSConfig
+from cfbs.cfbs_config import CFBSConfig
+from cfbs.cfbs_json import CFBSJson
 from cfbs.validate import CFBSIndexException, validate_index
 from cfbs.internal_file_management import (
     fetch_archive,
