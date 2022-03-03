@@ -208,7 +208,7 @@ class CFBSConfig(CFBSJson):
 
     def _add_modules(
         self,
-        names: list,
+        to_add: list,
         added_by="cfbs add",
         index_path=None,
         checksum=None,
@@ -216,22 +216,22 @@ class CFBSConfig(CFBSJson):
     ) -> int:
         index = self.index
 
-        names = index.translate_aliases(names)
-        index.check_existence(names)
+        to_add = index.translate_aliases(to_add)
+        index.check_existence(to_add)
 
         # Convert added_by to dictionary:
-        added_by = self._convert_added_by(added_by, names)
+        added_by = self._convert_added_by(added_by, to_add)
 
         # If some modules were added as deps previously, mark them as user requested:
-        self._update_added_by(names, added_by)
+        self._update_added_by(to_add, added_by)
 
         # Filter modules which are already added:
-        names = self._filter_modules_to_add(names)
-        if not names:
+        to_add = self._filter_modules_to_add(to_add)
+        if not to_add:
             return 0  # Everything already added
 
         # Convert names to objects:
-        modules_to_add = [index.get_module_object(m, added_by[m]) for m in names]
+        modules_to_add = [index.get_module_object(m, added_by[m]) for m in to_add]
         modules_already_added = self["build"]
 
         assert not any(m for m in modules_to_add if "name" not in m)
