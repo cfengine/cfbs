@@ -14,6 +14,7 @@ from cfbs.internal_file_management import (
 )
 from cfbs.pretty import pretty
 from cfbs.cfbs_json import CFBSJson
+from cfbs.module import Module
 
 
 def _has_autorun_tag(filename):
@@ -145,27 +146,27 @@ class CFBSConfig(CFBSJson):
         # Convert list -> dict:
         if not isinstance(added_by, dict):
             assert len(added_by) == len(to_add)
-            added_by = {k: v for k, v in zip(to_add, added_by)}
+            added_by = {k.name: v for k, v in zip(to_add, added_by)}
 
         # Should have a dict with keys for everything in to_add:
-        assert not any((k not in added_by for k in to_add))
+        assert not any((k.name not in added_by for k in to_add))
 
         return added_by
 
     def _update_added_by(self, requested, added_by):
-        for module in self["build"]:
-            if module["name"] in requested:
-                new_added_by = added_by[module["name"]]
-                if new_added_by == "cfbs add":
-                    module["added_by"] = "cfbs add"
+        for req in requested:
+            for mod in self["build"]:
+                if req.name == mod["name"]:
+                    if added_by[req.name] == "cfbs add":
+                        mod["added_by"] = "cfbs add"
 
     def _filter_modules_to_add(self, modules):
         added = [m["name"] for m in self["build"]]
         filtered = []
         for module in modules:
             assert module not in filtered
-            if module in added:
-                print("Skipping already added module: %s" % module)
+            if module.name in added:
+                print("Skipping already added module: %s" % module.name)
             else:
                 filtered.append(module)
         return filtered
@@ -216,22 +217,23 @@ class CFBSConfig(CFBSJson):
     ) -> int:
         index = self.index
 
-        to_add = index.translate_aliases(to_add)
-        index.check_existence(to_add)
+        modules = [Module(m) for m in to_add]
+        index.translate_aliases(modules)
+        index.check_existence(modules)
 
         # Convert added_by to dictionary:
-        added_by = self._convert_added_by(added_by, to_add)
+        added_by = self._convert_added_by(added_by, modules)
 
         # If some modules were added as deps previously, mark them as user requested:
-        self._update_added_by(to_add, added_by)
+        self._update_added_by(modules, added_by)
 
         # Filter modules which are already added:
-        to_add = self._filter_modules_to_add(to_add)
+        to_add = self._filter_modules_to_add(modules)
         if not to_add:
             return 0  # Everything already added
 
         # Convert names to objects:
-        modules_to_add = [index.get_module_object(m, added_by[m]) for m in to_add]
+        modules_to_add = [index.get_module_object(m, added_by[m.name]) for m in to_add]
         modules_already_added = self["build"]
 
         assert not any(m for m in modules_to_add if "name" not in m)

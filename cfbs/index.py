@@ -1,7 +1,8 @@
 import sys, os
 from collections import OrderedDict
 
-from cfbs.utils import get_or_read_json, user_error
+from cfbs.module import Module
+from cfbs.utils import get_or_read_json, user_error, get_json
 from cfbs.internal_file_management import local_module_name
 
 _DEFAULT_INDEX = (
@@ -97,35 +98,65 @@ class Index:
         return self._data
 
     def exists(self, module):
-        return os.path.exists(module) or (module in self)
+        if isinstance(module, Module):
+            name = module.name
+            version = module.version
+        else:
+            name = module
+            version = None
 
-    def check_existence(self, modules):
+        if os.path.exists(name):
+            return True
+        if not version:
+            return name in self
+        versions = get_json(_VERSION_INDEX)
+        return name in versions and version in versions[name]
+
+    def check_existence(self, modules: list):
         for module in modules:
+            assert isinstance(module, Module)
             if not self.exists(module):
-                user_error("Module '%s' does not exist" % module)
+                user_error(
+                    "Module '%s'%s does not exist"
+                    % (
+                        module.name,
+                        " version '%s'" % module.version if module.version else "",
+                    )
+                )
 
-    def translate_aliases(self, modules):
-        translated = []
+    def translate_aliases(self, modules: list):
         for module in modules:
-            if not module in self and os.path.exists(module):
-                translated.append(local_module_name(module))
-                continue
-            if module not in self:
-                translated.append(module)
-                continue  # Will error later
-            data = self[module]
-            if "alias" in data:
-                print("%s is an alias for %s" % (module, data["alias"]))
-                module = data["alias"]
-            translated.append(module)
-        return translated
+            self.translate_alias(module)
 
-    def get_module_object(self, name, added_by=None):
-        module = OrderedDict({"name": name})
+    def translate_alias(self, module: Module):
+        if module.name in self:
+            data = self[module.name]
+            if "alias" in data:
+                print("%s is an alias for %s" % (module.name, data["alias"]))
+                module.name = data["alias"]
+        else:
+            if os.path.exists(module.name):
+                module.name = local_module_name(module.name)
+
+    def get_module_object(self, module, added_by=None):
+        if isinstance(module, str):
+            module = Module(module)
+        name = module.name
+        version = module.version
+        module = module.to_dict()
+
         if name.startswith("./"):
             object = _generate_local_module_object(name)
         else:
             object = self[name]
+            if version:
+                versions = get_json(_VERSION_INDEX)
+                new_values = versions[name][version]
+                specifics = {
+                    k: v for (k, v) in new_values.items() if k in Module.attributes()
+                }
+                object.update(specifics)
+                object["version"] = version
         module.update(object)
         if added_by:
             module["added_by"] = added_by
