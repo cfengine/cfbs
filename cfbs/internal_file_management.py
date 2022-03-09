@@ -11,7 +11,7 @@ and what is on the file system (in ~/.cfengine and ./out).
 import os
 import re
 import shutil
-import distutils
+import distutils.spawn
 
 from cfbs.utils import (
     cfbs_dir,
