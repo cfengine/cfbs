@@ -3,10 +3,7 @@ Functions ending in "_command" are dynamically included in the list of commands
 in main.py for -h/--help/help.
 """
 import os
-import re
-import distutils.spawn
 import logging as log
-import shutil
 import json
 
 from cfbs.utils import (
@@ -14,7 +11,6 @@ from cfbs.utils import (
     cfbs_filename,
     is_cfbs_repo,
     user_error,
-    strip_left,
     strip_right,
     pad_right,
     get_json,
@@ -30,7 +26,8 @@ from cfbs.utils import (
 )
 
 from cfbs.pretty import pretty_check_file, pretty_file
-from cfbs.core import CFBSJson, CFBSConfig
+from cfbs.cfbs_config import CFBSConfig
+from cfbs.cfbs_json import CFBSJson
 from cfbs.validate import CFBSIndexException, validate_index
 from cfbs.internal_file_management import (
     fetch_archive,
@@ -38,12 +35,10 @@ from cfbs.internal_file_management import (
     local_module_copy,
     SUPPORTED_ARCHIVES,
 )
+from cfbs.index import _VERSION_INDEX
 
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
-_VERSION_INDEX = (
-    "https://raw.githubusercontent.com/cfengine/build-index/master/versions.json"
-)
 
 
 def _item_index(iterable, item, extra_at_end=True):
