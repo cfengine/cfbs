@@ -154,10 +154,13 @@ def init_command(index_path=None, non_interactive=False) -> int:
     if is_cfbs_repo():
         user_error("Already initialized - look at %s" % cfbs_filename())
 
+    name = prompt_user("Please enter name of this CFBS repository", default="Example")
+    description = prompt_user("Please enter description of this CFBS repository", default="Example description")
+
     definition = {
-        "name": "Example",
+        "name": name,
         "type": "policy-set",  # TODO: Prompt whether user wants to make a module
-        "description": "Example description",
+        "description": description,
         "build": [],  # TODO: Prompt what masterfile user wants to add
     }
     if index_path:
@@ -165,7 +168,7 @@ def init_command(index_path=None, non_interactive=False) -> int:
 
     write_json(cfbs_filename(), definition)
     assert is_cfbs_repo()
-    print("Initialized - edit name and description %s" % cfbs_filename())
+    print("Initialized")
     print("To add your first module, type: cfbs add masterfiles")
 
     return 0
