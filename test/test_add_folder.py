@@ -7,13 +7,25 @@ from cfbs.commands import (
     add_command,
 )
 from cfbs.utils import read_json
+from cfbs.cfbs_config import CFBSConfig
 
 
 @pytest.mark.parametrize("chdir", ["add_folder_sample"], indirect=True)
 def test_add_folders_and_build(chdir):
     os.system("rm -rf out")
     os.system("rm -f cfbs.json")
-    init_command()
+
+    # We need to set non_interactive here as if was given by the
+    # '--non-interactive' option.
+    cfg = CFBSConfig.get_instance()
+    cfg.non_interactive = True
+    init_command(non_interactive=True)
+
+    # And here we need to make sure that a new instance of CFBSConfig that loads
+    # the freshly created config above is created.
+    CFBSConfig.instance = None
+    cfg = CFBSConfig.get_instance()
+    cfg.non_interactive = True
     add_command(["masterfiles"])
     add_command(["./foo/"])
     add_command(["./bar/"])

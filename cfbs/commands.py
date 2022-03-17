@@ -136,7 +136,7 @@ def init_command(index_path=None, non_interactive=False) -> int:
 
 def status_command() -> int:
 
-    definition = CFBSConfig()
+    definition = CFBSConfig.get_instance()
     print("Name:        %s" % definition["name"])
     print("Description: %s" % definition["description"])
     print("File:        %s" % cfbs_filename())
@@ -163,8 +163,7 @@ def status_command() -> int:
 
 
 def search_command(terms: list, index_path=None) -> int:
-    config = CFBSConfig(index=index_path)
-    index = config.index
+    index = CFBSConfig.get_instance(index_path).index
     results = {}
 
     # in order to gather all aliases, we must iterate over everything first
@@ -212,14 +211,14 @@ def add_command(
     checksum=None,
     non_interactive=False,
 ) -> int:
-    config = CFBSConfig()
+    config = CFBSConfig.get_instance()
     r = config.add_command(to_add, added_by, index_path, checksum, non_interactive)
     config.save()
     return r
 
 
 def remove_command(to_remove: list, non_interactive=False):
-    definition = CFBSConfig()
+    definition = CFBSConfig.get_instance()
     modules = definition["build"]
 
     def _get_module_by_name(name) -> dict:
@@ -271,7 +270,7 @@ def remove_command(to_remove: list, non_interactive=False):
 
 def clean_command(non_interactive=False, definition=None):
     if not definition:
-        definition = CFBSConfig()
+        definition = CFBSConfig.get_instance()
     modules = definition["build"]
 
     def _someone_needs_me(this) -> bool:
@@ -315,7 +314,7 @@ def clean_command(non_interactive=False, definition=None):
 def update_command(non_interactive=False):
     new_deps = []
     new_deps_added_by = dict()
-    definition = CFBSConfig()
+    definition = CFBSConfig.get_instance()
     index = definition.index
     for module in definition["build"]:
         if "index" in module:
@@ -414,7 +413,7 @@ def validate_command(index_path=None):
     if index_path:
         index = CFBSJson(path=index_path).index
     elif CFBSConfig.exists():
-        index = CFBSConfig().index
+        index = CFBSConfig.get_instance().index
     else:
         user_error("Index not found")
 
@@ -503,7 +502,7 @@ def download_dependencies(config, prefer_offline=False, redownload=False):
 
 
 def download_command(force):
-    config = CFBSConfig()
+    config = CFBSConfig.get_instance()
     download_dependencies(config, redownload=force)
 
 
@@ -617,7 +616,7 @@ def build_steps(config) -> int:
 
 
 def build_command() -> int:
-    config = CFBSConfig()
+    config = CFBSConfig.get_instance()
     init_build_folder(config)
     download_dependencies(config, prefer_offline=True)
     build_steps(config)
@@ -678,7 +677,7 @@ def print_module_info(data):
 
 
 def info_command(modules, index_path=None):
-    config = CFBSConfig(index=index_path)
+    config = CFBSConfig.get_instance(index=index_path)
     index = config.index
 
     build = config.get("build", {})

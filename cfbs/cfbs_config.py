@@ -30,6 +30,10 @@ def _has_autorun_tag(filename):
 
 
 class CFBSConfig(CFBSJson):
+    """A singleton class representing the current config"""
+
+    instance = None
+
     @staticmethod
     def exists(path="./cfbs.json"):
         return os.path.exists(path)
@@ -54,6 +58,15 @@ class CFBSConfig(CFBSJson):
                 log.warning("No bundles tagged with autorun found in: '%s'" % name)
                 log.warning("Tag the bundle(s) you want evaluated in .cf policy files:")
                 log.warning('  meta: "tags" slist => { "autorun" };')
+
+    @classmethod
+    def get_instance(cls, index=None):
+        if cls.instance is not None:
+            if index is not None:
+                raise RuntimeError("Instance of %s already exists, cannot specify index" % cls.__name__)
+        else:
+            cls.instance = cls(index)
+        return cls.instance
 
     def __init__(self, index=None):
         super().__init__(path="./cfbs.json", index_argument=index)
