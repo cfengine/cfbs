@@ -40,6 +40,8 @@ from cfbs.index import _VERSION_INDEX
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
 
+YES_NO_CHOICES = ("yes", "y", "no", "n")
+
 
 def _item_index(iterable, item, extra_at_end=True):
     try:
@@ -49,6 +51,41 @@ def _item_index(iterable, item, extra_at_end=True):
             return len(iterable)
         else:
             return -1
+
+
+def prompt_user(prompt, choices=None, default=None):
+    config = CFBSConfig.get_instance()
+
+    if config.non_interactive:
+        if default is None:
+            raise ValueError("Missing default value for prompt '%s' in non-interactive mode" % prompt)
+        else:
+            return default
+
+    prompt_separator = " " if prompt.endswith("?") else ": "
+    if choices:
+        assert default is None or str(default) in choices
+        choices_str = "/".join(choice.upper() if choice == str(default) else choice
+                               for choice in choices)
+        prompt += " [%s]%s" % (choices_str, prompt_separator)
+    elif default is not None:
+        prompt += " [%s]%s" % (default, prompt_separator)
+    else:
+        prompt += prompt_separator
+
+    answer = None
+    while answer is None:
+        answer = input(prompt)
+        if answer == "":
+            if default is not None:
+                answer = default
+            else:
+                answer = None
+        elif choices and answer not in choices and answer.lower() not in choices:
+            print("Invalid value entered, must ve one of: %s" % "/".join(choices))
+            answer = None
+
+    return answer
 
 
 def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
@@ -242,11 +279,9 @@ def remove_command(to_remove: list):
             if not matches:
                 user_error("Could not find module with URL '%s'" % name)
             for module in matches:
-                answer = (
-                    "yes"
-                    if config.non_interactive
-                    else input("Do you wish to remove '%s'? [y/N] " % module["name"])
-                )
+                answer = prompt_user("Do you wish to remove '%s'?" % module["name"],
+                                     choices=YES_NO_CHOICES,
+                                     default="yes")
                 if answer.lower() in ("yes", "y"):
                     print("Removing module '%s'" % module["name"])
                     modules.remove(module)
@@ -296,11 +331,8 @@ def clean_command(config=None):
         added_by = module["added_by"] if "added_by" in module else ""
         print("%s - %s - added by: %s" % (name, description, added_by))
 
-    answer = (
-        "yes"
-        if config.non_interactive
-        else input("Do you wish to remove these modules? [y/N] ")
-    )
+    answer = prompt_user("Do you wish to remove these modules?",
+                         choices=YES_NO_CHOICES, default="yes")
     if answer.lower() in ("yes", "y"):
         for module in to_remove:
             modules.remove(module)
@@ -367,14 +399,13 @@ def update_command():
             if key == "steps":
                 # same commit => user modifications, don't revert them
                 if commit_differs:
-                    if config.non_interactive:
-                        ans = "yes"
-                    else:
-                        ans = input(
+                    ans = prompt_user(
                             "Module %s has different build steps now\n" % module["name"]
                             + "old steps: %s\n" % module["steps"]
                             + "new steps: %s\n" % index_info["steps"]
-                            + "Do you want to use the new build steps? [y/N]"
+                            + "Do you want to use the new build steps?",
+                            choices=YES_NO_CHOICES,
+                            default="yes"
                         )
                     if ans.lower() in ["y", "yes"]:
                         module["steps"] = index_info["steps"]
