@@ -208,17 +208,16 @@ def add_command(
     to_add: list,
     added_by="cfbs add",
     checksum=None,
-    non_interactive=False,
 ) -> int:
     config = CFBSConfig.get_instance()
-    r = config.add_command(to_add, added_by, checksum, non_interactive)
+    r = config.add_command(to_add, added_by, checksum)
     config.save()
     return r
 
 
-def remove_command(to_remove: list, non_interactive=False):
-    definition = CFBSConfig.get_instance()
-    modules = definition["build"]
+def remove_command(to_remove: list):
+    config = CFBSConfig.get_instance()
+    modules = config["build"]
 
     def _get_module_by_name(name) -> dict:
         if not name.startswith("./") and name.endswith(".cf") and os.path.exists(name):
@@ -245,7 +244,7 @@ def remove_command(to_remove: list, non_interactive=False):
             for module in matches:
                 answer = (
                     "yes"
-                    if non_interactive
+                    if config.non_interactive
                     else input("Do you wish to remove '%s'? [y/N] " % module["name"])
                 )
                 if answer.lower() in ("yes", "y"):
@@ -261,16 +260,16 @@ def remove_command(to_remove: list, non_interactive=False):
             else:
                 print("Module '%s' not found" % name)
 
-    definition.save()
+    config.save()
     if num_removed:
-        clean_command(non_interactive=non_interactive, definition=definition)
+        clean_command(config)
     return 0
 
 
-def clean_command(non_interactive=False, definition=None):
-    if not definition:
-        definition = CFBSConfig.get_instance()
-    modules = definition["build"]
+def clean_command(config=None):
+    if not config:
+        config = CFBSConfig.get_instance()
+    modules = config["build"]
 
     def _someone_needs_me(this) -> bool:
         if "added_by" not in this or this["added_by"] == "cfbs add":
@@ -299,23 +298,23 @@ def clean_command(non_interactive=False, definition=None):
 
     answer = (
         "yes"
-        if non_interactive
+        if config.non_interactive
         else input("Do you wish to remove these modules? [y/N] ")
     )
     if answer.lower() in ("yes", "y"):
         for module in to_remove:
             modules.remove(module)
-        definition.save()
+        config.save()
 
     return 0
 
 
-def update_command(non_interactive=False):
+def update_command():
     new_deps = []
     new_deps_added_by = dict()
-    definition = CFBSConfig.get_instance()
-    index = definition.index
-    for module in definition["build"]:
+    config = CFBSConfig.get_instance()
+    index = config.index
+    for module in config["build"]:
         if "index" in module:
             # not a module from the default index, not updating
             continue
@@ -368,7 +367,7 @@ def update_command(non_interactive=False):
             if key == "steps":
                 # same commit => user modifications, don't revert them
                 if commit_differs:
-                    if non_interactive:
+                    if config.non_interactive:
                         ans = "yes"
                     else:
                         ans = input(
@@ -404,8 +403,8 @@ def update_command(non_interactive=False):
 
     if new_deps:
         objects = [index.get_module_object(d, new_deps_added_by[d]) for d in new_deps]
-        definition.add_with_dependencies(objects)
-    definition.save()
+        config.add_with_dependencies(objects)
+    config.save()
 
 
 def validate_command():

@@ -127,12 +127,14 @@ Warning: The --non-interactive option is only meant for testing (!)
         _get_arg_parser().print_help()
         return 0
 
+    config = CFBSConfig.get_instance(args.index)
+    config.non_interactive = args.non_interactive
+
     if args.command == "init":
         return commands.init_command(
             index_path=args.index, non_interactive=args.non_interactive
         )
 
-    config = CFBSConfig.get_instance(args.index)
     if args.command == "search":
         return commands.search_command(args.args)
     if args.command == "pretty":
@@ -151,12 +153,11 @@ Warning: The --non-interactive option is only meant for testing (!)
         return commands.add_command(
             args.args,
             checksum=args.checksum,
-            non_interactive=args.non_interactive,
         )
     if args.command == "remove":
-        return commands.remove_command(args.args, non_interactive=args.non_interactive)
+        return commands.remove_command(args.args)
     if args.command == "clean":
-        return commands.clean_command(non_interactive=args.non_interactive)
+        return commands.clean_command()
     if args.command == "download":
         return commands.download_command(args.force)
     if args.command == "build":
@@ -164,7 +165,7 @@ Warning: The --non-interactive option is only meant for testing (!)
     if args.command == "install":
         return commands.install_command(args.args)
     if args.command == "update":
-        return commands.update_command(non_interactive=args.non_interactive)
+        return commands.update_command()
 
     _get_arg_parser().print_help()
     user_error("Command '%s' not found" % args.command)

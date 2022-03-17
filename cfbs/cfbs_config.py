@@ -68,8 +68,9 @@ class CFBSConfig(CFBSJson):
             cls.instance = cls(index)
         return cls.instance
 
-    def __init__(self, index=None):
+    def __init__(self, index=None, non_interactive=False):
         super().__init__(path="./cfbs.json", index_argument=index)
+        self.non_interactive = non_interactive
 
     def save(self):
         data = pretty(self._data) + "\n"
@@ -108,7 +109,6 @@ class CFBSConfig(CFBSJson):
         to_add: list,
         added_by="cfbs add",
         checksum=None,
-        non_interactive=False,
     ):
         url_commit = None
         if url.endswith(SUPPORTED_ARCHIVES):
@@ -132,7 +132,7 @@ class CFBSConfig(CFBSJson):
                 print("  - " + m["name"])
             if not any(modules):
                 user_error("no modules available, nothing to do")
-            if not non_interactive:
+            if not self.non_interactive:
                 answer = input(
                     "Do you want to add all %d of them? [y/N] " % (len(modules))
                 )
@@ -224,7 +224,6 @@ class CFBSConfig(CFBSJson):
         to_add: list,
         added_by="cfbs add",
         checksum=None,
-        non_interactive=False,
     ) -> int:
         index = self.index
 
@@ -265,7 +264,6 @@ class CFBSConfig(CFBSJson):
         to_add: list,
         added_by="cfbs add",
         checksum=None,
-        non_interactive=False,
     ) -> int:
         if not to_add:
             user_error("Must specify at least one module to add")
@@ -278,7 +276,6 @@ class CFBSConfig(CFBSJson):
                 to_add=to_add[1:],
                 added_by=added_by,
                 checksum=checksum,
-                non_interactive=non_interactive,
             )
 
-        return self._add_modules(to_add, added_by, checksum, non_interactive)
+        return self._add_modules(to_add, added_by, checksum)
