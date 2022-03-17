@@ -107,7 +107,6 @@ class CFBSConfig(CFBSJson):
         url,
         to_add: list,
         added_by="cfbs add",
-        index_path=None,
         checksum=None,
         non_interactive=False,
     ):
@@ -224,7 +223,6 @@ class CFBSConfig(CFBSJson):
         self,
         to_add: list,
         added_by="cfbs add",
-        index_path=None,
         checksum=None,
         non_interactive=False,
     ) -> int:
@@ -266,7 +264,6 @@ class CFBSConfig(CFBSJson):
         self,
         to_add: list,
         added_by="cfbs add",
-        index_path=None,
         checksum=None,
         non_interactive=False,
     ) -> int:

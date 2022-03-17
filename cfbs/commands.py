@@ -162,8 +162,8 @@ def status_command() -> int:
     return 0
 
 
-def search_command(terms: list, index_path=None) -> int:
-    index = CFBSConfig.get_instance(index_path).index
+def search_command(terms: list) -> int:
+    index = CFBSConfig.get_instance().index
     results = {}
 
     # in order to gather all aliases, we must iterate over everything first
@@ -207,12 +207,11 @@ def search_command(terms: list, index_path=None) -> int:
 def add_command(
     to_add: list,
     added_by="cfbs add",
-    index_path=None,
     checksum=None,
     non_interactive=False,
 ) -> int:
     config = CFBSConfig.get_instance()
-    r = config.add_command(to_add, added_by, index_path, checksum, non_interactive)
+    r = config.add_command(to_add, added_by, checksum, non_interactive)
     config.save()
     return r
 
@@ -409,12 +408,9 @@ def update_command(non_interactive=False):
     definition.save()
 
 
-def validate_command(index_path=None):
-    if index_path:
-        index = CFBSJson(path=index_path).index
-    elif CFBSConfig.exists():
-        index = CFBSConfig.get_instance().index
-    else:
+def validate_command():
+    index = CFBSConfig.get_instance().index
+    if not index:
         user_error("Index not found")
 
     data = index.data
@@ -676,8 +672,8 @@ def print_module_info(data):
             print("{}: {}".format(key.title().replace("_", " "), value))
 
 
-def info_command(modules, index_path=None):
-    config = CFBSConfig.get_instance(index=index_path)
+def info_command(modules):
+    config = CFBSConfig.get_instance()
     index = config.index
 
     build = config.get("build", {})
