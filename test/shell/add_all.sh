@@ -8,9 +8,10 @@ cd test
 mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
+rm -rf .git
 
-cfbs init
-cfbs add masterfiles
-cfbs search | awk '{print $1}' | xargs -n1 cfbs add
+cfbs --non-interactive init
+cfbs --non-interactive add masterfiles
+cfbs search | awk '{print $1}' | xargs -n1 cfbs --non-interactive add
 
 cfbs build

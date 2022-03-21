@@ -9,7 +9,7 @@ import logging as log
 
 from cfbs.version import string as version
 from cfbs.utils import user_error, is_cfbs_repo, cache
-from cfbs.core import CFBSConfig
+from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
 
 

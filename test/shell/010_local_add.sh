@@ -4,10 +4,11 @@ cd test
 mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
+rm -rf .git
 
-cfbs init
+cfbs --non-interactive init
 cfbs status
-cfbs add mpf
+cfbs --non-interactive add mpf
 cfbs status
 echo '
 bundle agent test_bundle
@@ -18,7 +19,7 @@ bundle agent test_bundle
     "test";
 }
 ' > test_policy.cf
-cfbs add ./test_policy.cf
+cfbs --non-interactive add ./test_policy.cf
 grep '"name": "autorun"' cfbs.json
 grep '"name": "./test_policy.cf"' cfbs.json
 cfbs status

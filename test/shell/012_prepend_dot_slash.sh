@@ -15,21 +15,26 @@ bundle agent test_bundle
 ' > test_policy.cf
 
 touch cfbs.json && rm cfbs.json
-cfbs init
-cfbs add ./test_policy.cf
-cfbs remove ./test_policy.cf --non-interactive
+rm -rf .git
+
+cfbs --non-interactive init
+cfbs --non-interactive add ./test_policy.cf
+cfbs --non-interactive remove ./test_policy.cf --non-interactive
 
 rm cfbs.json
-cfbs init
-cfbs add test_policy.cf
-cfbs remove test_policy.cf --non-interactive
+rm -rf .git
+cfbs --non-interactive init
+cfbs --non-interactive add test_policy.cf
+cfbs --non-interactive remove test_policy.cf --non-interactive
 
 rm cfbs.json
-cfbs init
-cfbs add ./test_policy.cf
-cfbs remove test_policy.cf --non-interactive
+rm -rf .git
+cfbs --non-interactive init
+cfbs --non-interactive add ./test_policy.cf
+cfbs --non-interactive remove test_policy.cf --non-interactive
 
 rm cfbs.json
-cfbs init
-cfbs add test_policy.cf
-cfbs remove ./test_policy.cf --non-interactive
+rm -rf .git
+cfbs --non-interactive init
+cfbs --non-interactive add test_policy.cf
+cfbs --non-interactive remove ./test_policy.cf --non-interactive

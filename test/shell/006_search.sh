@@ -4,8 +4,9 @@ cd test
 mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
+rm -rf .git
 
-cfbs init
+cfbs --non-interactive init
 cfbs search > all.log
 cfbs search mpf > mpf.log
 cfbs search masterfiles > masterfiles.log

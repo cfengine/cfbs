@@ -4,13 +4,14 @@ cd test
 mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
+rm -rf .git
 
-cfbs init
-cfbs add mpf
-cfbs add autorun
-cfbs add systemd
-cfbs add git
-cfbs add ansible
+cfbs --non-interactive init
+cfbs --non-interactive add mpf
+cfbs --non-interactive add autorun
+cfbs --non-interactive add systemd
+cfbs --non-interactive add git
+cfbs --non-interactive add ansible
 cfbs build
 
 ls out/

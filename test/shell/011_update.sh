@@ -4,6 +4,7 @@ cd test
 mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
+rm -rf .git
 
 echo '
 {
@@ -18,11 +19,12 @@ echo '
       "added_by": "cfbs add",
       "steps": []
     }
-  ]
+  ],
+  "git": false
 }
 ' > cfbs.json
 
-cfbs update --non-interactive
+cfbs --non-interactive update
 
 # This is not perfect, it relies on the JSON formatting, and it doesn't check
 # everything it could. Still, it tests a lot and was really easy to add.
@@ -58,7 +60,7 @@ cat cfbs.json | grep -F "subdirectory" | grep -F "libraries/python/"
 cat cfbs.json | grep -F "added_by" | grep -F "promise-type-ansible"
 cat cfbs.json | grep -F "steps" | grep -F "copy cfengine.py modules/promises/"
 
-cfbs add mpf
+cfbs --non-interactive add mpf
 cfbs status
 cfbs build
 

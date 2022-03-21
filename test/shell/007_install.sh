@@ -12,11 +12,12 @@ cd test
 mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
+rm -rf .git
 rm -rf ~/.cfagent/inputs/
 
-cfbs init
-cfbs add mpf
-cfbs add autorun
+cfbs --non-interactive init
+cfbs --non-interactive add mpf
+cfbs --non-interactive add autorun
 cfbs install
 
 ls ~/.cfagent/inputs/def.json

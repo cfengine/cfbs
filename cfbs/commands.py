@@ -37,12 +37,22 @@ from cfbs.internal_file_management import (
     SUPPORTED_ARCHIVES,
 )
 from cfbs.index import _VERSION_INDEX
-from cfbs.git import git_commit, git_discard_changes_in_file, CFBSGitError
+from cfbs.git import (is_git_repo,
+                      git_get_config,
+                      git_set_config,
+                      git_init,
+                      git_commit,
+                      git_discard_changes_in_file,
+                      CFBSGitError,
+                      )
 
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
 
 YES_NO_CHOICES = ("yes", "y", "no", "n")
+
+PLURAL_S = lambda args, kwargs: "s" if len(args[0]) > 1 else ""
+FIRST_ARG_SLIST = lambda args, kwargs: ", ".join("'%s'" % module for module in args[0])
 
 
 def _item_index(iterable, item, extra_at_end=True):
@@ -116,7 +126,7 @@ def with_git_commit(successful_returns, files_to_commit, commit_msg,
                     print(str(e))
                     try:
                         for file_name in files_to_commit:
-                            git_discard_changes_in_file(file_name())
+                            git_discard_changes_in_file(file_name)
                     except CFBSGitError as e:
                         print(str(e))
                     else:
@@ -210,8 +220,51 @@ def init_command(index_path=None, non_interactive=False) -> int:
     if index_path:
         definition["index_path"] = index_path
 
+    is_git = is_git_repo()
+    if is_git:
+        git_ans = prompt_user("This is a git repository. Do you want cfbs to make commits to it?",
+                              choices=YES_NO_CHOICES, default="yes")
+    else:
+        git_ans = prompt_user("Do you want cfbs to initialize a git repository and make commits to it?",
+                              choices=YES_NO_CHOICES, default="yes")
+    do_git = git_ans in ("yes", "y")
+
+    if do_git:
+        user_name = git_get_config("user.name")
+        user_email = git_get_config("user.email")
+        user_name = prompt_user("Please enter user name to use for git commits",
+                                default=user_name or "cfbs")
+
+        node_name = os.uname().nodename
+        user_email = prompt_user("Please enter user email to use for git commits",
+                                 default=user_email or ("cfbs@%s" % node_name))
+
+        if not is_git:
+            try:
+                git_init(user_name, user_email, description)
+            except CFBSGitError as e:
+                print(str(e))
+                return 1
+        else:
+            if (not git_set_config("user.name", user_name) or
+                not git_set_config("user.email", user_email)):
+                print("Failed to set Git user name and email")
+                return 1
+
+    definition["git"] = do_git
+
     write_json(cfbs_filename(), definition)
     assert is_cfbs_repo()
+
+    if do_git:
+        try:
+            git_commit("Initialized a new cfbs repository", not non_interactive,
+                       [cfbs_filename()])
+        except CFBSGitError as e:
+            print(str(e))
+            os.unlink(cfbs_filename())
+            return 1
+
     print("Initialized")
     print("To add your first module, type: cfbs add masterfiles")
 
@@ -287,7 +340,7 @@ def search_command(terms: list) -> int:
 
     return 0 if any(results) else 1
 
-
+@commit_after_command("Added module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
 def add_command(
     to_add: list,
     added_by="cfbs add",
@@ -299,6 +352,7 @@ def add_command(
     return r
 
 
+@commit_after_command("Removed module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
 def remove_command(to_remove: list):
     config = CFBSConfig.get_instance()
     modules = config["build"]
@@ -344,11 +398,18 @@ def remove_command(to_remove: list):
 
     config.save()
     if num_removed:
-        clean_command(config)
-    return 0
+        _clean_unused_modules(config)
+        return 0
+    else:
+        return 2
 
 
+@commit_after_command("Cleaned unused modules")
 def clean_command(config=None):
+    return _clean_unused_modules(config)
+
+
+def _clean_unused_modules(config=None):
     if not config:
         config = CFBSConfig.get_instance()
     modules = config["build"]
@@ -369,7 +430,7 @@ def clean_command(config=None):
             to_remove.append(module)
 
     if not to_remove:
-        return 0
+        return 2
 
     print("The following modules were added as dependencies but are no longer needed:")
     for module in to_remove:
@@ -388,11 +449,13 @@ def clean_command(config=None):
     return 0
 
 
+@commit_after_command("Updated all modules")
 def update_command():
     new_deps = []
     new_deps_added_by = dict()
     config = CFBSConfig.get_instance()
     index = config.index
+    changes_made = False
     for module in config["build"]:
         if "index" in module:
             # not a module from the default index, not updating
@@ -470,6 +533,7 @@ def update_command():
                     new_deps_added_by.update({item: module["name"] for item in extra})
 
                 module[key] = index_info[key]
+                changes_made = True
 
         # add new items
         for key in set(index_info.keys()) - set(module.keys()):
@@ -483,6 +547,8 @@ def update_command():
         objects = [index.get_module_object(d, new_deps_added_by[d]) for d in new_deps]
         config.add_with_dependencies(objects)
     config.save()
+
+    return 0 if changes_made else 2
 
 
 def validate_command():
