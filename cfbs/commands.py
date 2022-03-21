@@ -5,6 +5,7 @@ in main.py for -h/--help/help.
 import os
 import logging as log
 import json
+from functools import partial
 
 from cfbs.utils import (
     cfbs_dir,
@@ -36,6 +37,7 @@ from cfbs.internal_file_management import (
     SUPPORTED_ARCHIVES,
 )
 from cfbs.index import _VERSION_INDEX
+from cfbs.git import git_commit, git_discard_changes_in_file, CFBSGitError
 
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
@@ -86,6 +88,48 @@ def prompt_user(prompt, choices=None, default=None):
             answer = None
 
     return answer
+
+
+def with_git_commit(successful_returns, files_to_commit, commit_msg,
+                    positional_args_lambdas=None, failed_return=False):
+
+    def decorator(fn):
+
+        def decorated_fn(*args, **kwargs):
+            ret = fn(*args, **kwargs)
+
+            config = CFBSConfig.get_instance()
+            if not config["git"]:
+                return ret
+
+            if ret in successful_returns:
+                if positional_args_lambdas:
+                    positional_args = (l_fn(args, kwargs) for l_fn in positional_args_lambdas)
+                    msg = commit_msg % tuple(positional_args)
+                else:
+                    msg = commit_msg
+
+                try:
+                    git_commit(msg, not config.non_interactive,
+                               files_to_commit)
+                except CFBSGitError as e:
+                    print(str(e))
+                    try:
+                        for file_name in files_to_commit:
+                            git_discard_changes_in_file(file_name())
+                    except CFBSGitError as e:
+                        print(str(e))
+                    else:
+                        print("Failed to commit changes, discarding them...")
+                        return failed_return
+            return ret
+
+        return decorated_fn
+
+    return decorator
+
+
+commit_after_command = partial(with_git_commit, (0,), ("cfbs.json",), failed_return=0)
 
 
 def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
