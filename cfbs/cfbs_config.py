@@ -63,7 +63,9 @@ class CFBSConfig(CFBSJson):
     def get_instance(cls, index=None):
         if cls.instance is not None:
             if index is not None:
-                raise RuntimeError("Instance of %s already exists, cannot specify index" % cls.__name__)
+                raise RuntimeError(
+                    "Instance of %s already exists, cannot specify index" % cls.__name__
+                )
         else:
             cls.instance = cls(index)
         return cls.instance

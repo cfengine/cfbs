@@ -37,14 +37,15 @@ from cfbs.internal_file_management import (
     SUPPORTED_ARCHIVES,
 )
 from cfbs.index import _VERSION_INDEX
-from cfbs.git import (is_git_repo,
-                      git_get_config,
-                      git_set_config,
-                      git_init,
-                      git_commit,
-                      git_discard_changes_in_file,
-                      CFBSGitError,
-                      )
+from cfbs.git import (
+    is_git_repo,
+    git_get_config,
+    git_set_config,
+    git_init,
+    git_commit,
+    git_discard_changes_in_file,
+    CFBSGitError,
+)
 
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
@@ -70,15 +71,18 @@ def prompt_user(prompt, choices=None, default=None):
 
     if config.non_interactive:
         if default is None:
-            raise ValueError("Missing default value for prompt '%s' in non-interactive mode" % prompt)
+            raise ValueError(
+                "Missing default value for prompt '%s' in non-interactive mode" % prompt
+            )
         else:
             return default
 
     prompt_separator = " " if prompt.endswith("?") else ": "
     if choices:
         assert default is None or str(default) in choices
-        choices_str = "/".join(choice.upper() if choice == str(default) else choice
-                               for choice in choices)
+        choices_str = "/".join(
+            choice.upper() if choice == str(default) else choice for choice in choices
+        )
         prompt += " [%s]%s" % (choices_str, prompt_separator)
     elif default is not None:
         prompt += " [%s]%s" % (default, prompt_separator)
@@ -100,11 +104,14 @@ def prompt_user(prompt, choices=None, default=None):
     return answer
 
 
-def with_git_commit(successful_returns, files_to_commit, commit_msg,
-                    positional_args_lambdas=None, failed_return=False):
-
+def with_git_commit(
+    successful_returns,
+    files_to_commit,
+    commit_msg,
+    positional_args_lambdas=None,
+    failed_return=False,
+):
     def decorator(fn):
-
         def decorated_fn(*args, **kwargs):
             ret = fn(*args, **kwargs)
 
@@ -114,14 +121,15 @@ def with_git_commit(successful_returns, files_to_commit, commit_msg,
 
             if ret in successful_returns:
                 if positional_args_lambdas:
-                    positional_args = (l_fn(args, kwargs) for l_fn in positional_args_lambdas)
+                    positional_args = (
+                        l_fn(args, kwargs) for l_fn in positional_args_lambdas
+                    )
                     msg = commit_msg % tuple(positional_args)
                 else:
                     msg = commit_msg
 
                 try:
-                    git_commit(msg, not config.non_interactive,
-                               files_to_commit)
+                    git_commit(msg, not config.non_interactive, files_to_commit)
                 except CFBSGitError as e:
                     print(str(e))
                     try:
@@ -209,7 +217,10 @@ def init_command(index_path=None, non_interactive=False) -> int:
         user_error("Already initialized - look at %s" % cfbs_filename())
 
     name = prompt_user("Please enter name of this CFBS repository", default="Example")
-    description = prompt_user("Please enter description of this CFBS repository", default="Example description")
+    description = prompt_user(
+        "Please enter description of this CFBS repository",
+        default="Example description",
+    )
 
     definition = {
         "name": name,
@@ -222,22 +233,31 @@ def init_command(index_path=None, non_interactive=False) -> int:
 
     is_git = is_git_repo()
     if is_git:
-        git_ans = prompt_user("This is a git repository. Do you want cfbs to make commits to it?",
-                              choices=YES_NO_CHOICES, default="yes")
+        git_ans = prompt_user(
+            "This is a git repository. Do you want cfbs to make commits to it?",
+            choices=YES_NO_CHOICES,
+            default="yes",
+        )
     else:
-        git_ans = prompt_user("Do you want cfbs to initialize a git repository and make commits to it?",
-                              choices=YES_NO_CHOICES, default="yes")
+        git_ans = prompt_user(
+            "Do you want cfbs to initialize a git repository and make commits to it?",
+            choices=YES_NO_CHOICES,
+            default="yes",
+        )
     do_git = git_ans in ("yes", "y")
 
     if do_git:
         user_name = git_get_config("user.name")
         user_email = git_get_config("user.email")
-        user_name = prompt_user("Please enter user name to use for git commits",
-                                default=user_name or "cfbs")
+        user_name = prompt_user(
+            "Please enter user name to use for git commits", default=user_name or "cfbs"
+        )
 
         node_name = os.uname().nodename
-        user_email = prompt_user("Please enter user email to use for git commits",
-                                 default=user_email or ("cfbs@%s" % node_name))
+        user_email = prompt_user(
+            "Please enter user email to use for git commits",
+            default=user_email or ("cfbs@%s" % node_name),
+        )
 
         if not is_git:
             try:
@@ -246,8 +266,9 @@ def init_command(index_path=None, non_interactive=False) -> int:
                 print(str(e))
                 return 1
         else:
-            if (not git_set_config("user.name", user_name) or
-                not git_set_config("user.email", user_email)):
+            if not git_set_config("user.name", user_name) or not git_set_config(
+                "user.email", user_email
+            ):
                 print("Failed to set Git user name and email")
                 return 1
 
@@ -258,8 +279,11 @@ def init_command(index_path=None, non_interactive=False) -> int:
 
     if do_git:
         try:
-            git_commit("Initialized a new cfbs repository", not non_interactive,
-                       [cfbs_filename()])
+            git_commit(
+                "Initialized a new cfbs repository",
+                not non_interactive,
+                [cfbs_filename()],
+            )
         except CFBSGitError as e:
             print(str(e))
             os.unlink(cfbs_filename())
@@ -340,6 +364,7 @@ def search_command(terms: list) -> int:
 
     return 0 if any(results) else 1
 
+
 @commit_after_command("Added module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
 def add_command(
     to_add: list,
@@ -380,9 +405,11 @@ def remove_command(to_remove: list):
             if not matches:
                 user_error("Could not find module with URL '%s'" % name)
             for module in matches:
-                answer = prompt_user("Do you wish to remove '%s'?" % module["name"],
-                                     choices=YES_NO_CHOICES,
-                                     default="yes")
+                answer = prompt_user(
+                    "Do you wish to remove '%s'?" % module["name"],
+                    choices=YES_NO_CHOICES,
+                    default="yes",
+                )
                 if answer.lower() in ("yes", "y"):
                     print("Removing module '%s'" % module["name"])
                     modules.remove(module)
@@ -439,8 +466,9 @@ def _clean_unused_modules(config=None):
         added_by = module["added_by"] if "added_by" in module else ""
         print("%s - %s - added by: %s" % (name, description, added_by))
 
-    answer = prompt_user("Do you wish to remove these modules?",
-                         choices=YES_NO_CHOICES, default="yes")
+    answer = prompt_user(
+        "Do you wish to remove these modules?", choices=YES_NO_CHOICES, default="yes"
+    )
     if answer.lower() in ("yes", "y"):
         for module in to_remove:
             modules.remove(module)
@@ -510,13 +538,13 @@ def update_command():
                 # same commit => user modifications, don't revert them
                 if commit_differs:
                     ans = prompt_user(
-                            "Module %s has different build steps now\n" % module["name"]
-                            + "old steps: %s\n" % module["steps"]
-                            + "new steps: %s\n" % index_info["steps"]
-                            + "Do you want to use the new build steps?",
-                            choices=YES_NO_CHOICES,
-                            default="yes"
-                        )
+                        "Module %s has different build steps now\n" % module["name"]
+                        + "old steps: %s\n" % module["steps"]
+                        + "new steps: %s\n" % index_info["steps"]
+                        + "Do you want to use the new build steps?",
+                        choices=YES_NO_CHOICES,
+                        default="yes",
+                    )
                     if ans.lower() in ["y", "yes"]:
                         module["steps"] = index_info["steps"]
                     else:

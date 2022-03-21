@@ -2,8 +2,10 @@ import os
 import tempfile
 from subprocess import check_call, check_output, run, PIPE, CalledProcessError
 
+
 class CFBSGitError(Exception):
     pass
+
 
 def is_git_repo(path=None):
     """Is the given path a Git repository?)
@@ -44,9 +46,12 @@ def git_init(user_name=None, user_email=None, description=None):
       `None`) or none can be given (both must be `None`).
 
     """
-    if ((user_name is None and user_email is not None) or
-        (user_name is not None and user_email is None)):
-        raise AttributeError("Both user_name and user_email must be given or none can be given")
+    if (user_name is None and user_email is not None) or (
+        user_name is not None and user_email is None
+    ):
+        raise AttributeError(
+            "Both user_name and user_email must be given or none can be given"
+        )
 
     if is_git_repo():
         raise CFBSGitError("Already an initialized git repository")
@@ -120,4 +125,6 @@ def git_discard_changes_in_file(file_name):
     try:
         check_call(["git", "checkout", "--", file_name])
     except CalledProcessError as cpe:
-        raise CFBSGitError("Failed to discard changes in file '%s'" % file_name) from cpe
+        raise CFBSGitError(
+            "Failed to discard changes in file '%s'" % file_name
+        ) from cpe
