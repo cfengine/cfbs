@@ -2,10 +2,14 @@ import os
 import re
 import pytest
 from cfbs.commands import info_command
+from cfbs.cfbs_config import CFBSConfig
 
 
 @pytest.mark.parametrize("chdir", ["sample"], indirect=True)
 def test_noargs(capfd, chdir):
+    # Make sure a fresh instance of CFBSConfig is created based on the JSON
+    # definitions in the "sample" directory.
+    CFBSConfig.instance = None
     info_command([])
     out, _ = capfd.readouterr()
     assert out == "\n"
@@ -14,6 +18,10 @@ def test_noargs(capfd, chdir):
 @pytest.mark.parametrize("chdir", ["sample"], indirect=True)
 def test_showinfo(capfd, chdir):
     assert os.path.exists("cfbs.json")
+
+    # Make sure a fresh instance of CFBSConfig is created based on the JSON
+    # definitions in the "sample" directory.
+    CFBSConfig.instance = None
     info_command(
         "autorun masterfiles foo/main.cf bar/my.json bar/baz/main.cf nosuchfile".split(
             " "

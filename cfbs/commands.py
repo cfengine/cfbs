@@ -5,6 +5,7 @@ in main.py for -h/--help/help.
 import os
 import logging as log
 import json
+from functools import partial
 
 from cfbs.utils import (
     cfbs_dir,
@@ -36,9 +37,23 @@ from cfbs.internal_file_management import (
     SUPPORTED_ARCHIVES,
 )
 from cfbs.index import _VERSION_INDEX
+from cfbs.git import (
+    is_git_repo,
+    git_get_config,
+    git_set_config,
+    git_init,
+    git_commit,
+    git_discard_changes_in_file,
+    CFBSGitError,
+)
 
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
+
+YES_NO_CHOICES = ("yes", "y", "no", "n")
+
+PLURAL_S = lambda args, kwargs: "s" if len(args[0]) > 1 else ""
+FIRST_ARG_SLIST = lambda args, kwargs: ", ".join("'%s'" % module for module in args[0])
 
 
 def _item_index(iterable, item, extra_at_end=True):
@@ -49,6 +64,90 @@ def _item_index(iterable, item, extra_at_end=True):
             return len(iterable)
         else:
             return -1
+
+
+def prompt_user(prompt, choices=None, default=None):
+    config = CFBSConfig.get_instance()
+
+    if config.non_interactive:
+        if default is None:
+            raise ValueError(
+                "Missing default value for prompt '%s' in non-interactive mode" % prompt
+            )
+        else:
+            return default
+
+    prompt_separator = " " if prompt.endswith("?") else ": "
+    if choices:
+        assert default is None or str(default) in choices
+        choices_str = "/".join(
+            choice.upper() if choice == str(default) else choice for choice in choices
+        )
+        prompt += " [%s]%s" % (choices_str, prompt_separator)
+    elif default is not None:
+        prompt += " [%s]%s" % (default, prompt_separator)
+    else:
+        prompt += prompt_separator
+
+    answer = None
+    while answer is None:
+        answer = input(prompt)
+        if answer == "":
+            if default is not None:
+                answer = default
+            else:
+                answer = None
+        elif choices and answer not in choices and answer.lower() not in choices:
+            print("Invalid value entered, must ve one of: %s" % "/".join(choices))
+            answer = None
+
+    return answer
+
+
+def with_git_commit(
+    successful_returns,
+    files_to_commit,
+    commit_msg,
+    positional_args_lambdas=None,
+    failed_return=False,
+):
+    def decorator(fn):
+        def decorated_fn(*args, **kwargs):
+            ret = fn(*args, **kwargs)
+
+            config = CFBSConfig.get_instance()
+            if not config["git"]:
+                return ret
+
+            if ret in successful_returns:
+                if positional_args_lambdas:
+                    positional_args = (
+                        l_fn(args, kwargs) for l_fn in positional_args_lambdas
+                    )
+                    msg = commit_msg % tuple(positional_args)
+                else:
+                    msg = commit_msg
+
+                try:
+                    git_commit(msg, not config.non_interactive, files_to_commit)
+                except CFBSGitError as e:
+                    print(str(e))
+                    try:
+                        for file_name in files_to_commit:
+                            git_discard_changes_in_file(file_name)
+                    except CFBSGitError as e:
+                        print(str(e))
+                    else:
+                        print("Failed to commit changes, discarding them...")
+                        return failed_return
+            return ret
+
+        return decorated_fn
+
+    return decorator
+
+
+commit_after_command = partial(with_git_commit, (0,), ("cfbs.json",), failed_return=0)
 
 
 def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
@@ -117,18 +216,80 @@ def init_command(index_path=None, non_interactive=False) -> int:
     if is_cfbs_repo():
         user_error("Already initialized - look at %s" % cfbs_filename())
 
+    name = prompt_user("Please enter name of this CFBS repository", default="Example")
+    description = prompt_user(
+        "Please enter description of this CFBS repository",
+        default="Example description",
+    )
+
     definition = {
-        "name": "Example",
+        "name": name,
         "type": "policy-set",  # TODO: Prompt whether user wants to make a module
-        "description": "Example description",
+        "description": description,
         "build": [],  # TODO: Prompt what masterfile user wants to add
     }
     if index_path:
         definition["index_path"] = index_path
 
+    is_git = is_git_repo()
+    if is_git:
+        git_ans = prompt_user(
+            "This is a git repository. Do you want cfbs to make commits to it?",
+            choices=YES_NO_CHOICES,
+            default="yes",
+        )
+    else:
+        git_ans = prompt_user(
+            "Do you want cfbs to initialize a git repository and make commits to it?",
+            choices=YES_NO_CHOICES,
+            default="yes",
+        )
+    do_git = git_ans in ("yes", "y")
+
+    if do_git:
+        user_name = git_get_config("user.name")
+        user_email = git_get_config("user.email")
+        user_name = prompt_user(
+            "Please enter user name to use for git commits", default=user_name or "cfbs"
+        )
+
+        node_name = os.uname().nodename
+        user_email = prompt_user(
+            "Please enter user email to use for git commits",
+            default=user_email or ("cfbs@%s" % node_name),
+        )
+
+        if not is_git:
+            try:
+                git_init(user_name, user_email, description)
+            except CFBSGitError as e:
+                print(str(e))
+                return 1
+        else:
+            if not git_set_config("user.name", user_name) or not git_set_config(
+                "user.email", user_email
+            ):
+                print("Failed to set Git user name and email")
+                return 1
+
+    definition["git"] = do_git
+
     write_json(cfbs_filename(), definition)
     assert is_cfbs_repo()
-    print("Initialized - edit name and description %s" % cfbs_filename())
+
+    if do_git:
+        try:
+            git_commit(
+                "Initialized a new cfbs repository",
+                not non_interactive,
+                [cfbs_filename()],
+            )
+        except CFBSGitError as e:
+            print(str(e))
+            os.unlink(cfbs_filename())
+            return 1
+
+    print("Initialized")
     print("To add your first module, type: cfbs add masterfiles")
 
     return 0
@@ -136,7 +297,7 @@ def init_command(index_path=None, non_interactive=False) -> int:
 
 def status_command() -> int:
 
-    definition = CFBSConfig()
+    definition = CFBSConfig.get_instance()
     print("Name:        %s" % definition["name"])
     print("Description: %s" % definition["description"])
     print("File:        %s" % cfbs_filename())
@@ -162,9 +323,8 @@ def status_command() -> int:
     return 0
 
 
-def search_command(terms: list, index_path=None) -> int:
-    config = CFBSConfig(index=index_path)
-    index = config.index
+def search_command(terms: list) -> int:
+    index = CFBSConfig.get_instance().index
     results = {}
 
     # in order to gather all aliases, we must iterate over everything first
@@ -205,22 +365,22 @@ def search_command(terms: list, index_path=None) -> int:
     return 0 if any(results) else 1
 
 
+@commit_after_command("Added module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
 def add_command(
     to_add: list,
     added_by="cfbs add",
-    index_path=None,
     checksum=None,
-    non_interactive=False,
 ) -> int:
-    config = CFBSConfig()
-    r = config.add_command(to_add, added_by, index_path, checksum, non_interactive)
+    config = CFBSConfig.get_instance()
+    r = config.add_command(to_add, added_by, checksum)
     config.save()
     return r
 
 
-def remove_command(to_remove: list, non_interactive=False):
-    definition = CFBSConfig()
-    modules = definition["build"]
+@commit_after_command("Removed module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
+def remove_command(to_remove: list):
+    config = CFBSConfig.get_instance()
+    modules = config["build"]
 
     def _get_module_by_name(name) -> dict:
         if not name.startswith("./") and name.endswith(".cf") and os.path.exists(name):
@@ -245,10 +405,10 @@ def remove_command(to_remove: list, non_interactive=False):
             if not matches:
                 user_error("Could not find module with URL '%s'" % name)
             for module in matches:
-                answer = (
-                    "yes"
-                    if non_interactive
-                    else input("Do you wish to remove '%s'? [y/N] " % module["name"])
+                answer = prompt_user(
+                    "Do you wish to remove '%s'?" % module["name"],
+                    choices=YES_NO_CHOICES,
+                    default="yes",
                 )
                 if answer.lower() in ("yes", "y"):
                     print("Removing module '%s'" % module["name"])
@@ -263,16 +423,23 @@ def remove_command(to_remove: list, non_interactive=False):
             else:
                 print("Module '%s' not found" % name)
 
-    definition.save()
+    config.save()
     if num_removed:
-        clean_command(non_interactive=non_interactive, definition=definition)
-    return 0
+        _clean_unused_modules(config)
+        return 0
+    else:
+        return 2
 
 
-def clean_command(non_interactive=False, definition=None):
-    if not definition:
-        definition = CFBSConfig()
-    modules = definition["build"]
+@commit_after_command("Cleaned unused modules")
+def clean_command(config=None):
+    return _clean_unused_modules(config)
+
+
+def _clean_unused_modules(config=None):
+    if not config:
+        config = CFBSConfig.get_instance()
+    modules = config["build"]
 
     def _someone_needs_me(this) -> bool:
         if "added_by" not in this or this["added_by"] == "cfbs add":
@@ -290,7 +457,7 @@ def clean_command(non_interactive=False, definition=None):
             to_remove.append(module)
 
     if not to_remove:
-        return 0
+        return 2
 
     print("The following modules were added as dependencies but are no longer needed:")
     for module in to_remove:
@@ -299,25 +466,25 @@ def clean_command(non_interactive=False, definition=None):
         added_by = module["added_by"] if "added_by" in module else ""
         print("%s - %s - added by: %s" % (name, description, added_by))
 
-    answer = (
-        "yes"
-        if non_interactive
-        else input("Do you wish to remove these modules? [y/N] ")
+    answer = prompt_user(
+        "Do you wish to remove these modules?", choices=YES_NO_CHOICES, default="yes"
     )
     if answer.lower() in ("yes", "y"):
         for module in to_remove:
             modules.remove(module)
-        definition.save()
+        config.save()
 
     return 0
 
 
-def update_command(non_interactive=False):
+@commit_after_command("Updated all modules")
+def update_command():
     new_deps = []
     new_deps_added_by = dict()
-    definition = CFBSConfig()
-    index = definition.index
-    for module in definition["build"]:
+    config = CFBSConfig.get_instance()
+    index = config.index
+    changes_made = False
+    for module in config["build"]:
         if "index" in module:
             # not a module from the default index, not updating
             continue
@@ -370,15 +537,14 @@ def update_command(non_interactive=False):
             if key == "steps":
                 # same commit => user modifications, don't revert them
                 if commit_differs:
-                    if non_interactive:
-                        ans = "yes"
-                    else:
-                        ans = input(
-                            "Module %s has different build steps now\n" % module["name"]
-                            + "old steps: %s\n" % module["steps"]
-                            + "new steps: %s\n" % index_info["steps"]
-                            + "Do you want to use the new build steps? [y/N]"
-                        )
+                    ans = prompt_user(
+                        "Module %s has different build steps now\n" % module["name"]
+                        + "old steps: %s\n" % module["steps"]
+                        + "new steps: %s\n" % index_info["steps"]
+                        + "Do you want to use the new build steps?",
+                        choices=YES_NO_CHOICES,
+                        default="yes",
+                    )
                     if ans.lower() in ["y", "yes"]:
                         module["steps"] = index_info["steps"]
                     else:
@@ -395,6 +561,7 @@ def update_command(non_interactive=False):
                     new_deps_added_by.update({item: module["name"] for item in extra})
 
                 module[key] = index_info[key]
+                changes_made = True
 
         # add new items
         for key in set(index_info.keys()) - set(module.keys()):
@@ -406,16 +573,15 @@ def update_command(non_interactive=False):
 
     if new_deps:
         objects = [index.get_module_object(d, new_deps_added_by[d]) for d in new_deps]
-        definition.add_with_dependencies(objects)
-    definition.save()
+        config.add_with_dependencies(objects)
+    config.save()
+
+    return 0 if changes_made else 2
 
 
-def validate_command(index_path=None):
-    if index_path:
-        index = CFBSJson(path=index_path).index
-    elif CFBSConfig.exists():
-        index = CFBSConfig().index
-    else:
+def validate_command():
+    index = CFBSConfig.get_instance().index
+    if not index:
         user_error("Index not found")
 
     data = index.data
@@ -503,7 +669,7 @@ def download_dependencies(config, prefer_offline=False, redownload=False):
 
 
 def download_command(force):
-    config = CFBSConfig()
+    config = CFBSConfig.get_instance()
     download_dependencies(config, redownload=force)
 
 
@@ -617,7 +783,7 @@ def build_steps(config) -> int:
 
 
 def build_command() -> int:
-    config = CFBSConfig()
+    config = CFBSConfig.get_instance()
     init_build_folder(config)
     download_dependencies(config, prefer_offline=True)
     build_steps(config)
@@ -677,8 +843,8 @@ def print_module_info(data):
             print("{}: {}".format(key.title().replace("_", " "), value))
 
 
-def info_command(modules, index_path=None):
-    config = CFBSConfig(index=index_path)
+def info_command(modules):
+    config = CFBSConfig.get_instance()
     index = config.index
 
     build = config.get("build", {})

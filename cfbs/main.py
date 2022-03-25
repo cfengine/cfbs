@@ -9,6 +9,7 @@ import logging as log
 
 from cfbs.version import string as version
 from cfbs.utils import user_error, is_cfbs_repo, cache
+from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
 
 
@@ -125,18 +126,23 @@ Warning: The --non-interactive option is only meant for testing (!)
     if args.command == "help":
         _get_arg_parser().print_help()
         return 0
+
+    config = CFBSConfig.get_instance(args.index)
+    config.non_interactive = args.non_interactive
+
     if args.command == "init":
         return commands.init_command(
             index_path=args.index, non_interactive=args.non_interactive
         )
+
     if args.command == "search":
-        return commands.search_command(args.args, index_path=args.index)
+        return commands.search_command(args.args)
     if args.command == "pretty":
         return commands.pretty_command(args.args, args.check, args.keep_order)
     if args.command == "validate":
-        return commands.validate_command(index_path=args.index)
+        return commands.validate_command()
     if args.command in ("info", "show"):
-        return commands.info_command(args.args, index_path=args.index)
+        return commands.info_command(args.args)
 
     if not is_cfbs_repo():
         user_error("This is not a cfbs repo, to get started, type: cfbs init")
@@ -146,14 +152,12 @@ Warning: The --non-interactive option is only meant for testing (!)
     if args.command == "add":
         return commands.add_command(
             args.args,
-            index_path=args.index,
             checksum=args.checksum,
-            non_interactive=args.non_interactive,
         )
     if args.command == "remove":
-        return commands.remove_command(args.args, non_interactive=args.non_interactive)
+        return commands.remove_command(args.args)
     if args.command == "clean":
-        return commands.clean_command(non_interactive=args.non_interactive)
+        return commands.clean_command()
     if args.command == "download":
         return commands.download_command(args.force)
     if args.command == "build":
@@ -161,7 +165,7 @@ Warning: The --non-interactive option is only meant for testing (!)
     if args.command == "install":
         return commands.install_command(args.args)
     if args.command == "update":
-        return commands.update_command(non_interactive=args.non_interactive)
+        return commands.update_command()
 
     _get_arg_parser().print_help()
     user_error("Command '%s' not found" % args.command)

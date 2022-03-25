@@ -4,9 +4,10 @@ cd test
 mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
+rm -rf .git
 
-cfbs init
-cfbs add masterfiles
+cfbs --non-interactive init
+cfbs --non-interactive add masterfiles
 grep '"name": "masterfiles"' cfbs.json
-cfbs remove masterfiles --non-interactive
+cfbs --non-interactive remove masterfiles --non-interactive
 ! grep '"name": "masterfiles"' cfbs.json
