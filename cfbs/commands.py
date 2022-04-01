@@ -289,7 +289,7 @@ def init_command(index_path=None, non_interactive=False) -> int:
             os.unlink(cfbs_filename())
             return 1
 
-    print("Initialized")
+    print("Initialized an empty project called '{}' in '{}'".format(name, cfbs_filename()))
     print("To add your first module, type: cfbs add masterfiles")
 
     return 0
