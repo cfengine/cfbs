@@ -280,7 +280,7 @@ def init_command(index_path=None, non_interactive=False) -> int:
     if do_git:
         try:
             git_commit(
-                "Initialized a new cfbs repository",
+                "Initialized a new CFEngine Build project",
                 not non_interactive,
                 [cfbs_filename()],
             )
