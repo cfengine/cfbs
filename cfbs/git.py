@@ -3,7 +3,7 @@ import tempfile
 from functools import partial
 from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProcessError
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
-from cfbs.cfbs_config import CFBSConfig
+from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 
 
 class CFBSGitError(Exception):
@@ -157,7 +157,10 @@ def with_git_commit(
 ):
     def decorator(fn):
         def decorated_fn(*args, **kwargs):
-            ret = fn(*args, **kwargs)
+            try:
+                ret = fn(*args, **kwargs)
+            except CFBSReturnWithoutCommit as e:
+                return e.retval
 
             config = CFBSConfig.get_instance()
             if not config["git"]:

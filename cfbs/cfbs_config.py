@@ -17,6 +17,11 @@ from cfbs.cfbs_json import CFBSJson
 from cfbs.module import Module
 
 
+class CFBSReturnWithoutCommit(Exception):
+    def __init__(self, r):
+        self.retval = r
+
+
 def _has_autorun_tag(filename):
     assert os.path.isfile(filename)
     content = read_file(filename)
@@ -142,7 +147,7 @@ class CFBSConfig(CFBSJson):
                     "Do you want to add all %d of them? [y/N] " % (len(modules))
                 )
                 if answer.lower() not in ("y", "yes"):
-                    return 0
+                    return
         else:
             missing = [k for k in to_add if k not in provides]
             if missing:
@@ -151,8 +156,6 @@ class CFBSConfig(CFBSJson):
 
         for module in modules:
             self.add_with_dependencies(module, remote_config)
-
-        return 0
 
     @staticmethod
     def _convert_added_by(added_by, to_add):
@@ -245,7 +248,7 @@ class CFBSConfig(CFBSJson):
         # Filter modules which are already added:
         to_add = self._filter_modules_to_add(modules)
         if not to_add:
-            return 0  # Everything already added
+            return  # Everything already added
 
         # Convert names to objects:
         modules_to_add = [index.get_module_object(m, added_by[m.name]) for m in to_add]
@@ -262,8 +265,6 @@ class CFBSConfig(CFBSJson):
 
         self._add_without_dependencies(modules_to_add)
 
-        return 0
-
     def add_command(
         self,
         to_add: list,
@@ -273,14 +274,23 @@ class CFBSConfig(CFBSJson):
         if not to_add:
             user_error("Must specify at least one module to add")
 
+        before_adding = len(self["build"])
+
         if to_add[0].endswith(SUPPORTED_ARCHIVES) or to_add[0].startswith(
             ("https://", "git://", "ssh://")
         ):
-            return self._add_using_url(
+            self._add_using_url(
                 url=to_add[0],
                 to_add=to_add[1:],
                 added_by=added_by,
                 checksum=checksum,
             )
+        else:
+            self._add_modules(to_add, added_by, checksum)
 
-        return self._add_modules(to_add, added_by, checksum)
+        if len(self["build"]) == before_adding:
+            # Not an error, we just want to exit successfully without
+            # making a git commit
+            raise CFBSReturnWithoutCommit(0)
+
+        return 0
