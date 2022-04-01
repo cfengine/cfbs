@@ -1,7 +1,7 @@
 import os
 import tempfile
 from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProcessError
-
+from cfbs.prompts import YES_NO_CHOICES, prompt_user
 
 class CFBSGitError(Exception):
     pass
