@@ -91,7 +91,7 @@ def with_git_commit(
                     msg = commit_msg
 
                 try:
-                    git_commit(msg, not config.non_interactive, files_to_commit)
+                    git_commit(msg, config.non_interactive, files_to_commit)
                 except CFBSGitError as e:
                     print(str(e))
                     try:
@@ -243,7 +243,7 @@ def init_command(index_path=None, non_interactive=False) -> int:
         try:
             git_commit(
                 "Initialized a new CFEngine Build project",
-                not non_interactive,
+                non_interactive,
                 [cfbs_filename()],
             )
         except CFBSGitError as e:

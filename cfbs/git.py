@@ -75,16 +75,26 @@ def git_init(user_name=None, user_email=None, description=None):
             f.write(description + "\n")
 
 
-def git_commit(commit_msg, edit_commit_msg=True, scope="all"):
+def git_commit(commit_msg, non_interactive, scope="all"):
     """Create a commit in the CWD Git repository
 
     :param commit_msg: commit message to use for the commit
     :param scope: files to include in the commit or `"all"` (`git commit -a`)
     :type scope: str or an iterable of str
-    :param edit_commit_msg: whether the user should be prompted to edit and
+    :param non_interactive: whether the user should be prompted to edit and
                             save the commit message or not
 
     """
+
+    edit_commit_msg = False
+
+    if not non_interactive:
+        ans = prompt_user(
+            "The default commit message is '{}' - edit it?".format(commit_msg),
+            choices=YES_NO_CHOICES,
+            default="no",
+        )
+        edit_commit_msg = ans.lower() in ("yes", "y")
 
     print("Committing using git:\n")
 
