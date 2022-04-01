@@ -735,7 +735,7 @@ def help_command():
     pass  # no-op here, all *_command functions are presented in help contents
 
 
-def print_module_info(data):
+def _print_module_info(data):
     ordered_keys = [
         "module",
         "version",
@@ -793,7 +793,7 @@ def info_command(modules):
                 continue
             data["status"] = "Added"
         data["module"] = (module + "({})".format(alias)) if alias else module
-        print_module_info(data)
+        _print_module_info(data)
     print()  # extra line for ease of reading
     return 0
 
