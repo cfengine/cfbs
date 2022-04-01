@@ -526,7 +526,7 @@ def longest_module_name(config) -> int:
     return max((len(m["name"]) for m in config["build"]))
 
 
-def download_dependencies(config, prefer_offline=False, redownload=False):
+def _download_dependencies(config, prefer_offline=False, redownload=False):
     print("\nModules:")
     counter = 1
     max_length = longest_module_name(config)
@@ -586,7 +586,7 @@ def download_dependencies(config, prefer_offline=False, redownload=False):
 
 def download_command(force):
     config = CFBSConfig.get_instance()
-    download_dependencies(config, redownload=force)
+    _download_dependencies(config, redownload=force)
 
 
 def build_step(module, step, max_length):
@@ -701,7 +701,7 @@ def build_steps(config) -> int:
 def build_command() -> int:
     config = CFBSConfig.get_instance()
     init_build_folder(config)
-    download_dependencies(config, prefer_offline=True)
+    _download_dependencies(config, prefer_offline=True)
     build_steps(config)
 
 
