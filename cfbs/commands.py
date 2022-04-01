@@ -659,7 +659,7 @@ def info_command(modules):
                 alias = module
                 module = data["alias"]
                 data = index[module]
-            data["status"] = "Added" if in_build else "Not Added"
+            data["status"] = "Added" if in_build else "Not added"
         else:
             if not module.startswith("./"):
                 module = "./" + module
