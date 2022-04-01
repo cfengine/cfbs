@@ -86,6 +86,8 @@ def git_commit(commit_msg, edit_commit_msg=True, scope="all"):
 
     """
 
+    print("Committing using git:\n")
+
     if not is_git_repo():
         raise CFBSGitError("Not a git repository")
 
@@ -111,6 +113,7 @@ def git_commit(commit_msg, edit_commit_msg=True, scope="all"):
         result = run(["git", "commit", "--template", name], check=False, stderr=PIPE)
         os.unlink(name)
         if result.returncode == 0:
+            print("")
             return
         elif "did not edit the message" not in result.stderr.decode():
             raise CFBSGitError("Failed to commit changes")
@@ -118,6 +121,7 @@ def git_commit(commit_msg, edit_commit_msg=True, scope="all"):
     # else
     try:
         run(["git", "commit", "-F-"], input=commit_msg.encode("utf-8"), check=True)
+        print("")
     except CalledProcessError as cpe:
         raise CFBSGitError("Failed to commit changes") from cpe
 
