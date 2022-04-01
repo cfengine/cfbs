@@ -18,3 +18,4 @@ bash test/shell/012_prepend_dot_slash.sh
 bash test/shell/013_add_url_commit.sh
 bash test/shell/014_add_nonexistent.sh
 bash test/shell/015_add_version.sh
+bash test/shell/016_add_folders.sh

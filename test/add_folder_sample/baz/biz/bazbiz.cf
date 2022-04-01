@@ -1,6 +1,0 @@
-bundle agent bazbiz
-{
-  meta:
-    "tags" slist => { "autorun" };
-  reports: "I am bazbiz.";
-}
