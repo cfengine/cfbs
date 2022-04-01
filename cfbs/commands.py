@@ -222,7 +222,7 @@ def status_command() -> int:
     if not modules:
         return 0
     print("\nModules:")
-    max_length = longest_module_name(definition)
+    max_length = definition.longest_module_name()
     counter = 1
     for m in modules:
         if m["name"].startswith("./"):
@@ -522,14 +522,11 @@ def init_build_folder(config):
     mkdir("out/steps")
 
 
-def longest_module_name(config) -> int:
-    return max((len(m["name"]) for m in config["build"]))
-
 
 def _download_dependencies(config, prefer_offline=False, redownload=False):
     print("\nModules:")
     counter = 1
-    max_length = longest_module_name(config)
+    max_length = config.longest_module_name()
     downloads = os.path.join(cfbs_dir(), "downloads")
     for module in config["build"]:
         name = module["name"]
@@ -680,7 +677,7 @@ def build_step(module, step, max_length):
 
 def build_steps(config) -> int:
     print("\nSteps:")
-    module_name_length = longest_module_name(config)
+    module_name_length = config.longest_module_name()
     for module in config["build"]:
         for step in module["steps"]:
             build_step(module, step, module_name_length)
