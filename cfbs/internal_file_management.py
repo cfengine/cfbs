@@ -11,7 +11,6 @@ and what is on the file system (in ~/.cfengine and ./out).
 import os
 import re
 import shutil
-import distutils.spawn
 
 from cfbs.utils import (
     cfbs_dir,
@@ -222,12 +221,12 @@ def fetch_archive(url, checksum=None, directory=None, with_index=True):
 
     # TODO: use Python modules instead of CLI tools?
     if archive_type.startswith(_SUPPORTED_TAR_TYPES):
-        if distutils.spawn.find_executable("tar"):
+        if shutil.which("tar"):
             sh("cd %s; tar -xf %s" % (content_dir, archive_path))
         else:
             user_error("Working with .tar archives requires the 'tar' utility")
     elif archive_type == (".zip"):
-        if distutils.spawn.find_executable("unzip"):
+        if shutil.which("unzip"):
             sh("cd %s; unzip %s" % (content_dir, archive_path))
         else:
             user_error("Working with .zip archives requires the 'unzip' utility")
