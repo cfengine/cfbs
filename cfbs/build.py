@@ -13,13 +13,13 @@ from cfbs.utils import (
 )
 from cfbs.pretty import pretty_file
 
-def init_build_folder():
+def init_out_folder():
     rm("out", missing_ok=True)
     mkdir("out")
     mkdir("out/masterfiles")
     mkdir("out/steps")
 
-def build_step(module, step, max_length):
+def _perform_build_step(module, step, max_length):
     step = step.split(" ")
     operation, args = step[0], step[1:]
     source = module["_directory"]
@@ -108,12 +108,12 @@ def build_step(module, step, max_length):
         user_error("Unknown build step operation: %s" % operation)
 
 
-def build_steps(config) -> int:
+def perform_build_steps(config) -> int:
     print("\nSteps:")
     module_name_length = config.longest_module_name()
     for module in config["build"]:
         for step in module["steps"]:
-            build_step(module, step, module_name_length)
+            _perform_build_step(module, step, module_name_length)
     if os.path.isfile("out/masterfiles/def.json"):
         pretty_file("out/masterfiles/def.json")
     print("")

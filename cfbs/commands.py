@@ -26,7 +26,7 @@ from cfbs.utils import (
 )
 
 from cfbs.pretty import pretty_check_file, pretty_file
-from cfbs.build import build_steps, init_build_folder
+from cfbs.build import init_out_folder, perform_build_steps
 from cfbs.cfbs_config import CFBSConfig
 from cfbs.cfbs_json import CFBSJson
 from cfbs.validate import CFBSIndexException, validate_index
@@ -509,6 +509,9 @@ def validate_command():
 
 
 def _download_dependencies(config, prefer_offline=False, redownload=False):
+    # TODO: This function should be split in 2:
+    #       1. Code for downloading things into ~/.cfengine
+    #       2. Code for copying things into ./out
     print("\nModules:")
     counter = 1
     max_length = config.longest_module_name()
@@ -573,9 +576,9 @@ def download_command(force):
 
 def build_command() -> int:
     config = CFBSConfig.get_instance()
-    init_build_folder()
+    init_out_folder()
     _download_dependencies(config, prefer_offline=True)
-    build_steps(config)
+    perform_build_steps(config)
 
 
 def install_command(args) -> int:
