@@ -1,6 +1,6 @@
 import os
 import tempfile
-from subprocess import check_call, check_output, run, PIPE, CalledProcessError
+from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProcessError
 
 
 class CFBSGitError(Exception):
@@ -57,7 +57,8 @@ def git_init(user_name=None, user_email=None, description=None):
         raise CFBSGitError("Already an initialized git repository")
 
     try:
-        check_call(["git", "init"])
+        # Suppress noisy hint output on stderr:
+        check_call(["git", "init"], stderr=DEVNULL)
     except CalledProcessError as cpe:
         raise CFBSGitError("Failed to initialize git repository") from cpe
 
