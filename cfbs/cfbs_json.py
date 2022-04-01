@@ -61,6 +61,8 @@ class CFBSJson:
             self.index = Index()
 
     def get(self, key, default=None):
+        if not self._data: # If the specified JSON file does not exist
+            return default
         return self._data.get(key, default)
 
     def __getitem__(self, key):
