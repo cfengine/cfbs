@@ -28,6 +28,14 @@ It is also **recommended** to install `cf-remote` if you want to deploy the poli
 pip install cf-remote
 ```
 
+### Install from sources
+
+If you want to install an unreleased version of `cfbs`, such as the master branch, just run this inside [the git repo](https://github.com/cfengine/cfbs):
+
+```
+$ cfbs install .
+```
+
 ### Dependencies
 
 `cfbs` is implemented in Python and has a few dependencies:
