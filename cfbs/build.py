@@ -13,11 +13,13 @@ from cfbs.utils import (
 )
 from cfbs.pretty import pretty_file
 
+
 def init_out_folder():
     rm("out", missing_ok=True)
     mkdir("out")
     mkdir("out/masterfiles")
     mkdir("out/steps")
+
 
 def _perform_build_step(module, step, max_length):
     step = step.split(" ")

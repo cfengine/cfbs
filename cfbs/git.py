@@ -5,6 +5,7 @@ from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProce
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 from cfbs.cfbs_config import CFBSConfig
 
+
 class CFBSGitError(Exception):
     pass
 

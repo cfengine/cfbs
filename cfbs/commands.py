@@ -196,7 +196,9 @@ def init_command(index=None, non_interactive=False) -> int:
             os.unlink(cfbs_filename())
             return 1
 
-    print("Initialized an empty project called '{}' in '{}'".format(name, cfbs_filename()))
+    print(
+        "Initialized an empty project called '{}' in '{}'".format(name, cfbs_filename())
+    )
     print("To add your first module, type: cfbs add masterfiles")
 
     return 0
@@ -504,8 +506,6 @@ def validate_command():
         print(e)
         return 1
     return 0
-
-
 
 
 def _download_dependencies(config, prefer_offline=False, redownload=False):

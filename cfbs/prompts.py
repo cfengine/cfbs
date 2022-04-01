@@ -2,6 +2,7 @@ from cfbs.cfbs_config import CFBSConfig
 
 YES_NO_CHOICES = ("yes", "y", "no", "n")
 
+
 def prompt_user(prompt, choices=None, default=None):
     config = CFBSConfig.get_instance()
 

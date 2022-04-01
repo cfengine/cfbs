@@ -2,6 +2,7 @@ from collections import OrderedDict
 from cfbs.pretty import pretty, pretty_check_string, pretty_string
 from cfbs.utils import item_index
 
+
 def test_pretty():
     # Test primitives
     assert pretty(None) == "null"
