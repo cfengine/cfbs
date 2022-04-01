@@ -10,6 +10,7 @@ from cfbs.utils import (
     cfbs_dir,
     cfbs_filename,
     is_cfbs_repo,
+    item_index,
     user_error,
     strip_right,
     pad_right,
@@ -56,16 +57,6 @@ PLURAL_S = lambda args, kwargs: "s" if len(args[0]) > 1 else ""
 FIRST_ARG_SLIST = lambda args, kwargs: ", ".join("'%s'" % module for module in args[0])
 
 
-def _item_index(iterable, item, extra_at_end=True):
-    try:
-        return iterable.index(item)
-    except ValueError:
-        if extra_at_end:
-            return len(iterable)
-        else:
-            return -1
-
-
 def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     if not filenames:
         user_error("Filenames missing for cfbs pretty command")
@@ -87,13 +78,13 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
         )
         cfbs_sorting_rules = {
             None: (
-                lambda child_item: _item_index(top_level_keys, child_item[0]),
+                lambda child_item: item_index(top_level_keys, child_item[0]),
                 {
                     "index": (
                         lambda child_item: child_item[0],
                         {
                             ".*": (
-                                lambda child_item: _item_index(
+                                lambda child_item: item_index(
                                     module_keys, child_item[0]
                                 ),
                                 None,

@@ -95,6 +95,16 @@ def get_or_read_json(path: str) -> OrderedDict:
     return read_json(path)
 
 
+def item_index(iterable, item, extra_at_end=True):
+    try:
+        return iterable.index(item)
+    except ValueError:
+        if extra_at_end:
+            return len(iterable)
+        else:
+            return -1
+
+
 def strip_right(string, ending):
     if not string.endswith(ending):
         return string
