@@ -129,14 +129,14 @@ def init_command(index_path=None, non_interactive=False) -> int:
         default="Example description",
     )
 
-    definition = {
+    config = {
         "name": name,
         "type": "policy-set",  # TODO: Prompt whether user wants to make a module
         "description": description,
         "build": [],  # TODO: Prompt what masterfile user wants to add
     }
     if index_path:
-        definition["index_path"] = index_path
+        config["index_path"] = index_path
 
     is_git = is_git_repo()
     if is_git:
@@ -179,9 +179,9 @@ def init_command(index_path=None, non_interactive=False) -> int:
                 print("Failed to set Git user name and email")
                 return 1
 
-    definition["git"] = do_git
+    config["git"] = do_git
 
-    write_json(cfbs_filename(), definition)
+    write_json(cfbs_filename(), config)
     assert is_cfbs_repo()
 
     if do_git:
@@ -204,16 +204,16 @@ def init_command(index_path=None, non_interactive=False) -> int:
 
 def status_command() -> int:
 
-    definition = CFBSConfig.get_instance()
-    print("Name:        %s" % definition["name"])
-    print("Description: %s" % definition["description"])
+    config = CFBSConfig.get_instance()
+    print("Name:        %s" % config["name"])
+    print("Description: %s" % config["description"])
     print("File:        %s" % cfbs_filename())
 
-    modules = definition["build"]
+    modules = config["build"]
     if not modules:
         return 0
     print("\nModules:")
-    max_length = definition.longest_module_name()
+    max_length = config.longest_module_name()
     counter = 1
     for m in modules:
         if m["name"].startswith("./"):
