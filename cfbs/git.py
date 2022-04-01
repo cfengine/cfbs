@@ -1,7 +1,9 @@
 import os
 import tempfile
+from functools import partial
 from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProcessError
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
+from cfbs.cfbs_config import CFBSConfig
 
 class CFBSGitError(Exception):
     pass
@@ -143,3 +145,49 @@ def git_discard_changes_in_file(file_name):
         raise CFBSGitError(
             "Failed to discard changes in file '%s'" % file_name
         ) from cpe
+
+
+def with_git_commit(
+    successful_returns,
+    files_to_commit,
+    commit_msg,
+    positional_args_lambdas=None,
+    failed_return=False,
+):
+    def decorator(fn):
+        def decorated_fn(*args, **kwargs):
+            ret = fn(*args, **kwargs)
+
+            config = CFBSConfig.get_instance()
+            if not config["git"]:
+                return ret
+
+            if ret in successful_returns:
+                if positional_args_lambdas:
+                    positional_args = (
+                        l_fn(args, kwargs) for l_fn in positional_args_lambdas
+                    )
+                    msg = commit_msg % tuple(positional_args)
+                else:
+                    msg = commit_msg
+
+                try:
+                    git_commit(msg, config.non_interactive, files_to_commit)
+                except CFBSGitError as e:
+                    print(str(e))
+                    try:
+                        for file_name in files_to_commit:
+                            git_discard_changes_in_file(file_name)
+                    except CFBSGitError as e:
+                        print(str(e))
+                    else:
+                        print("Failed to commit changes, discarding them...")
+                        return failed_return
+            return ret
+
+        return decorated_fn
+
+    return decorator
+
+
+commit_after_command = partial(with_git_commit, (0,), ("cfbs.json",), failed_return=0)
