@@ -119,7 +119,7 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     return 0
 
 
-def init_command(index_path=None, non_interactive=False) -> int:
+def init_command(index=None, non_interactive=False) -> int:
     if is_cfbs_repo():
         user_error("Already initialized - look at %s" % cfbs_filename())
 
@@ -135,8 +135,8 @@ def init_command(index_path=None, non_interactive=False) -> int:
         "description": description,
         "build": [],  # TODO: Prompt what masterfile user wants to add
     }
-    if index_path:
-        config["index_path"] = index_path
+    if index:
+        config["index"] = index
 
     is_git = is_git_repo()
     if is_git:
