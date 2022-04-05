@@ -24,7 +24,7 @@ from cfbs.utils import (
 
 from cfbs.pretty import pretty_check_file, pretty_file
 from cfbs.build import init_out_folder, perform_build_steps
-from cfbs.cfbs_config import CFBSConfig
+from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.cfbs_json import CFBSJson
 from cfbs.validate import CFBSIndexException, validate_index
 from cfbs.internal_file_management import (
@@ -331,7 +331,7 @@ def remove_command(to_remove: list):
         _clean_unused_modules(config)
         return 0
     else:
-        return 2
+        raise CFBSReturnWithoutCommit(0)
 
 
 @commit_after_command("Cleaned unused modules")
@@ -360,7 +360,7 @@ def _clean_unused_modules(config=None):
             to_remove.append(module)
 
     if not to_remove:
-        return 2
+        raise CFBSReturnWithoutCommit(0)
 
     print("The following modules were added as dependencies but are no longer needed:")
     for module in to_remove:

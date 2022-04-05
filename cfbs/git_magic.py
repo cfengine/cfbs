@@ -71,4 +71,4 @@ def with_git_commit(
     return decorator
 
 
-commit_after_command = partial(with_git_commit, (0,), ("cfbs.json",), failed_return=0)
+commit_after_command = partial(with_git_commit, (0,), ("cfbs.json",), failed_return=1)
