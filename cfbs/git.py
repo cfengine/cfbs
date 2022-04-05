@@ -1,9 +1,16 @@
+"""Module for running creating / interacting with a git repository
+
+Uses the subprocess module to run the git command line tool.
+
+Should be fairly reusable, not depending on other parts
+of the CFBS codebase.
+
+See git_magic.py for more git related code.
+"""
+
 import os
 import tempfile
-from functools import partial
 from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProcessError
-from cfbs.prompts import YES_NO_CHOICES, prompt_user
-from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 
 
 class CFBSGitError(Exception):
@@ -78,26 +85,16 @@ def git_init(user_name=None, user_email=None, description=None):
             f.write(description + "\n")
 
 
-def git_commit(commit_msg, non_interactive, scope="all"):
+def git_commit(commit_msg, edit_commit_msg=False, scope="all"):
     """Create a commit in the CWD Git repository
 
     :param commit_msg: commit message to use for the commit
     :param scope: files to include in the commit or `"all"` (`git commit -a`)
     :type scope: str or an iterable of str
-    :param non_interactive: whether the user should be prompted to edit and
+    :param edit_commit_message=False: whether the user should be prompted to edit and
                             save the commit message or not
 
     """
-
-    edit_commit_msg = False
-
-    if not non_interactive:
-        ans = prompt_user(
-            "The default commit message is '{}' - edit it?".format(commit_msg),
-            choices=YES_NO_CHOICES,
-            default="no",
-        )
-        edit_commit_msg = ans.lower() in ("yes", "y")
 
     print("Committing using git:\n")
 
@@ -146,52 +143,3 @@ def git_discard_changes_in_file(file_name):
         raise CFBSGitError(
             "Failed to discard changes in file '%s'" % file_name
         ) from cpe
-
-
-def with_git_commit(
-    successful_returns,
-    files_to_commit,
-    commit_msg,
-    positional_args_lambdas=None,
-    failed_return=False,
-):
-    def decorator(fn):
-        def decorated_fn(*args, **kwargs):
-            try:
-                ret = fn(*args, **kwargs)
-            except CFBSReturnWithoutCommit as e:
-                return e.retval
-
-            config = CFBSConfig.get_instance()
-            if not config["git"]:
-                return ret
-
-            if ret in successful_returns:
-                if positional_args_lambdas:
-                    positional_args = (
-                        l_fn(args, kwargs) for l_fn in positional_args_lambdas
-                    )
-                    msg = commit_msg % tuple(positional_args)
-                else:
-                    msg = commit_msg
-
-                try:
-                    git_commit(msg, config.non_interactive, files_to_commit)
-                except CFBSGitError as e:
-                    print(str(e))
-                    try:
-                        for file_name in files_to_commit:
-                            git_discard_changes_in_file(file_name)
-                    except CFBSGitError as e:
-                        print(str(e))
-                    else:
-                        print("Failed to commit changes, discarding them...")
-                        return failed_return
-            return ret
-
-        return decorated_fn
-
-    return decorator
-
-
-commit_after_command = partial(with_git_commit, (0,), ("cfbs.json",), failed_return=0)

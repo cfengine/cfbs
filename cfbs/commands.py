@@ -42,12 +42,9 @@ from cfbs.git import (
     git_get_config,
     git_set_config,
     git_init,
-    git_commit,
-    git_discard_changes_in_file,
-    with_git_commit,
-    commit_after_command,
     CFBSGitError,
 )
+from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 
 
@@ -186,7 +183,7 @@ def init_command(index=None, non_interactive=False) -> int:
 
     if do_git:
         try:
-            git_commit(
+            git_commit_maybe_prompt(
                 "Initialized a new CFEngine Build project",
                 non_interactive,
                 [cfbs_filename()],
