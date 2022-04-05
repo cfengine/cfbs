@@ -151,7 +151,7 @@ def init_command(index=None, non_interactive=False) -> int:
             choices=YES_NO_CHOICES,
             default="yes",
         )
-    do_git = git_ans in ("yes", "y")
+    do_git = git_ans.lower() in ("yes", "y")
 
     if do_git:
         user_name = git_get_config("user.name")
