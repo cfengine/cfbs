@@ -132,7 +132,7 @@ Warning: The --non-interactive option is only meant for testing (!)
 
     if args.command == "init":
         return commands.init_command(
-            index_path=args.index, non_interactive=args.non_interactive
+            index=args.index, non_interactive=args.non_interactive
         )
 
     if args.command == "search":

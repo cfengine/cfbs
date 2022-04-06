@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from cfbs.pretty import pretty, pretty_check_string, pretty_string
+from cfbs.utils import item_index
 
 
 def test_pretty():
@@ -198,16 +199,6 @@ def test_pretty_check_string():
     assert pretty_check_string('{ "name": "lars", "age": 27 }') == True
 
 
-def _item_index(iterable, item, extra_at_end=True):
-    try:
-        return iterable.index(item)
-    except ValueError:
-        if extra_at_end:
-            return len(iterable)
-        else:
-            return -1
-
-
 def test_pretty_sorting():
     test_json = """{
   "description": "The official (default) index of modules for CFEngine Build",
@@ -255,13 +246,13 @@ def test_pretty_sorting():
     )
     cfbs_sorting_rules = {
         None: (
-            lambda child_item: _item_index(top_level_keys, child_item[0]),
+            lambda child_item: item_index(top_level_keys, child_item[0]),
             {
                 "index": (
                     lambda child_item: child_item[0],
                     {
                         ".*": (
-                            lambda child_item: _item_index(module_keys, child_item[0]),
+                            lambda child_item: item_index(module_keys, child_item[0]),
                             None,
                         )
                     },

@@ -5,21 +5,17 @@ in main.py for -h/--help/help.
 import os
 import logging as log
 import json
-from functools import partial
 
 from cfbs.utils import (
     cfbs_dir,
     cfbs_filename,
     is_cfbs_repo,
+    item_index,
     user_error,
     strip_right,
     pad_right,
     get_json,
     write_json,
-    read_json,
-    merge_json,
-    mkdir,
-    touch,
     rm,
     cp,
     sh,
@@ -27,7 +23,8 @@ from cfbs.utils import (
 )
 
 from cfbs.pretty import pretty_check_file, pretty_file
-from cfbs.cfbs_config import CFBSConfig
+from cfbs.build import init_out_folder, perform_build_steps
+from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.cfbs_json import CFBSJson
 from cfbs.validate import CFBSIndexException, validate_index
 from cfbs.internal_file_management import (
@@ -42,112 +39,16 @@ from cfbs.git import (
     git_get_config,
     git_set_config,
     git_init,
-    git_commit,
-    git_discard_changes_in_file,
     CFBSGitError,
 )
+from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
+from cfbs.prompts import YES_NO_CHOICES, prompt_user
 
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
 
-YES_NO_CHOICES = ("yes", "y", "no", "n")
-
 PLURAL_S = lambda args, kwargs: "s" if len(args[0]) > 1 else ""
 FIRST_ARG_SLIST = lambda args, kwargs: ", ".join("'%s'" % module for module in args[0])
-
-
-def _item_index(iterable, item, extra_at_end=True):
-    try:
-        return iterable.index(item)
-    except ValueError:
-        if extra_at_end:
-            return len(iterable)
-        else:
-            return -1
-
-
-def prompt_user(prompt, choices=None, default=None):
-    config = CFBSConfig.get_instance()
-
-    if config.non_interactive:
-        if default is None:
-            raise ValueError(
-                "Missing default value for prompt '%s' in non-interactive mode" % prompt
-            )
-        else:
-            return default
-
-    prompt_separator = " " if prompt.endswith("?") else ": "
-    if choices:
-        assert default is None or str(default) in choices
-        choices_str = "/".join(
-            choice.upper() if choice == str(default) else choice for choice in choices
-        )
-        prompt += " [%s]%s" % (choices_str, prompt_separator)
-    elif default is not None:
-        prompt += " [%s]%s" % (default, prompt_separator)
-    else:
-        prompt += prompt_separator
-
-    answer = None
-    while answer is None:
-        answer = input(prompt)
-        if answer == "":
-            if default is not None:
-                answer = default
-            else:
-                answer = None
-        elif choices and answer not in choices and answer.lower() not in choices:
-            print("Invalid value entered, must ve one of: %s" % "/".join(choices))
-            answer = None
-
-    return answer
-
-
-def with_git_commit(
-    successful_returns,
-    files_to_commit,
-    commit_msg,
-    positional_args_lambdas=None,
-    failed_return=False,
-):
-    def decorator(fn):
-        def decorated_fn(*args, **kwargs):
-            ret = fn(*args, **kwargs)
-
-            config = CFBSConfig.get_instance()
-            if not config["git"]:
-                return ret
-
-            if ret in successful_returns:
-                if positional_args_lambdas:
-                    positional_args = (
-                        l_fn(args, kwargs) for l_fn in positional_args_lambdas
-                    )
-                    msg = commit_msg % tuple(positional_args)
-                else:
-                    msg = commit_msg
-
-                try:
-                    git_commit(msg, not config.non_interactive, files_to_commit)
-                except CFBSGitError as e:
-                    print(str(e))
-                    try:
-                        for file_name in files_to_commit:
-                            git_discard_changes_in_file(file_name)
-                    except CFBSGitError as e:
-                        print(str(e))
-                    else:
-                        print("Failed to commit changes, discarding them...")
-                        return failed_return
-            return ret
-
-        return decorated_fn
-
-    return decorator
-
-
-commit_after_command = partial(with_git_commit, (0,), ("cfbs.json",), failed_return=0)
 
 
 def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
@@ -171,13 +72,13 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
         )
         cfbs_sorting_rules = {
             None: (
-                lambda child_item: _item_index(top_level_keys, child_item[0]),
+                lambda child_item: item_index(top_level_keys, child_item[0]),
                 {
                     "index": (
                         lambda child_item: child_item[0],
                         {
                             ".*": (
-                                lambda child_item: _item_index(
+                                lambda child_item: item_index(
                                     module_keys, child_item[0]
                                 ),
                                 None,
@@ -212,7 +113,7 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     return 0
 
 
-def init_command(index_path=None, non_interactive=False) -> int:
+def init_command(index=None, non_interactive=False) -> int:
     if is_cfbs_repo():
         user_error("Already initialized - look at %s" % cfbs_filename())
 
@@ -222,14 +123,14 @@ def init_command(index_path=None, non_interactive=False) -> int:
         default="Example description",
     )
 
-    definition = {
+    config = {
         "name": name,
         "type": "policy-set",  # TODO: Prompt whether user wants to make a module
         "description": description,
         "build": [],  # TODO: Prompt what masterfile user wants to add
     }
-    if index_path:
-        definition["index_path"] = index_path
+    if index:
+        config["index"] = index
 
     is_git = is_git_repo()
     if is_git:
@@ -244,7 +145,7 @@ def init_command(index_path=None, non_interactive=False) -> int:
             choices=YES_NO_CHOICES,
             default="yes",
         )
-    do_git = git_ans in ("yes", "y")
+    do_git = git_ans.lower() in ("yes", "y")
 
     if do_git:
         user_name = git_get_config("user.name")
@@ -272,16 +173,16 @@ def init_command(index_path=None, non_interactive=False) -> int:
                 print("Failed to set Git user name and email")
                 return 1
 
-    definition["git"] = do_git
+    config["git"] = do_git
 
-    write_json(cfbs_filename(), definition)
+    write_json(cfbs_filename(), config)
     assert is_cfbs_repo()
 
     if do_git:
         try:
-            git_commit(
-                "Initialized a new cfbs repository",
-                not non_interactive,
+            git_commit_maybe_prompt(
+                "Initialized a new CFEngine Build project",
+                non_interactive,
                 [cfbs_filename()],
             )
         except CFBSGitError as e:
@@ -289,7 +190,9 @@ def init_command(index_path=None, non_interactive=False) -> int:
             os.unlink(cfbs_filename())
             return 1
 
-    print("Initialized")
+    print(
+        "Initialized an empty project called '{}' in '{}'".format(name, cfbs_filename())
+    )
     print("To add your first module, type: cfbs add masterfiles")
 
     return 0
@@ -297,16 +200,16 @@ def init_command(index_path=None, non_interactive=False) -> int:
 
 def status_command() -> int:
 
-    definition = CFBSConfig.get_instance()
-    print("Name:        %s" % definition["name"])
-    print("Description: %s" % definition["description"])
+    config = CFBSConfig.get_instance()
+    print("Name:        %s" % config["name"])
+    print("Description: %s" % config["description"])
     print("File:        %s" % cfbs_filename())
 
-    modules = definition["build"]
+    modules = config["build"]
     if not modules:
         return 0
     print("\nModules:")
-    max_length = longest_module_name(definition)
+    max_length = config.longest_module_name()
     counter = 1
     for m in modules:
         if m["name"].startswith("./"):
@@ -428,7 +331,7 @@ def remove_command(to_remove: list):
         _clean_unused_modules(config)
         return 0
     else:
-        return 2
+        raise CFBSReturnWithoutCommit(0)
 
 
 @commit_after_command("Cleaned unused modules")
@@ -457,7 +360,7 @@ def _clean_unused_modules(config=None):
             to_remove.append(module)
 
     if not to_remove:
-        return 2
+        raise CFBSReturnWithoutCommit(0)
 
     print("The following modules were added as dependencies but are no longer needed:")
     for module in to_remove:
@@ -599,21 +502,13 @@ def validate_command():
     return 0
 
 
-def init_build_folder(config):
-    rm("out", missing_ok=True)
-    mkdir("out")
-    mkdir("out/masterfiles")
-    mkdir("out/steps")
-
-
-def longest_module_name(config) -> int:
-    return max((len(m["name"]) for m in config["build"]))
-
-
-def download_dependencies(config, prefer_offline=False, redownload=False):
+def _download_dependencies(config, prefer_offline=False, redownload=False):
+    # TODO: This function should be split in 2:
+    #       1. Code for downloading things into ~/.cfengine
+    #       2. Code for copying things into ./out
     print("\nModules:")
     counter = 1
-    max_length = longest_module_name(config)
+    max_length = config.longest_module_name()
     downloads = os.path.join(cfbs_dir(), "downloads")
     for module in config["build"]:
         name = module["name"]
@@ -670,123 +565,14 @@ def download_dependencies(config, prefer_offline=False, redownload=False):
 
 def download_command(force):
     config = CFBSConfig.get_instance()
-    download_dependencies(config, redownload=force)
-
-
-def build_step(module, step, max_length):
-    step = step.split(" ")
-    operation, args = step[0], step[1:]
-    source = module["_directory"]
-    counter = module["_counter"]
-    destination = "out/masterfiles"
-
-    prefix = "%03d %s :" % (counter, pad_right(module["name"], max_length))
-
-    if operation == "copy":
-        src, dst = args
-        if dst in [".", "./"]:
-            dst = ""
-        print("%s copy '%s' 'masterfiles/%s'" % (prefix, src, dst))
-        src, dst = os.path.join(source, src), os.path.join(destination, dst)
-        cp(src, dst)
-    elif operation == "run":
-        shell_command = " ".join(args)
-        print("%s run '%s'" % (prefix, shell_command))
-        sh(shell_command, source)
-    elif operation == "delete":
-        files = [args] if type(args) is str else args
-        assert len(files) > 0
-        as_string = " ".join(["'%s'" % f for f in files])
-        print("%s delete %s" % (prefix, as_string))
-        for file in files:
-            rm(os.path.join(source, file))
-    elif operation == "json":
-        src, dst = args
-        if dst in [".", "./"]:
-            dst = ""
-        print("%s json '%s' 'masterfiles/%s'" % (prefix, src, dst))
-        if not os.path.isfile(os.path.join(source, src)):
-            user_error("'%s' is not a file" % src)
-        src, dst = os.path.join(source, src), os.path.join(destination, dst)
-        extras, original = read_json(src), read_json(dst)
-        if not extras:
-            print("Warning: '%s' looks empty, adding nothing" % os.path.basename(src))
-        if original:
-            merged = merge_json(original, extras)
-        else:
-            merged = extras
-        write_json(dst, merged)
-    elif operation == "append":
-        src, dst = args
-        if dst in [".", "./"]:
-            dst = ""
-        print("%s append '%s' 'masterfiles/%s'" % (prefix, src, dst))
-        src, dst = os.path.join(source, src), os.path.join(destination, dst)
-        if not os.path.exists(dst):
-            touch(dst)
-        assert os.path.isfile(dst)
-        sh("cat '%s' >> '%s'" % (src, dst))
-    elif operation == "directory":
-        src, dst = args
-        if dst in [".", "./"]:
-            dst = ""
-        print("{} directory '{}' 'masterfiles/{}'".format(prefix, src, dst))
-        dstarg = dst  # save this for adding .cf files to inputs
-        src, dst = os.path.join(source, src), os.path.join(destination, dst)
-        defjson = os.path.join(destination, "def.json")
-        merged = read_json(defjson)
-        if not merged:
-            merged = {}
-        if "classes" not in merged:
-            merged["classes"] = {}
-        if "services_autorun_bundles" not in merged["classes"]:
-            merged["classes"]["services_autorun_bundles"] = ["any"]
-        inputs = []
-        for root, dirs, files in os.walk(src):
-            for f in files:
-                if f.endswith(".cf"):
-                    inputs.append(os.path.join(dstarg, f))
-                    cp(os.path.join(root, f), os.path.join(destination, dstarg, f))
-                elif f == "def.json":
-                    extra = read_json(os.path.join(root, f))
-                    if extra:
-                        merged = merge_json(merged, extra)
-                else:
-                    cp(os.path.join(root, f), os.path.join(destination, dstarg, f))
-        if "inputs" in merged:
-            merged["inputs"].extend(inputs)
-        else:
-            merged["inputs"] = inputs
-        write_json(defjson, merged)
-    else:
-        user_error("Unknown build step operation: %s" % operation)
-
-
-def build_steps(config) -> int:
-    print("\nSteps:")
-    module_name_length = longest_module_name(config)
-    for module in config["build"]:
-        for step in module["steps"]:
-            build_step(module, step, module_name_length)
-    if os.path.isfile("out/masterfiles/def.json"):
-        pretty_file("out/masterfiles/def.json")
-    print("")
-    print("Generating tarball...")
-    sh("( cd out/ && tar -czf masterfiles.tgz masterfiles )")
-    print("\nBuild complete, ready to deploy 🐿")
-    print(" -> Directory: out/masterfiles")
-    print(" -> Tarball:   out/masterfiles.tgz")
-    print("")
-    print("To install on this machine: sudo cfbs install")
-    print("To deploy on remote hub(s): cf-remote deploy")
-    return 0
+    _download_dependencies(config, redownload=force)
 
 
 def build_command() -> int:
     config = CFBSConfig.get_instance()
-    init_build_folder(config)
-    download_dependencies(config, prefer_offline=True)
-    build_steps(config)
+    init_out_folder()
+    _download_dependencies(config, prefer_offline=True)
+    perform_build_steps(config)
 
 
 def install_command(args) -> int:
@@ -819,7 +605,7 @@ def help_command():
     pass  # no-op here, all *_command functions are presented in help contents
 
 
-def print_module_info(data):
+def _print_module_info(data):
     ordered_keys = [
         "module",
         "version",
@@ -867,7 +653,7 @@ def info_command(modules):
                 alias = module
                 module = data["alias"]
                 data = index[module]
-            data["status"] = "Added" if in_build else "Not Added"
+            data["status"] = "Added" if in_build else "Not added"
         else:
             if not module.startswith("./"):
                 module = "./" + module
@@ -877,7 +663,7 @@ def info_command(modules):
                 continue
             data["status"] = "Added"
         data["module"] = (module + "({})".format(alias)) if alias else module
-        print_module_info(data)
+        _print_module_info(data)
     print()  # extra line for ease of reading
     return 0
 

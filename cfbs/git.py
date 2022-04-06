@@ -1,6 +1,16 @@
+"""Module for running creating / interacting with a git repository
+
+Uses the subprocess module to run the git command line tool.
+
+Should be fairly reusable, not depending on other parts
+of the CFBS codebase.
+
+See git_magic.py for more git related code.
+"""
+
 import os
 import tempfile
-from subprocess import check_call, check_output, run, PIPE, CalledProcessError
+from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProcessError
 
 
 class CFBSGitError(Exception):
@@ -57,7 +67,8 @@ def git_init(user_name=None, user_email=None, description=None):
         raise CFBSGitError("Already an initialized git repository")
 
     try:
-        check_call(["git", "init"])
+        # Suppress noisy hint output on stderr:
+        check_call(["git", "init"], stderr=DEVNULL)
     except CalledProcessError as cpe:
         raise CFBSGitError("Failed to initialize git repository") from cpe
 
@@ -74,16 +85,18 @@ def git_init(user_name=None, user_email=None, description=None):
             f.write(description + "\n")
 
 
-def git_commit(commit_msg, edit_commit_msg=True, scope="all"):
+def git_commit(commit_msg, edit_commit_msg=False, scope="all"):
     """Create a commit in the CWD Git repository
 
     :param commit_msg: commit message to use for the commit
     :param scope: files to include in the commit or `"all"` (`git commit -a`)
     :type scope: str or an iterable of str
-    :param edit_commit_msg: whether the user should be prompted to edit and
+    :param edit_commit_message=False: whether the user should be prompted to edit and
                             save the commit message or not
 
     """
+
+    print("Committing using git:\n")
 
     if not is_git_repo():
         raise CFBSGitError("Not a git repository")
@@ -110,6 +123,7 @@ def git_commit(commit_msg, edit_commit_msg=True, scope="all"):
         result = run(["git", "commit", "--template", name], check=False, stderr=PIPE)
         os.unlink(name)
         if result.returncode == 0:
+            print("")
             return
         elif "did not edit the message" not in result.stderr.decode():
             raise CFBSGitError("Failed to commit changes")
@@ -117,6 +131,7 @@ def git_commit(commit_msg, edit_commit_msg=True, scope="all"):
     # else
     try:
         run(["git", "commit", "-F-"], input=commit_msg.encode("utf-8"), check=True)
+        print("")
     except CalledProcessError as cpe:
         raise CFBSGitError("Failed to commit changes") from cpe
 
