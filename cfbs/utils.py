@@ -209,9 +209,14 @@ def fetch_url(url, target, checksum=None):
     else:
         sha = hashlib.sha1()
 
+    headers = dict()
+    user_agent = os.environ.get("CFBS_USER_AGENT")
+    if user_agent is not None:
+        headers["User-Agent"] = user_agent
+    request = urllib.request.Request(url, headers=headers)
     try:
         with open(target, "wb") as f:
-            with urllib.request.urlopen(url) as u:
+            with urllib.request.urlopen(request) as u:
                 if not (200 <= u.status <= 300):
                     raise FetchError("Failed to fetch '%s': %s" % (url, u.reason))
                 done = False
