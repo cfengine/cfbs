@@ -28,7 +28,11 @@ def prompt_user(prompt, choices=None, default=None):
 
     answer = None
     while answer is None:
-        answer = input(prompt)
+        try:
+            answer = input(prompt)
+        except EOFError:
+            answer = ""
+
         if answer == "":
             if default is not None:
                 answer = default
