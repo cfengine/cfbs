@@ -12,6 +12,9 @@ node_modules/
 # VS Code:
 .vscode/
 
+# Vim
+*.swp
+
 # Build outputs:
 build/
 dist/
@@ -28,3 +31,4 @@ test/tmp/
 black_output.txt
 commit_message.txt
 git_diff_exists
+
