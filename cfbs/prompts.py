@@ -34,10 +34,7 @@ def prompt_user(prompt, choices=None, default=None):
             answer = ""
 
         if answer == "":
-            if default is not None:
-                answer = default
-            else:
-                answer = None
+            answer = default
         elif choices and answer not in choices and answer.lower() not in choices:
             print("Invalid value entered, must ve one of: %s" % "/".join(choices))
             answer = None
