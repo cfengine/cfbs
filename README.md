@@ -41,7 +41,6 @@ $ cfbs install .
 `cfbs` is implemented in Python and has a few dependencies:
 
 * Python 3.5 or newer
-* `requests` python library
 * `git` CLI installed and in PATH
 * `rsync`
 * `autoconf` for configuring masterfiles module (typical usage but not required)
