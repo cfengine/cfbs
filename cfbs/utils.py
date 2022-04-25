@@ -6,6 +6,7 @@ import copy
 import subprocess
 import hashlib
 import urllib
+import urllib.request  # needed on some platforms
 from collections import OrderedDict
 from shutil import rmtree
 
