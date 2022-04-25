@@ -9,8 +9,6 @@ import urllib
 from collections import OrderedDict
 from shutil import rmtree
 
-import requests
-
 from cfbs.pretty import pretty
 
 SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -84,9 +82,9 @@ def user_error(msg: str):
 
 
 def get_json(url: str) -> OrderedDict:
-    r = requests.get(url)
-    assert r.status_code >= 200 and r.status_code < 300
-    return r.json(object_pairs_hook=OrderedDict)
+    with urllib.request.urlopen(url) as r:
+        assert r.status >= 200 and r.status < 300
+        return json.loads(r.read().decode(), object_pairs_hook=OrderedDict)
 
 
 def get_or_read_json(path: str) -> OrderedDict:
