@@ -16,7 +16,6 @@ rm -rf .git
 rm -rf ~/.cfagent/inputs/
 
 cfbs --non-interactive init
-cfbs --non-interactive add mpf
 cfbs --non-interactive add autorun
 cfbs install
 

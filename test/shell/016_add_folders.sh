@@ -45,9 +45,6 @@ echo 'Hello
 cfbs --non-interactive init
 cfbs status
 
-cfbs --non-interactive add mpf
-cfbs status
-
 cfbs --non-interactive add ./one
 cfbs --non-interactive add ./two/
 cfbs status
