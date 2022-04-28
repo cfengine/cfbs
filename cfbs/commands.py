@@ -210,7 +210,7 @@ def init_command(index=None, non_interactive=False) -> int:
         to_add = "masterfiles"
     else:
         to_add = prompt_user(
-            "Specify policy set to use instead (or skip if empty)", default=""
+            "Specify policy set to use instead (empty to skip)", default=""
         )
 
     if to_add:
