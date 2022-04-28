@@ -165,7 +165,7 @@ Warning: The --non-interactive option is only meant for testing (!)
     if args.command == "install":
         return commands.install_command(args.args)
     if args.command == "update":
-        return commands.update_command()
+        return commands.update_command(args.args)
 
     _get_arg_parser().print_help()
     user_error("Command '%s' not found" % args.command)

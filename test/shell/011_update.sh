@@ -6,24 +6,9 @@ cd ./tmp/
 touch cfbs.json && rm cfbs.json
 rm -rf .git
 
-echo '
-{
-  "name": "Example",
-  "type": "policy-set",
-  "description": "Example description",
-  "build": [
-    {
-      "name": "promise-type-ansible",
-      "version": "0.0.0",
-      "commit": "invalid",
-      "added_by": "cfbs add",
-      "steps": []
-    }
-  ],
-  "git": false
-}
-' > cfbs.json
-
+cfbs --non-interactive init
+cfbs --non-interactive add promise-type-ansible@0.1.1
+cfbs --non-interactive update promise-type-ansible@0.1.0
 cfbs --non-interactive update
 
 # This is not perfect, it relies on the JSON formatting, and it doesn't check
@@ -60,7 +45,6 @@ cat cfbs.json | grep -F "subdirectory" | grep -F "libraries/python/"
 cat cfbs.json | grep -F "added_by" | grep -F "promise-type-ansible"
 cat cfbs.json | grep -F "steps" | grep -F "copy cfengine.py modules/promises/"
 
-cfbs --non-interactive add mpf
 cfbs status
 cfbs build
 
