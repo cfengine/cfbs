@@ -7,7 +7,6 @@ touch cfbs.json && rm cfbs.json
 rm -rf .git
 
 cfbs --non-interactive init
-cfbs --non-interactive add masterfiles
 cfbs download
 
 ls ~/.cfengine/cfbs/downloads/*

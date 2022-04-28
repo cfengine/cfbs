@@ -8,8 +8,6 @@ rm -rf .git
 
 cfbs --non-interactive init
 cfbs status
-cfbs --non-interactive add mpf
-cfbs status
 echo '
 bundle agent test_bundle
 {

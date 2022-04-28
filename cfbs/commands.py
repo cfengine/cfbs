@@ -127,7 +127,7 @@ def init_command(index=None, non_interactive=False) -> int:
         "name": name,
         "type": "policy-set",  # TODO: Prompt whether user wants to make a module
         "description": description,
-        "build": [],  # TODO: Prompt what masterfile user wants to add
+        "build": [],
     }
     if index:
         config["index"] = index
@@ -193,7 +193,28 @@ def init_command(index=None, non_interactive=False) -> int:
     print(
         "Initialized an empty project called '{}' in '{}'".format(name, cfbs_filename())
     )
-    print("To add your first module, type: cfbs add masterfiles")
+
+    """
+    The CFBSConfig instance was initally created in main(). Back then
+    cfbs.json did not exist, thus the instance is empty. By manually deleting
+    this instance, a new instance will be created loading the now existing
+    cfbs.json.
+    """
+    CFBSConfig.instance = None
+
+    if prompt_user(
+        "Do you wish to build on top of the default policy set, masterfiles? (Recommended)",
+        choices=YES_NO_CHOICES,
+        default="yes",
+    ) in ("yes", "y"):
+        to_add = "masterfiles"
+    else:
+        to_add = prompt_user(
+            "Specify policy set to use instead (empty to skip)", default=""
+        )
+
+    if to_add:
+        return add_command([to_add])
 
     return 0
 
