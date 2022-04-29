@@ -109,7 +109,7 @@ def main() -> int:
         "clean",
         "update",
     ):
-        user_error("The option --non-interactive is not for cfbs " % (args.command))
+        user_error("The option --non-interactive is not for cfbs %s" % (args.command))
 
     if args.non_interactive:
         print(
