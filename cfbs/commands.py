@@ -651,6 +651,8 @@ def _print_module_info(data):
 
 
 def info_command(modules):
+    if not modules:
+        user_error("info/show command requires one or more module names as arguments")
     config = CFBSConfig.get_instance()
     index = config.index
 
