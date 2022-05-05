@@ -3,6 +3,7 @@ Functions ending in "_command" are dynamically included in the list of commands
 in main.py for -h/--help/help.
 """
 import os
+import re
 import logging as log
 import json
 
@@ -438,11 +439,12 @@ def update_command():
 
         if "version" in module:
             local_ver = [
-                int(version_number) for version_number in module["version"].split(".")
+                int(version_number)
+                for version_number in re.split("[-\.]", module["version"])
             ]
             index_ver = [
                 int(version_number)
-                for version_number in index_info["version"].split(".")
+                for version_number in re.split("[-\.]", index_info["version"])
             ]
             if local_ver > index_ver:
                 print(
