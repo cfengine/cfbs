@@ -84,7 +84,6 @@ def validate_index(index):
             raise CFBSIndexException(name, "Missing required attribute 'version'")
         if type(modules[name]["version"]) != str:
             raise CFBSIndexException(name, "'version' must be of type string")
-        print("validating version {}".format(modules[name]["version"]))
         regex = r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9]+))?"
         if re.fullmatch(regex, modules[name]["version"]) == None:
             raise CFBSIndexException(name, "'version' must match regex %s" % regex)
