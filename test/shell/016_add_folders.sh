@@ -51,8 +51,8 @@ cfbs status
 
 cfbs status | grep "./one/"
 cfbs status | grep "./two/"
-cat cfbs.json | grep "directory ./one/ services/cfbs/one/"
-cat cfbs.json | grep "directory ./two/ services/cfbs/two/"
+cat cfbs.json | grep "directory ./ services/cfbs/one/"
+cat cfbs.json | grep "directory ./ services/cfbs/two/"
 
 cfbs build
 
