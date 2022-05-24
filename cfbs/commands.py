@@ -198,11 +198,10 @@ def init_command(index=None, non_interactive=False) -> int:
 
     """
     The CFBSConfig instance was initally created in main(). Back then
-    cfbs.json did not exist, thus the instance is empty. By manually deleting
-    this instance, a new instance will be created loading the now existing
-    cfbs.json.
+    cfbs.json did not exist, thus the instance is empty. Ensure it is reloaded
+    now that the JSON exists.
     """
-    CFBSConfig.instance = None
+    CFBSConfig.reload()
 
     if prompt_user(
         "Do you wish to build on top of the default policy set, masterfiles? (Recommended)",

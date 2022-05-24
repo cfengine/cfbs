@@ -127,8 +127,7 @@ Warning: The --non-interactive option is only meant for testing (!)
         _get_arg_parser().print_help()
         return 0
 
-    config = CFBSConfig.get_instance(args.index)
-    config.non_interactive = args.non_interactive
+    config = CFBSConfig.get_instance(args.index, args.non_interactive)
 
     if args.command == "init":
         return commands.init_command(
