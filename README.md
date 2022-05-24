@@ -223,14 +223,19 @@ out/steps/001_masterfiles_5c7dc5b43088e259a94de4e5a9f17c0ce9781a0f/
 The `destination` parameter below should all be relative paths to `out/masterfiles`.
 
 
-
 ### Available steps are:
+
+Note that the build steps are run inside each modules directory (the temporary copy of it inside `out/steps`).
+Scripts and source files are read from that directory.
+Destination is relative to the output policy set (`out/masterfiles`).
 
 #### `copy <source> <destination>`
 - Copy a single file or a directory recursively.
 
 #### `run <command>`
-- Run a command in the module's `out/steps` directory as mentioned above.
+- Run a shell command / script.
+- Usually used to prepare the module directory, delete files, etc. before a copy step.
+- Running scripts should be avoided if possible.
 
 #### `delete <paths ...>`
 - Delete multiple files or paths recursively.
