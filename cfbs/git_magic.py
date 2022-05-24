@@ -14,8 +14,15 @@ def git_commit_maybe_prompt(commit_msg, non_interactive, scope="all"):
     edit_commit_msg = False
 
     if not non_interactive:
+        prompt = "The default commit message is '{}' - edit it?".format(commit_msg)
+        if "\n" in commit_msg:
+            prompt = "The default commit message is:\n\n"
+            for line in commit_msg.split("\n"):
+                prompt += "\n" if line == "" else "\t" + line + "\n"
+            prompt += "\nEdit it?"
+
         ans = prompt_user(
-            "The default commit message is '{}' - edit it?".format(commit_msg),
+            prompt,
             choices=YES_NO_CHOICES,
             default="no",
         )

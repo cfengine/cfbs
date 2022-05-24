@@ -44,6 +44,7 @@ from cfbs.git import (
 )
 from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
+from cfbs.module import Module
 
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
@@ -402,19 +403,47 @@ def _clean_unused_modules(config=None):
     return 0
 
 
-@commit_after_command("Updated all modules")
-def update_command():
-    new_deps = []
-    new_deps_added_by = dict()
+def update_command(to_update):
     config = CFBSConfig.get_instance()
     index = config.index
+
+    if to_update:
+        to_update = [Module(m) for m in to_update]
+        index.translate_aliases(to_update)
+        skip = (
+            m for m in to_update if all(n["name"] != m.name for n in config["build"])
+        )
+        for m in skip:
+            log.warning("Module '%s' not in build. Skipping its update.", m.name)
+            to_update.remove(m)
+    else:
+        # Update all modules in build if no modules are specified
+        to_update = [Module(m["name"]) for m in config["build"]]
+
+    new_deps = []
+    new_deps_added_by = dict()
     changes_made = False
+    updated = []
+
     for module in config["build"]:
-        if "index" in module:
-            # not a module from the default index, not updating
+        update = None
+        for m in to_update:
+            if m.name == module["name"]:
+                update = m
+        if not update:
             continue
 
-        index_info = index.get(module["name"])
+        if "index" in module:
+            # TODO: Support custom index
+            log.warning(
+                "Module '%s' is not from the default index. "
+                + "Updating from custom index is currently not supported. "
+                + "Skipping its update.",
+                module["name"],
+            )
+            continue
+
+        index_info = index.get_module_object(update)
         if not index_info:
             log.warning(
                 "Module '%s' not present in the index, cannot update it", module["name"]
@@ -446,13 +475,15 @@ def update_command():
                 int(version_number)
                 for version_number in re.split("[-\.]", index_info["version"])
             ]
-            if local_ver > index_ver:
-                print(
-                    (
-                        "Locally installed version of module %s (%s)"
-                        + " is newer than the version in index (%s), not updating."
-                    )
-                    % (module["name"], module["version"], index_info["version"])
+            if local_ver == index_ver:
+                continue
+            elif local_ver > index_ver:
+                log.warning(
+                    "The requested version of module '%s' is older than current version (%s < %s)."
+                    " Skipping its update.",
+                    module["name"],
+                    index_info["version"],
+                    module["version"],
                 )
                 continue
 
@@ -497,12 +528,25 @@ def update_command():
                 new_deps.extend(extra)
                 new_deps_added_by.update({item: module["name"] for item in extra})
 
+        if not update.version:
+            update.version = index_info["version"]
+        updated.append(update)
+
     if new_deps:
         objects = [index.get_module_object(d, new_deps_added_by[d]) for d in new_deps]
         config.add_with_dependencies(objects)
     config.save()
 
-    return 0 if changes_made else 2
+    if changes_made:
+        if len(updated) > 1:
+            msg = "Updated %d modules\n" % len(updated)
+            for m in updated:
+                msg += "\n - Updated module '%s' to version %s" % (m.name, m.version)
+        else:
+            msg = "Updated module '%s' to version %s" % (m.name, m.version)
+        git_commit_maybe_prompt(msg, config.non_interactive)
+
+    return 0
 
 
 def validate_command():

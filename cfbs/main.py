@@ -109,7 +109,7 @@ def main() -> int:
         "clean",
         "update",
     ):
-        user_error("The option --non-interactive is not for cfbs " % (args.command))
+        user_error("The option --non-interactive is not for cfbs %s" % (args.command))
 
     if args.non_interactive:
         print(
@@ -165,7 +165,7 @@ Warning: The --non-interactive option is only meant for testing (!)
     if args.command == "install":
         return commands.install_command(args.args)
     if args.command == "update":
-        return commands.update_command()
+        return commands.update_command(args.args)
 
     _get_arg_parser().print_help()
     user_error("Command '%s' not found" % args.command)
