@@ -98,7 +98,14 @@ def local_module_copy(module, counter, max_length):
     target = "out/steps/%03d_%s_local/" % (counter, pretty_name)
     module["_directory"] = target
     module["_counter"] = counter
-    cp(name, target + name)
+    if name.endswith(("/", "/.")):
+        # If this is a local folder, the target should be a copy of the folder
+        # (Don't create an extra unnecessary subfolder)
+        cp(name, target)
+    else:
+        # If this is not a folder it is a file
+        # create a copy of that file in the target folder
+        cp(name, target + name)
     print(
         "%03d %s @ local                                    (Copied)"
         % (counter, pad_right(name, max_length))

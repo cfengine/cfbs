@@ -65,17 +65,26 @@ class CFBSConfig(CFBSJson):
                 log.warning('  meta: "tags" slist => { "autorun" };')
 
     @classmethod
-    def get_instance(cls, index=None):
+    def get_instance(cls, index=None, non_interactive=False):
         if cls.instance is not None:
             if index is not None:
                 raise RuntimeError(
                     "Instance of %s already exists, cannot specify index" % cls.__name__
                 )
         else:
-            cls.instance = cls(index)
+            cls.instance = cls(index, non_interactive)
         return cls.instance
 
+    @classmethod
+    def reload(cls):
+        if not cls.instance:
+            return
+        # Create a new instance with the same __init__ args as last time:
+        index, non_interactive = cls.instance._reload_args
+        cls.instance = cls(index, non_interactive)
+
     def __init__(self, index=None, non_interactive=False):
+        self._reload_args = (index, non_interactive)
         super().__init__(path="./cfbs.json", index_argument=index)
         self.non_interactive = non_interactive
 

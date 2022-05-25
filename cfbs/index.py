@@ -35,11 +35,12 @@ def _local_module_data_json_file(module):
 
 def _local_module_data_subdir(module):
     assert module.startswith("./")
+    assert module.endswith(("/", "/."))
     dst = os.path.join("services", "cfbs", module[2:])
     return {
         "description": "Local subdirectory added using cfbs command line",
         "tags": ["local"],
-        "steps": ["directory {} {}".format(module, dst)],
+        "steps": ["directory ./ {}".format(dst)],
         "added_by": "cfbs add",
     }
 
