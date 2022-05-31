@@ -45,7 +45,7 @@ def with_git_commit(
                 return e.retval
 
             config = CFBSConfig.get_instance()
-            if not config["git"]:
+            if not config.get("git", False):
                 return ret
 
             if ret in successful_returns:
