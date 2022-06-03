@@ -2,6 +2,7 @@
 __pycache__/
 cfbs.egg-info
 cfbs/VERSION
+*.pyc
 
 # Node / npm:
 node_modules/
