@@ -42,7 +42,7 @@ from cfbs.git import (
     git_init,
     CFBSGitError,
 )
-from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
+from cfbs.git_magic import Result, commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 from cfbs.module import Module
 
@@ -402,6 +402,7 @@ def _clean_unused_modules(config=None):
     return 0
 
 
+@commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update):
     config = CFBSConfig.get_instance()
     index = config.index
@@ -424,13 +425,9 @@ def update_command(to_update):
     changes_made = False
     updated = []
 
-    for module in config["build"]:
-        update = None
-        for m in to_update:
-            if m.name == module["name"]:
-                update = m
-        if not update:
-            continue
+    for update in to_update:
+        module = config.get_module_from_build(update.name)
+        assert module is not None  # Checked above when logging skipped modules
 
         if "index" in module:
             # TODO: Support custom index
@@ -536,16 +533,18 @@ def update_command(to_update):
         config.add_with_dependencies(objects)
     config.save()
 
+    msg = None
     if changes_made:
         if len(updated) > 1:
             msg = "Updated %d modules\n" % len(updated)
             for m in updated:
                 msg += "\n - Updated module '%s' to version %s" % (m.name, m.version)
         else:
-            msg = "Updated module '%s' to version %s" % (m.name, m.version)
-        git_commit_maybe_prompt(msg, config.non_interactive)
+            assert updated
+            m = updated[0]
+            msg = "Update module '%s' to version %s" % (m.name, m.version)
 
-    return 0
+    return Result(0, changes_made, msg)
 
 
 def validate_command():
