@@ -17,6 +17,7 @@ from cfbs.cfbs_json import CFBSJson
 from cfbs.module import Module
 
 
+# Legacy; do not use. Use the 'Result' namedtuple instead.
 class CFBSReturnWithoutCommit(Exception):
     def __init__(self, r):
         self.retval = r

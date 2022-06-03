@@ -94,3 +94,9 @@ class CFBSJson:
 
     def _module_is_in_build(self, module):
         return module["name"] in (m["name"] for m in self["build"])
+
+    def get_module_from_build(self, module):
+        for m in self["build"]:
+            if m["name"] == module:
+                return m
+        return None
