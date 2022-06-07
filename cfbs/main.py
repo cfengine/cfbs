@@ -4,69 +4,13 @@
 __authors__ = ["Ole Herman Schumacher Elgesem"]
 __copyright__ = ["Northern.tech AS"]
 
-import argparse
 import logging as log
 
 from cfbs.version import string as version
-from cfbs.utils import user_error, is_cfbs_repo, cache
+from cfbs.utils import user_error, is_cfbs_repo
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
-
-
-@cache
-def _get_arg_parser():
-    command_list = [
-        cmd.split("_")[0] for cmd in dir(commands) if cmd.endswith("_command")
-    ]
-    parser = argparse.ArgumentParser(description="CFEngine Build System.")
-    parser.add_argument(
-        "command",
-        metavar="cmd",
-        type=str,
-        nargs="?",
-        help="The command to perform ({})".format(", ".join(command_list)),
-    )
-    parser.add_argument("args", nargs="*", help="Command arguments")
-    parser.add_argument(
-        "--loglevel",
-        "-l",
-        help="Set log level for more/less detailed output",
-        type=str,
-        default="warning",
-    )
-    parser.add_argument(
-        "--version", "-V", help="Print version number", action="store_true"
-    )
-    parser.add_argument(
-        "--force", help="Force rebuild / redownload", action="store_true"
-    )
-    parser.add_argument(
-        "--non-interactive",
-        help="Don't prompt, use defaults (only for testing)",
-        action="store_true",
-    )
-    parser.add_argument("--index", help="Specify alternate index", type=str)
-    parser.add_argument(
-        "--check", help="Check if file(s) would be reformatted", action="store_true"
-    )
-    parser.add_argument(
-        "--checksum",
-        type=str,
-        default=None,
-        help="Expected checksum of the downloaded file",
-    )
-    parser.add_argument(
-        "--keep-order",
-        help="Keep order of items in the JSON in 'cfbs pretty'",
-        action="store_true",
-    )
-    return parser
-
-
-def get_args():
-    parser = _get_arg_parser()
-    args = parser.parse_args()
-    return args
+from cfbs.args import get_args, print_help
 
 
 def init_logging(level):
@@ -98,7 +42,7 @@ def main() -> int:
         return 0
 
     if not args.command:
-        _get_arg_parser().print_help()
+        print_help()
         print("")
         user_error("No command given")
 
@@ -124,7 +68,7 @@ Warning: The --non-interactive option is only meant for testing (!)
 
     # Commands you can run outside a cfbs repo:
     if args.command == "help":
-        _get_arg_parser().print_help()
+        print_help()
         return 0
 
     CFBSConfig.get_instance(args.index, args.non_interactive)
@@ -166,5 +110,5 @@ Warning: The --non-interactive option is only meant for testing (!)
     if args.command == "update":
         return commands.update_command(args.args)
 
-    _get_arg_parser().print_help()
+    print_help()
     user_error("Command '%s' not found" % args.command)
