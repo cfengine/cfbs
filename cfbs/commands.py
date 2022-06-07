@@ -23,6 +23,7 @@ from cfbs.utils import (
     is_a_commit_hash,
 )
 
+from cfbs.args import get_args
 from cfbs.pretty import pretty_check_file, pretty_file
 from cfbs.build import init_out_folder, perform_build_steps
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
@@ -133,22 +134,27 @@ def init_command(index=None, non_interactive=False) -> int:
     if index:
         config["index"] = index
 
+    do_git = get_args().git
     is_git = is_git_repo()
-    if is_git:
-        git_ans = prompt_user(
-            "This is a git repository. Do you want cfbs to make commits to it?",
-            choices=YES_NO_CHOICES,
-            default="yes",
-        )
+    if do_git is None:
+        if is_git:
+            git_ans = prompt_user(
+                "This is a git repository. Do you want cfbs to make commits to it?",
+                choices=YES_NO_CHOICES,
+                default="yes",
+            )
+        else:
+            git_ans = prompt_user(
+                "Do you want cfbs to initialize a git repository and make commits to it?",
+                choices=YES_NO_CHOICES,
+                default="yes",
+            )
+        do_git = git_ans.lower() in ("yes", "y")
     else:
-        git_ans = prompt_user(
-            "Do you want cfbs to initialize a git repository and make commits to it?",
-            choices=YES_NO_CHOICES,
-            default="yes",
-        )
-    do_git = git_ans.lower() in ("yes", "y")
+        assert do_git in ("yes", "no")
+        do_git = True if do_git == "yes" else False
 
-    if do_git:
+    if do_git is True:
         user_name = git_get_config("user.name")
         user_email = git_get_config("user.email")
         user_name = prompt_user(

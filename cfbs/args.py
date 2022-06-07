@@ -62,4 +62,9 @@ def _get_arg_parser():
         help="Keep order of items in the JSON in 'cfbs pretty'",
         action="store_true",
     )
+    parser.add_argument(
+        "--git",
+        choices=("yes", "no"),
+        help="Override git option in cfbs.json",
+    )
     return parser

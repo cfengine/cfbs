@@ -7,7 +7,9 @@ do prompts, etc.
 from collections import namedtuple
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
-from cfbs.git import git_commit, git_discard_changes_in_file, CFBSGitError
+from cfbs.git import git_commit, git_discard_changes_in_file, CFBSGitError, is_git_repo
+from cfbs.args import get_args
+import logging as log
 from functools import partial
 
 
@@ -66,8 +68,19 @@ def with_git_commit(
                 return ret
 
             config = CFBSConfig.get_instance()
-            if not config.get("git", False):
+            do_git = get_args().git
+            if do_git == "yes":
+                if not is_git_repo():
+                    log.error(
+                        "Used '--git=yes' option on what appears to not be a git repository"
+                    )
+                    return ret
+            elif do_git == "no":
                 return ret
+            else:
+                assert do_git is None
+                if not config.get("git", False):
+                    return ret
 
             if ret not in successful_returns:
                 return ret
