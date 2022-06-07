@@ -350,7 +350,10 @@ def remove_command(to_remove: list):
 
     config.save()
     if num_removed:
-        _clean_unused_modules(config)
+        try:
+            _clean_unused_modules(config)
+        except CFBSReturnWithoutCommit:
+            pass
         return 0
     else:
         raise CFBSReturnWithoutCommit(0)
