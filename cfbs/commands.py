@@ -48,8 +48,8 @@ from cfbs.module import Module
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
 
-PLURAL_S = lambda args, kwargs: "s" if len(args[0]) > 1 else ""
-FIRST_ARG_SLIST = lambda args, kwargs: ", ".join("'%s'" % module for module in args[0])
+PLURAL_S = lambda args, _: "s" if len(args[0]) > 1 else ""
+FIRST_ARG_SLIST = lambda args, _: ", ".join("'%s'" % module for module in args[0])
 
 
 def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
