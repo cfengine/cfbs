@@ -33,7 +33,15 @@ def git_commit_maybe_prompt(commit_msg, non_interactive, scope="all"):
             default="no",
         )
         edit_commit_msg = ans.lower() in ("yes", "y")
-    git_commit(commit_msg, edit_commit_msg, scope)
+
+    args = get_args()
+    git_commit(
+        commit_msg,
+        edit_commit_msg,
+        args.git_user_name,
+        args.git_user_email,
+        scope,
+    )
 
 
 def with_git_commit(

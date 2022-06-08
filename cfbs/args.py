@@ -67,4 +67,12 @@ def _get_arg_parser():
         choices=("yes", "no"),
         help="Override git option in cfbs.json",
     )
+    parser.add_argument(
+        "--git-user-name",
+        help="Specify git user name",
+    )
+    parser.add_argument(
+        "--git-user-email",
+        help="Specify git user email",
+    )
     return parser

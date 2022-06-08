@@ -6,6 +6,7 @@ import os
 import re
 import logging as log
 import json
+from cfbs.args import get_args
 
 from cfbs.utils import (
     cfbs_dir,
@@ -155,17 +156,22 @@ def init_command(index=None, non_interactive=False) -> int:
         do_git = True if do_git == "yes" else False
 
     if do_git is True:
-        user_name = git_get_config("user.name")
-        user_email = git_get_config("user.email")
-        user_name = prompt_user(
-            "Please enter user name to use for git commits", default=user_name or "cfbs"
-        )
+        user_name = get_args().git_user_name
+        if not user_name:
+            user_name = git_get_config("user.name")
+            user_name = prompt_user(
+                "Please enter user name to use for git commits",
+                default=user_name or "cfbs",
+            )
 
-        node_name = os.uname().nodename
-        user_email = prompt_user(
-            "Please enter user email to use for git commits",
-            default=user_email or ("cfbs@%s" % node_name),
-        )
+        user_email = get_args().git_user_email
+        if not user_email:
+            user_email = git_get_config("user.email")
+            node_name = os.uname().nodename
+            user_email = prompt_user(
+                "Please enter user email to use for git commits",
+                default=user_email or ("cfbs@%s" % node_name),
+            )
 
         if not is_git:
             try:
