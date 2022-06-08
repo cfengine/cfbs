@@ -15,9 +15,24 @@ from functools import partial
 
 Result = namedtuple("Result", ["rc", "commit", "msg"])
 
+first_commit = True
+
 
 def git_commit_maybe_prompt(commit_msg, non_interactive, scope="all"):
     edit_commit_msg = False
+    args = get_args()
+
+    # Override message if --git-commit-message option is used
+    if args.git_commit_message:
+        global first_commit
+        if first_commit:
+            commit_msg = args.git_commit_message
+            non_interactive = True
+            first_commit = False
+        else:
+            log.warning(
+                "Commit message specified, but command produced multiple commits, using default commit message"
+            )
 
     if not non_interactive:
         prompt = "The default commit message is '{}' - edit it?".format(commit_msg)
@@ -34,7 +49,6 @@ def git_commit_maybe_prompt(commit_msg, non_interactive, scope="all"):
         )
         edit_commit_msg = ans.lower() in ("yes", "y")
 
-    args = get_args()
     git_commit(
         commit_msg,
         edit_commit_msg,

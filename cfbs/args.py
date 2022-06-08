@@ -75,4 +75,8 @@ def _get_arg_parser():
         "--git-user-email",
         help="Specify git user email",
     )
+    parser.add_argument(
+        "--git-commit-message",
+        help="Specify git commit message",
+    )
     return parser
