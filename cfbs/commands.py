@@ -432,6 +432,10 @@ def update_command(to_update):
         module = config.get_module_from_build(update.name)
         assert module is not None  # Checked above when logging skipped modules
 
+        if "version" not in module:
+            print("Module '%s' not updatable" % module["name"])
+            continue
+
         if "index" in module:
             # TODO: Support custom index
             log.warning(
@@ -450,8 +454,7 @@ def update_command(to_update):
             continue
 
         if (
-            "version" in module
-            and module["version"] != index_info["version"]
+            module["version"] != index_info["version"]
             and module["commit"] == index_info["commit"]
         ):
             log.warning(
@@ -465,26 +468,25 @@ def update_command(to_update):
             )
             continue
 
-        if "version" in module:
-            local_ver = [
-                int(version_number)
-                for version_number in re.split("[-\.]", module["version"])
-            ]
-            index_ver = [
-                int(version_number)
-                for version_number in re.split("[-\.]", index_info["version"])
-            ]
-            if local_ver == index_ver:
-                continue
-            elif local_ver > index_ver:
-                log.warning(
-                    "The requested version of module '%s' is older than current version (%s < %s)."
-                    " Skipping its update.",
-                    module["name"],
-                    index_info["version"],
-                    module["version"],
-                )
-                continue
+        local_ver = [
+            int(version_number)
+            for version_number in re.split("[-\.]", module["version"])
+        ]
+        index_ver = [
+            int(version_number)
+            for version_number in re.split("[-\.]", index_info["version"])
+        ]
+        if local_ver == index_ver:
+            continue
+        elif local_ver > index_ver:
+            log.warning(
+                "The requested version of module '%s' is older than current version (%s < %s)."
+                " Skipping its update.",
+                module["name"],
+                index_info["version"],
+                module["version"],
+            )
+            continue
 
         commit_differs = module["commit"] != index_info["commit"]
         for key, value in module.items():
