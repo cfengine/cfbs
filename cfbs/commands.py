@@ -426,6 +426,7 @@ def update_command(to_update):
     new_deps = []
     new_deps_added_by = dict()
     changes_made = False
+    msg = ""
     updated = []
 
     for update in to_update:
@@ -435,6 +436,7 @@ def update_command(to_update):
         if "version" not in module:
             print("Module '%s' not updatable" % module["name"])
             continue
+        old_version = module["version"]
 
         if "index" in module:
             # TODO: Support custom index
@@ -532,22 +534,26 @@ def update_command(to_update):
         if not update.version:
             update.version = index_info["version"]
         updated.append(update)
+        msg += "\n - Updated module '%s' from version %s to version %s" % (
+            update.name,
+            old_version,
+            update.version,
+        )
 
     if new_deps:
         objects = [index.get_module_object(d, new_deps_added_by[d]) for d in new_deps]
         config.add_with_dependencies(objects)
     config.save()
 
-    msg = None
     if changes_made:
         if len(updated) > 1:
-            msg = "Updated %d modules\n" % len(updated)
-            for m in updated:
-                msg += "\n - Updated module '%s' to version %s" % (m.name, m.version)
+            msg = "Updated %d modules\n" % len(updated) + msg
         else:
             assert updated
-            m = updated[0]
-            msg = "Update module '%s' to version %s" % (m.name, m.version)
+            msg = msg[4:]  # Remove the '\n - ' part of the message
+        print("%s\n" % msg)
+    else:
+        print("Modules are already up to date")
 
     return Result(0, changes_made, msg)
 
