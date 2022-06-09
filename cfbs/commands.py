@@ -489,7 +489,7 @@ def update_command(to_update):
             continue
 
         commit_differs = module["commit"] != index_info["commit"]
-        for key, value in module.items():
+        for key in module.keys():
             if key not in index_info or module[key] == index_info[key]:
                 continue
             if key == "steps":
