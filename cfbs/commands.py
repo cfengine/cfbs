@@ -426,11 +426,17 @@ def update_command(to_update):
     new_deps = []
     new_deps_added_by = dict()
     changes_made = False
+    msg = ""
     updated = []
 
     for update in to_update:
         module = config.get_module_from_build(update.name)
         assert module is not None  # Checked above when logging skipped modules
+
+        if "version" not in module:
+            print("Module '%s' not updatable" % module["name"])
+            continue
+        old_version = module["version"]
 
         if "index" in module:
             # TODO: Support custom index
@@ -450,8 +456,7 @@ def update_command(to_update):
             continue
 
         if (
-            "version" in module
-            and module["version"] != index_info["version"]
+            module["version"] != index_info["version"]
             and module["commit"] == index_info["commit"]
         ):
             log.warning(
@@ -465,29 +470,28 @@ def update_command(to_update):
             )
             continue
 
-        if "version" in module:
-            local_ver = [
-                int(version_number)
-                for version_number in re.split("[-\.]", module["version"])
-            ]
-            index_ver = [
-                int(version_number)
-                for version_number in re.split("[-\.]", index_info["version"])
-            ]
-            if local_ver == index_ver:
-                continue
-            elif local_ver > index_ver:
-                log.warning(
-                    "The requested version of module '%s' is older than current version (%s < %s)."
-                    " Skipping its update.",
-                    module["name"],
-                    index_info["version"],
-                    module["version"],
-                )
-                continue
+        local_ver = [
+            int(version_number)
+            for version_number in re.split("[-\.]", module["version"])
+        ]
+        index_ver = [
+            int(version_number)
+            for version_number in re.split("[-\.]", index_info["version"])
+        ]
+        if local_ver == index_ver:
+            continue
+        elif local_ver > index_ver:
+            log.warning(
+                "The requested version of module '%s' is older than current version (%s < %s)."
+                " Skipping its update.",
+                module["name"],
+                index_info["version"],
+                module["version"],
+            )
+            continue
 
         commit_differs = module["commit"] != index_info["commit"]
-        for key, value in module.items():
+        for key in module.keys():
             if key not in index_info or module[key] == index_info[key]:
                 continue
             if key == "steps":
@@ -530,22 +534,26 @@ def update_command(to_update):
         if not update.version:
             update.version = index_info["version"]
         updated.append(update)
+        msg += "\n - Updated module '%s' from version %s to version %s" % (
+            update.name,
+            old_version,
+            update.version,
+        )
 
     if new_deps:
         objects = [index.get_module_object(d, new_deps_added_by[d]) for d in new_deps]
         config.add_with_dependencies(objects)
     config.save()
 
-    msg = None
     if changes_made:
         if len(updated) > 1:
-            msg = "Updated %d modules\n" % len(updated)
-            for m in updated:
-                msg += "\n - Updated module '%s' to version %s" % (m.name, m.version)
+            msg = "Updated %d modules\n" % len(updated) + msg
         else:
             assert updated
-            m = updated[0]
-            msg = "Update module '%s' to version %s" % (m.name, m.version)
+            msg = msg[4:]  # Remove the '\n - ' part of the message
+        print("%s\n" % msg)
+    else:
+        print("Modules are already up to date")
 
     return Result(0, changes_made, msg)
 
