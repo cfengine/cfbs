@@ -6,6 +6,7 @@ import os
 import re
 import logging as log
 import json
+from cfbs.args import get_args
 
 from cfbs.utils import (
     cfbs_dir,
@@ -23,10 +24,10 @@ from cfbs.utils import (
     is_a_commit_hash,
 )
 
+from cfbs.args import get_args
 from cfbs.pretty import pretty_check_file, pretty_file
 from cfbs.build import init_out_folder, perform_build_steps
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
-from cfbs.cfbs_json import CFBSJson
 from cfbs.validate import CFBSIndexException, validate_index
 from cfbs.internal_file_management import (
     fetch_archive,
@@ -49,8 +50,8 @@ from cfbs.module import Module
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
 
-PLURAL_S = lambda args, kwargs: "s" if len(args[0]) > 1 else ""
-FIRST_ARG_SLIST = lambda args, kwargs: ", ".join("'%s'" % module for module in args[0])
+PLURAL_S = lambda args, _: "s" if len(args[0]) > 1 else ""
+FIRST_ARG_SLIST = lambda args, _: ", ".join("'%s'" % module for module in args[0])
 
 
 def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
@@ -134,33 +135,43 @@ def init_command(index=None, non_interactive=False) -> int:
     if index:
         config["index"] = index
 
+    do_git = get_args().git
     is_git = is_git_repo()
-    if is_git:
-        git_ans = prompt_user(
-            "This is a git repository. Do you want cfbs to make commits to it?",
-            choices=YES_NO_CHOICES,
-            default="yes",
-        )
+    if do_git is None:
+        if is_git:
+            git_ans = prompt_user(
+                "This is a git repository. Do you want cfbs to make commits to it?",
+                choices=YES_NO_CHOICES,
+                default="yes",
+            )
+        else:
+            git_ans = prompt_user(
+                "Do you want cfbs to initialize a git repository and make commits to it?",
+                choices=YES_NO_CHOICES,
+                default="yes",
+            )
+        do_git = git_ans.lower() in ("yes", "y")
     else:
-        git_ans = prompt_user(
-            "Do you want cfbs to initialize a git repository and make commits to it?",
-            choices=YES_NO_CHOICES,
-            default="yes",
-        )
-    do_git = git_ans.lower() in ("yes", "y")
+        assert do_git in ("yes", "no")
+        do_git = True if do_git == "yes" else False
 
-    if do_git:
-        user_name = git_get_config("user.name")
-        user_email = git_get_config("user.email")
-        user_name = prompt_user(
-            "Please enter user name to use for git commits", default=user_name or "cfbs"
-        )
+    if do_git is True:
+        user_name = get_args().git_user_name
+        if not user_name:
+            user_name = git_get_config("user.name")
+            user_name = prompt_user(
+                "Please enter user name to use for git commits",
+                default=user_name or "cfbs",
+            )
 
-        node_name = os.uname().nodename
-        user_email = prompt_user(
-            "Please enter user email to use for git commits",
-            default=user_email or ("cfbs@%s" % node_name),
-        )
+        user_email = get_args().git_user_email
+        if not user_email:
+            user_email = git_get_config("user.email")
+            node_name = os.uname().nodename
+            user_email = prompt_user(
+                "Please enter user email to use for git commits",
+                default=user_email or ("cfbs@%s" % node_name),
+            )
 
         if not is_git:
             try:

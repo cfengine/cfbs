@@ -85,7 +85,9 @@ def git_init(user_name=None, user_email=None, description=None):
             f.write(description + "\n")
 
 
-def git_commit(commit_msg, edit_commit_msg=False, scope="all"):
+def git_commit(
+    commit_msg, edit_commit_msg=False, user_name=None, user_email=None, scope="all"
+):
     """Create a commit in the CWD Git repository
 
     :param commit_msg: commit message to use for the commit
@@ -93,6 +95,8 @@ def git_commit(commit_msg, edit_commit_msg=False, scope="all"):
     :type scope: str or an iterable of str
     :param edit_commit_message=False: whether the user should be prompted to edit and
                             save the commit message or not
+    :param user_name: override git config user name
+    :param user_email: override git config user email
 
     """
 
@@ -113,6 +117,10 @@ def git_commit(commit_msg, edit_commit_msg=False, scope="all"):
             except CalledProcessError as cpe:
                 raise CFBSGitError("Failed to add %s to commit" % item) from cpe
 
+    # Override git config user name and email if specified
+    u_name = ["-c", "user.name=%s" % user_name] if user_name else []
+    u_email = ["-c", "user.email=%s" % user_email] if user_email else []
+
     if edit_commit_msg:
         fd, name = tempfile.mkstemp(dir=".git", prefix="commit-msg")
         with os.fdopen(fd, "w") as f:
@@ -120,7 +128,11 @@ def git_commit(commit_msg, edit_commit_msg=False, scope="all"):
 
         # If the user doesn't edit the message, the commit fails. In such case
         # we need to make the commit the same way as in non-interactive mode.
-        result = run(["git", "commit", "--template", name], check=False, stderr=PIPE)
+        result = run(
+            ["git"] + u_name + u_email + ["commit", "--template", name],
+            check=False,
+            stderr=PIPE,
+        )
         os.unlink(name)
         if result.returncode == 0:
             print("")
@@ -130,7 +142,11 @@ def git_commit(commit_msg, edit_commit_msg=False, scope="all"):
 
     # else
     try:
-        run(["git", "commit", "-F-"], input=commit_msg.encode("utf-8"), check=True)
+        run(
+            ["git"] + u_name + u_email + ["commit", "-F-"],
+            input=commit_msg.encode("utf-8"),
+            check=True,
+        )
         print("")
     except CalledProcessError as cpe:
         raise CFBSGitError("Failed to commit changes") from cpe
