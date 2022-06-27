@@ -36,4 +36,4 @@ jobs:
         pip install dist/cfbs-*.whl
     - name: Run bash tests
       run: |
-        bash test/shell/validate.sh
+        bash tests/shell/validate.sh

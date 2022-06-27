@@ -30,4 +30,4 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Check formatting with black
       run: |
-        black --check cfbs/*.py test/*.py
+        black --check cfbs/*.py tests/*.py
