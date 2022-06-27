@@ -23,7 +23,7 @@ jobs:
             python -m pip install black
         - name: Reformat with black
           run: |
-            black cfbs/*.py test/*.py > black_output.txt 2>&1
+            black cfbs/*.py tests/*.py > black_output.txt 2>&1
         - name: Check if there are changes
           run: |
             git diff --exit-code || touch git_diff_exists
@@ -43,7 +43,7 @@ jobs:
           run: |
             git config user.name 'GitHub'
             git config user.email '<noreply@github.com>'
-            git add cfbs/*.py test/*.py
+            git add cfbs/*.py tests/*.py
             git commit -F commit_message.txt
         - id: commit-message-from-file
           name: Parse commit message from file into variable

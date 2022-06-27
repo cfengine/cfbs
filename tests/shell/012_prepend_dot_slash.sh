@@ -1,6 +1,6 @@
 set -e
 set -x
-cd test
+cd tests/
 mkdir -p ./tmp/
 cd ./tmp/
 
