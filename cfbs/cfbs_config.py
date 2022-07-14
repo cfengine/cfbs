@@ -2,6 +2,7 @@
 import os
 import logging as log
 
+from cfbs.result import Result
 from cfbs.utils import (
     user_error,
     read_file,
@@ -286,7 +287,7 @@ class CFBSConfig(CFBSJson):
         if not to_add:
             user_error("Must specify at least one module to add")
 
-        before_adding = len(self["build"])
+        before = self["build"].copy()
 
         if to_add[0].endswith(SUPPORTED_ARCHIVES) or to_add[0].startswith(
             ("https://", "git://", "ssh://")
@@ -300,9 +301,15 @@ class CFBSConfig(CFBSJson):
         else:
             self._add_modules(to_add, added_by, checksum)
 
-        if len(self["build"]) == before_adding:
-            # Not an error, we just want to exit successfully without
-            # making a git commit
-            raise CFBSReturnWithoutCommit(0)
-
-        return 0
+        msg = ""
+        count = 0
+        for module in self["build"]:
+            if not any(module["name"] == m["name"] for m in before):
+                msg += "\n - Added module '%s'" % module["name"]
+                count += 1
+        if count > 1:
+            msg = "Added %d modules\n" % count + msg
+        else:
+            msg = msg[4:]  # Remove the '\n - ' part of the message
+        changes_made = count > 0
+        return Result(0, changes_made, msg)
