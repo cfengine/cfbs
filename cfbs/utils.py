@@ -281,3 +281,8 @@ def cache(func):
         return memo[key]
 
     return wrapper
+
+
+def canonify(s: str):
+    s = "".join([c if c.isalnum() else "_" for c in s])
+    return s
