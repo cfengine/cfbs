@@ -98,6 +98,15 @@ class Index:
             self._expand_index()
         return self._data
 
+    @property
+    def custom_index(self) -> str:
+        # Index can be initialized with a dict or OrderedDict instead of a url string
+        # in which case there would not be an index url to check against the default
+        if type(self._unexpanded) is str and self._unexpanded != _DEFAULT_INDEX:
+            return self._unexpanded
+        else:
+            return None
+
     def exists(self, module):
         if isinstance(module, Module):
             name = module.name
