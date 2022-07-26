@@ -39,7 +39,7 @@ def validate_index(index):
 
     def validate_tags(name, modules):
         if not "tags" in modules[name]:
-            raise CFBSIndexException("Missing required attribute 'tags'")
+            raise CFBSIndexException(name, "Missing required attribute 'tags'")
         if type(modules[name]["tags"]) != list:
             raise CFBSIndexException(name, "'tags' must be of type list")
         for tag in modules[name]["tags"]:
