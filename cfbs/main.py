@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """CFEngine Build System"""
 
-__authors__ = ["Ole Herman Schumacher Elgesem"]
 __copyright__ = ["Northern.tech AS"]
 
 import logging as log
