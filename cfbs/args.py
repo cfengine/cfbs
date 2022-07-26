@@ -79,4 +79,9 @@ def _get_arg_parser():
         "--git-commit-message",
         help="Specify git commit message",
     )
+    parser.add_argument(
+        "--ignore-versions-json",
+        help="Ignore versions.json. Necessary in case of a custom index or testing changes to the default index.",
+        action="store_true",
+    )
     return parser

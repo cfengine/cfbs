@@ -589,7 +589,9 @@ def validate_command():
     return 0
 
 
-def _download_dependencies(config, prefer_offline=False, redownload=False):
+def _download_dependencies(
+    config, prefer_offline=False, redownload=False, ignore_versions=False
+):
     # TODO: This function should be split in 2:
     #       1. Code for downloading things into ~/.cfengine
     #       2. Code for copying things into ./out
@@ -621,7 +623,7 @@ def _download_dependencies(config, prefer_offline=False, redownload=False):
         if not os.path.exists(module_dir):
             if url.endswith(SUPPORTED_ARCHIVES):
                 fetch_archive(url, commit)
-            elif "index" in module:
+            elif "index" in module or ignore_versions:
                 sh("git clone %s %s" % (url, commit_dir))
                 sh("(cd %s && git checkout %s)" % (commit_dir, commit))
             else:
@@ -650,15 +652,15 @@ def _download_dependencies(config, prefer_offline=False, redownload=False):
         counter += 1
 
 
-def download_command(force):
+def download_command(force, ignore_versions=False):
     config = CFBSConfig.get_instance()
-    _download_dependencies(config, redownload=force)
+    _download_dependencies(config, redownload=force, ignore_versions=ignore_versions)
 
 
-def build_command() -> int:
+def build_command(ignore_versions=False) -> int:
     config = CFBSConfig.get_instance()
     init_out_folder()
-    _download_dependencies(config, prefer_offline=True)
+    _download_dependencies(config, prefer_offline=True, ignore_versions=ignore_versions)
     perform_build_steps(config)
 
 
