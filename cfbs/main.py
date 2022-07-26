@@ -104,7 +104,7 @@ Warning: The --non-interactive option is only meant for testing (!)
     if args.command == "download":
         return commands.download_command(args.force)
     if args.command == "build":
-        return commands.build_command()
+        return commands.build_command(ignore_versions=args.ignore_versions_json)
     if args.command == "install":
         return commands.install_command(args.args)
     if args.command == "update":
