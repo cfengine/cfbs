@@ -70,9 +70,10 @@ def with_git_commit(
             except CFBSReturnWithoutCommit as e:
                 # Legacy; do not use. Use the Result namedtuple instead.
                 return e.retval
-            ret, should_commit, msg = (
-                result if isinstance(result, Result) else (result, True, None)
+            ret, should_commit, msg, files = (
+                result if isinstance(result, Result) else (result, True, None, [])
             )
+            files += files_to_commit
 
             # Message from the Result namedtuple overrides message from decorator
             if not msg:
@@ -106,11 +107,11 @@ def with_git_commit(
                 return ret
 
             try:
-                git_commit_maybe_prompt(msg, config.non_interactive, files_to_commit)
+                git_commit_maybe_prompt(msg, config.non_interactive, files)
             except CFBSGitError as e:
                 print(str(e))
                 try:
-                    for file_name in files_to_commit:
+                    for file_name in files:
                         git_discard_changes_in_file(file_name)
                 except CFBSGitError as e:
                     print(str(e))
