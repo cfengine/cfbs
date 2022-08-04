@@ -335,6 +335,8 @@ def remove_command(to_remove: list):
         return r
 
     num_removed = 0
+    msg = ""
+    files = []
     for name in to_remove:
         if name.startswith(("https://", "ssh://", "git://")):
             matches = _get_modules_by_url(name)
@@ -349,15 +351,36 @@ def remove_command(to_remove: list):
                 if answer.lower() in ("yes", "y"):
                     print("Removing module '%s'" % module["name"])
                     modules.remove(module)
+                    msg += "\n - Removed module '%s'" % module["name"]
                     num_removed += 1
         else:
             module = _get_module_by_name(name)
             if module:
                 print("Removing module '%s'" % name)
                 modules.remove(module)
+                msg += "\n - Removed module '%s'" % module["name"]
                 num_removed += 1
             else:
                 print("Module '%s' not found" % name)
+        input_path = os.path.join(".", name, "input.json")
+        if os.path.isfile(input_path) and prompt_user(
+            config.non_interactive,
+            "Module '%s' has input data '%s'. Do you want to remove it?"
+            % (name, input_path),
+            choices=YES_NO_CHOICES,
+            default="no",
+        ).lower() in ("yes", "y"):
+            rm(input_path)
+            files.append(input_path)
+            msg += "\n - Removed input data for module '%s'" % name
+            log.debug("Deleted module data '%s'" % input_path)
+
+    num_lines = len(msg.strip().splitlines())
+    changes_made = num_lines > 0
+    if num_lines > 1:
+        msg = "Removed %d modules\n" % num_removed + msg
+    else:
+        msg = msg[4:]  # Remove the '\n - ' part of the message
 
     config.save()
     if num_removed:
@@ -365,9 +388,7 @@ def remove_command(to_remove: list):
             _clean_unused_modules(config)
         except CFBSReturnWithoutCommit:
             pass
-        return 0
-    else:
-        raise CFBSReturnWithoutCommit(0)
+    return Result(0, changes_made, msg, files)
 
 
 @commit_after_command("Cleaned unused modules")
