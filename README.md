@@ -99,6 +99,12 @@ cfbs remove promise-type-git
 cfbs clean
 ```
 
+### Add module input
+
+```
+cfbs input create-single-file
+```
+
 ### Deploy your policy set to a remote hub
 
 ```
