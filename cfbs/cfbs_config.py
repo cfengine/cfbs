@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import copy
 import logging as log
 from collections import OrderedDict
 
@@ -8,6 +9,7 @@ from cfbs.utils import (
     user_error,
     read_file,
     find,
+    write_json,
 )
 from cfbs.internal_file_management import (
     clone_url_repo,
@@ -307,15 +309,37 @@ class CFBSConfig(CFBSJson):
 
         msg = ""
         count = 0
+        files = []
         for name in added:
             msg += "\n - Added module '%s'" % name
             count += 1
+
+            module = self.get_module_from_build(name)
+            input_path = os.path.join(".", name, "input.json")
+            if (
+                "input" in module
+                and not os.path.isfile(input_path)
+                and prompt_user(
+                    self.non_interactive,
+                    "The added module '%s' accepts user input. Do you want to add it now?"
+                    % name,
+                    YES_NO_CHOICES,
+                    "no",
+                ).lower()
+                in ("yes", "y")
+            ):
+                input_data = copy.deepcopy(module["input"])
+                self.input_command(name, input_data)
+                write_json(input_path, input_data)
+                files.append(input_path)
+                msg += "\n - Added input for module '%s'" % name
         if count > 1:
             msg = "Added %d modules\n" % count + msg
         else:
             msg = msg[4:]  # Remove the '\n - ' part of the message
+
         changes_made = count > 0
-        return Result(0, changes_made, msg)
+        return Result(0, changes_made, msg, files)
 
     def input_command(self, module_name, input_data):
         def _check_keys(keys, input_data):
