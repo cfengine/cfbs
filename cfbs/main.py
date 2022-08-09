@@ -51,6 +51,7 @@ def main() -> int:
         "remove",
         "clean",
         "update",
+        "input",
     ):
         user_error("The option --non-interactive is not for cfbs %s" % (args.command))
 
@@ -108,6 +109,8 @@ Warning: The --non-interactive option is only meant for testing (!)
         return commands.install_command(args.args)
     if args.command == "update":
         return commands.update_command(args.args)
+    if args.command == "input":
+        return commands.input_command(args.args)
 
     print_help()
     user_error("Command '%s' not found" % args.command)

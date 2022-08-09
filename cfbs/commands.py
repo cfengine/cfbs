@@ -4,6 +4,7 @@ in main.py for -h/--help/help.
 """
 import os
 import re
+import copy
 import logging as log
 import json
 from cfbs.args import get_args
@@ -801,3 +802,37 @@ def info_command(modules):
 # show_command here to auto-populate into help in main.py
 def show_command(module):
     return info_command(module)
+
+
+@commit_after_command("Added input for module%s", [PLURAL_S])
+def input_command(args, input_from="cfbs input"):
+    config = CFBSConfig.get_instance()
+    do_commit = False
+    files_to_commit = []
+    for module_name in args:
+        module = config.get_module_from_build(module_name)
+        if not module:
+            print("Skipping module '%s', module not found" % module_name)
+            continue
+        if "input" not in module:
+            print("Skipping module '%s', no input needed" % module_name)
+            continue
+
+        input_path = os.path.join(".", module_name, "input.json")
+        if os.path.isfile(input_path):
+            if prompt_user(
+                config.non_interactive,
+                "Input already exists for this module, do you want to overwrite it?",
+                YES_NO_CHOICES,
+                "no",
+            ).lower() in ("no", "n"):
+                continue
+
+        input_data = copy.deepcopy(module["input"])
+        config.input_command(module_name, input_data)
+
+        write_json(input_path, input_data)
+        do_commit = True
+        files_to_commit.append(input_path)
+    config.save()
+    return Result(0, do_commit, None, files_to_commit)
