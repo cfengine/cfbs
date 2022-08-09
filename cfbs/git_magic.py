@@ -41,6 +41,7 @@ def git_commit_maybe_prompt(commit_msg, non_interactive, scope="all"):
             prompt += "\nEdit it?"
 
         ans = prompt_user(
+            non_interactive,
             prompt,
             choices=YES_NO_CHOICES,
             default="no",

@@ -120,8 +120,11 @@ def init_command(index=None, non_interactive=False) -> int:
     if is_cfbs_repo():
         user_error("Already initialized - look at %s" % cfbs_filename())
 
-    name = prompt_user("Please enter name of this CFBS repository", default="Example")
+    name = prompt_user(
+        non_interactive, "Please enter name of this CFBS repository", default="Example"
+    )
     description = prompt_user(
+        non_interactive,
         "Please enter description of this CFBS repository",
         default="Example description",
     )
@@ -140,12 +143,14 @@ def init_command(index=None, non_interactive=False) -> int:
     if do_git is None:
         if is_git:
             git_ans = prompt_user(
+                non_interactive,
                 "This is a git repository. Do you want cfbs to make commits to it?",
                 choices=YES_NO_CHOICES,
                 default="yes",
             )
         else:
             git_ans = prompt_user(
+                non_interactive,
                 "Do you want cfbs to initialize a git repository and make commits to it?",
                 choices=YES_NO_CHOICES,
                 default="yes",
@@ -160,6 +165,7 @@ def init_command(index=None, non_interactive=False) -> int:
         if not user_name:
             user_name = git_get_config("user.name")
             user_name = prompt_user(
+                non_interactive,
                 "Please enter user name to use for git commits",
                 default=user_name or "cfbs",
             )
@@ -169,6 +175,7 @@ def init_command(index=None, non_interactive=False) -> int:
             user_email = git_get_config("user.email")
             node_name = os.uname().nodename
             user_email = prompt_user(
+                non_interactive,
                 "Please enter user email to use for git commits",
                 default=user_email or ("cfbs@%s" % node_name),
             )
@@ -215,6 +222,7 @@ def init_command(index=None, non_interactive=False) -> int:
     CFBSConfig.reload()
 
     if prompt_user(
+        non_interactive,
         "Do you wish to build on top of the default policy set, masterfiles? (Recommended)",
         choices=YES_NO_CHOICES,
         default="yes",
@@ -222,7 +230,9 @@ def init_command(index=None, non_interactive=False) -> int:
         to_add = "masterfiles"
     else:
         to_add = prompt_user(
-            "Specify policy set to use instead (empty to skip)", default=""
+            non_interactive,
+            "Specify policy set to use instead (empty to skip)",
+            default="",
         )
 
     if to_add:
@@ -344,6 +354,7 @@ def remove_command(to_remove: list):
                 user_error("Could not find module with URL '%s'" % name)
             for module in matches:
                 answer = prompt_user(
+                    config.non_interactive,
                     "Do you wish to remove '%s'?" % module["name"],
                     choices=YES_NO_CHOICES,
                     default="yes",
@@ -427,7 +438,10 @@ def _clean_unused_modules(config=None):
         print("%s - %s - added by: %s" % (name, description, added_by))
 
     answer = prompt_user(
-        "Do you wish to remove these modules?", choices=YES_NO_CHOICES, default="yes"
+        config.non_interactive,
+        "Do you wish to remove these modules?",
+        choices=YES_NO_CHOICES,
+        default="yes",
     )
     if answer.lower() in ("yes", "y"):
         for module in to_remove:
@@ -530,6 +544,7 @@ def update_command(to_update):
                 # same commit => user modifications, don't revert them
                 if commit_differs:
                     ans = prompt_user(
+                        config.non_interactive,
                         "Module %s has different build steps now\n" % module["name"]
                         + "old steps: %s\n" % module["steps"]
                         + "new steps: %s\n" % index_info["steps"]

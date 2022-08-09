@@ -1,12 +1,8 @@
-from cfbs.cfbs_config import CFBSConfig
-
 YES_NO_CHOICES = ("yes", "y", "no", "n")
 
 
-def prompt_user(prompt, choices=None, default=None):
-    config = CFBSConfig.get_instance()
-
-    if config.non_interactive:
+def prompt_user(non_interactive, prompt, choices=None, default=None):
+    if non_interactive:
         if default is None:
             raise ValueError(
                 "Missing default value for prompt '%s' in non-interactive mode" % prompt
