@@ -287,7 +287,7 @@ class CFBSConfig(CFBSJson):
         if not to_add:
             user_error("Must specify at least one module to add")
 
-        before = self["build"].copy()
+        before = {m["name"] for m in self["build"]}
 
         if to_add[0].endswith(SUPPORTED_ARCHIVES) or to_add[0].startswith(
             ("https://", "git://", "ssh://")
@@ -301,12 +301,13 @@ class CFBSConfig(CFBSJson):
         else:
             self._add_modules(to_add, added_by, checksum)
 
+        added = {m["name"] for m in self["build"]}.difference(before)
+
         msg = ""
         count = 0
-        for module in self["build"]:
-            if not any(module["name"] == m["name"] for m in before):
-                msg += "\n - Added module '%s'" % module["name"]
-                count += 1
+        for name in added:
+            msg += "\n - Added module '%s'" % name
+            count += 1
         if count > 1:
             msg = "Added %d modules\n" % count + msg
         else:
