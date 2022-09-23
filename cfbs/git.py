@@ -45,7 +45,7 @@ def git_set_config(key, value):
         return True
 
 
-def git_init(user_name=None, user_email=None, description=None):
+def git_init(user_name=None, user_email=None, description=None, initial_branch="main"):
     """Initialize git repo in CWD
 
     Also initializes `user.name` and `user.email` Git config for the repo if
@@ -68,7 +68,7 @@ def git_init(user_name=None, user_email=None, description=None):
 
     try:
         # Suppress noisy hint output on stderr:
-        check_call(["git", "init"], stderr=DEVNULL)
+        check_call(["git", "init", "-b", initial_branch], stderr=DEVNULL)
     except CalledProcessError as cpe:
         raise CFBSGitError("Failed to initialize git repository") from cpe
 
