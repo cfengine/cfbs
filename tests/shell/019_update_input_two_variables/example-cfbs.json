@@ -1,0 +1,67 @@
+{
+  "name": "example-project",
+  "type": "policy-set",
+  "description": "Example project",
+  "git": false,
+  "index": {
+    "example-module": {
+      "description": "Example module",
+      "repo": "https://github.com/larsewi/cfbs-test-modules.git",
+      "commit": "3827a0da69d73ec2f973660d3c640b33cad58655",
+      "by": "https://github.com/larsewi",
+      "version": "1.0.1",
+      "subdirectory": "./example-module/",
+      "input": [
+        {
+          "type": "string",
+          "variable": "filename",
+          "label": "Path",
+          "question": "Path of file?",
+          "default": "/tmp/test.txt"
+        },
+        {
+          "type": "string",
+          "variable": "content",
+          "label": "Contents",
+          "question": "File contents?",
+          "default" : "Hello CFEngine!"
+        }
+      ],
+      "steps": [
+        "input ./input.json def.json"
+      ]
+    }
+  },
+  "build": [
+    {
+      "name": "example-module",
+      "description": "Example module",
+      "repo": "https://github.com/example-user/example-modules.git",
+      "commit": "0000000000000000000000000000000000000000",
+      "by": "https://github.com/example-user",
+      "version": "1.0.0",
+      "subdirectory": "./example-module/",
+      "dependencies": ["autorun"],
+      "input": [
+        {
+          "type": "string",
+          "variable": "filename",
+          "label": "Filename",
+          "question": "What file should this module create?",
+          "default": "/tmp/example.txt"
+        },
+        {
+          "type": "string",
+          "variable": "content",
+          "label": "Content",
+          "question": "What content should this file have?",
+          "default": "Bye CFEngine!"
+        }
+      ],
+      "steps": [
+        "input ./input.json def.json"
+      ],
+      "added_by": "cfbs add"
+    }
+  ]
+}

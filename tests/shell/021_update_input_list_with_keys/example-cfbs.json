@@ -1,0 +1,82 @@
+{
+  "name": "example-project",
+  "type": "policy-set",
+  "description": "Example project",
+  "git": false,
+  "index": {
+    "example-module": {
+      "description": "Example module",
+      "repo": "https://github.com/example-user/example-modules.git",
+      "by": "https://github.com/example-user",
+      "version": "1.0.1",
+      "commit": "3827a0da69d73ec2f973660d3c640b33cad58655",
+      "subdirectory": "./example-module/",
+      "input": [
+        {
+          "type": "list",
+          "variable": "files",
+          "label": "Files",
+          "subtype": [
+            {
+              "key": "name",
+              "type": "string",
+              "label": "Path",
+              "question": "Path of file?",
+              "default": "/tmp/test.txt"
+            },
+            {
+              "key": "content",
+              "type": "string",
+              "label": "Contents",
+              "question": "File contents?",
+              "default": "Hello CFEngine!"
+            }
+          ],
+          "while": "Create another file?"
+        }
+      ],
+      "steps": [
+        "input ./input.json def.json"
+      ]
+    }
+  },
+  "build": [
+    {
+      "name": "example-module",
+      "description": "Example module",
+      "url": "https://github.com/example-user/example-modules.git",
+      "commit": "0000000000000000000000000000000000000000",
+      "by": "https://github.com/example-user",
+      "version": "1.0.0",
+      "subdirectory": "./example-module/",
+      "input": [
+        {
+          "type": "list",
+          "variable": "files",
+          "label": "Files",
+          "subtype": [
+            {
+              "key": "name",
+              "type": "string",
+              "label": "Name",
+              "question": "What file should this module create?",
+              "default": "/tmp/example.txt"
+            },
+            {
+              "key": "content",
+              "type": "string",
+              "label": "Content",
+              "question": "What content should this file have?",
+              "default": "Bye CFEngine!"
+            }
+          ],
+          "while": "Do you want to create another file?"
+        }
+      ],
+      "steps": [
+        "input ./input.json def.json"
+      ],
+      "added_by": "cfbs add"
+    }
+  ]
+}

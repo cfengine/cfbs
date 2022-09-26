@@ -1,0 +1,18 @@
+[
+  {
+    "type": "string",
+    "variable": "filename",
+    "label": "Filename",
+    "question": "What file should this module create?",
+    "default": "/tmp/example.txt",
+    "response": "/tmp/create-single-file-with-content.txt"
+  },
+  {
+    "type": "string",
+    "variable": "content",
+    "label": "Content",
+    "question": "What content should this file have?",
+    "default": "Bye CFEngine!",
+    "response": "Hello CFEngine!"
+  }
+]
