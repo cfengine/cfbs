@@ -626,7 +626,7 @@ def _download_dependencies(
             # a couple of cases where there will not be an archive available:
             # - using an alternate index (index property in module data)
             # - added by URL instead of name (no version property in module data)
-            elif "index" in module or not "version" in module or ignore_versions:
+            elif "index" in module or if "url" in module or ignore_versions:
                 sh("git clone %s %s" % (url, commit_dir))
                 sh("(cd %s && git checkout %s)" % (commit_dir, commit))
             else:
