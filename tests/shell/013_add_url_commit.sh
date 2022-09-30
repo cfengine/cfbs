@@ -16,3 +16,25 @@ grep scl cfbs.json
 cfbs build
 ls out/masterfiles/lib/scl/
 grep scl_dmidecode_example out/masterfiles/scl_example.json
+
+# Build should be possible to do on another machine
+# so let's test that it works after deleting the things which
+# will not be on the next machine.
+# Notably, cfbs add will download some things which can be reused in
+# cfbs build (git clones / zip downloads in ~/.cfengine/cfbs)
+
+rm -rf out/
+rm -rf ~/.cfengine/cfbs
+
+cfbs build
+ls out/masterfiles/lib/scl/
+grep scl_dmidecode_example out/masterfiles/scl_example.json
+
+# Finally, let's also test that we can build it again (now with the cached
+# files)
+
+rm -rf out/
+
+cfbs build
+ls out/masterfiles/lib/scl/
+grep scl_dmidecode_example out/masterfiles/scl_example.json
