@@ -316,23 +316,26 @@ class CFBSConfig(CFBSJson):
 
             module = self.get_module_from_build(name)
             input_path = os.path.join(".", name, "input.json")
-            if (
-                "input" in module
-                and not os.path.isfile(input_path)
-                and prompt_user(
+            if "input" in module:
+                if os.path.isfile(input_path):
+                    log.warning(
+                        "There seems to already be input for module '%s'. " % name
+                        + "Note that old input may break the module. "
+                        + "Please make sure to run 'cfbs input' to re-enter input "
+                        + "before building and depolying/installing your project."
+                    )
+                elif prompt_user(
                     self.non_interactive,
-                    "The added module '%s' accepts user input. Do you want to add it now?"
-                    % name,
+                    "The added module '%s' accepts user input. " % name
+                    + "Do you want to add it now?",
                     YES_NO_CHOICES,
                     "no",
-                ).lower()
-                in ("yes", "y")
-            ):
-                input_data = copy.deepcopy(module["input"])
-                self.input_command(name, input_data)
-                write_json(input_path, input_data)
-                files.append(input_path)
-                msg += "\n - Added input for module '%s'" % name
+                ).lower() in ("yes", "y"):
+                    input_data = copy.deepcopy(module["input"])
+                    self.input_command(name, input_data)
+                    write_json(input_path, input_data)
+                    files.append(input_path)
+                    msg += "\n - Added input for module '%s'" % name
         if count > 1:
             msg = "Added %d modules\n" % count + msg
         else:
