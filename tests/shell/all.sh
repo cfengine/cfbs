@@ -27,3 +27,4 @@ bash tests/shell/021_update_input_list_with_keys.sh
 bash tests/shell/022_update_input_fail_variable.sh
 bash tests/shell/023_update_input_fail_number.sh
 bash tests/shell/024_update_input_fail_bundle.sh
+bash tests/shell/025_add_input_remove.sh

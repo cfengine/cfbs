@@ -1,0 +1,29 @@
+{
+  "name": "example-project",
+  "type": "policy-set",
+  "description": "Example project",
+  "git": false,
+  "index": {
+    "example-module": {
+      "description": "Example module",
+      "repo": "https://github.com/example-user/example-modules.git",
+      "by": "https://github.com/example-user",
+      "version": "1.2.3",
+      "commit": "3827a0da69d73ec2f973660d3c640b33cad58655",
+      "subdirectory": "example-module",
+      "input": [
+        {
+          "type": "string",
+          "variable": "filename",
+          "label": "Filename",
+          "question": "What file do you want to create?",
+          "default": "/tmp/testfile.txt"
+        }
+      ],
+      "steps": [
+        "input input.json def.json"
+      ]
+    }
+  },
+  "build": []
+}
