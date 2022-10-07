@@ -515,10 +515,8 @@ def update_command(to_update):
         elif local_ver > index_ver:
             log.warning(
                 "The requested version of module '%s' is older than current version (%s < %s)."
-                " Skipping its update.",
-                module["name"],
-                index_info["version"],
-                module["version"],
+                " Skipping its update."
+                % (module["name"], index_info["version"], module["version"])
             )
             continue
 
