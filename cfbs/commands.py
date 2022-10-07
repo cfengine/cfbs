@@ -36,7 +36,7 @@ from cfbs.internal_file_management import (
     local_module_copy,
     SUPPORTED_ARCHIVES,
 )
-from cfbs.index import _VERSION_INDEX
+from cfbs.index import _VERSION_INDEX, Index
 from cfbs.git import (
     is_git_repo,
     git_get_config,
@@ -455,20 +455,14 @@ def _clean_unused_modules(config=None):
 @commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update):
     config = CFBSConfig.get_instance()
-    index = config.index
+    build = config["build"]
 
-    if to_update:
-        to_update = [Module(m) for m in to_update]
-        index.translate_aliases(to_update)
-        skip = (
-            m for m in to_update if all(n["name"] != m.name for n in config["build"])
-        )
-        for m in skip:
-            log.warning("Module '%s' not in build. Skipping its update.", m.name)
-            to_update.remove(m)
-    else:
-        # Update all modules in build if no modules are specified
-        to_update = [Module(m["name"]) for m in config["build"]]
+    # Update all modules in build if none specified
+    to_update = (
+        [Module(m) for m in to_update]
+        if to_update
+        else [Module(m["name"]) for m in build]
+    )
 
     new_deps = []
     new_deps_added_by = dict()
@@ -480,40 +474,30 @@ def update_command(to_update):
         module = config.get_module_from_build(update.name)
         assert module is not None  # Checked above when logging skipped modules
 
+        custom_index = module is not None and "index" in module
+        index = Index(module["index"]) if custom_index else config.index
+
+        if not module:
+            index.translate_alias(update)
+            module = config.get_module_from_build(update.name)
+
+        if not module:
+            log.warning("Module '%s' not in build. Skipping its update." % update.name)
+            continue
+
         if "version" not in module:
-            print("Module '%s' not updatable" % module["name"])
+            log.warning(
+                "Module '%s' not updatable. Skipping its update." % module["name"]
+            )
+            log.debug("Module '%s' has no version attribute." % module["name"])
             continue
         old_version = module["version"]
 
-        if "index" in module:
-            # TODO: Support custom index
-            log.warning(
-                "Module '%s' is not from the default index. "
-                + "Updating from custom index is currently not supported. "
-                + "Skipping its update.",
-                module["name"],
-            )
-            continue
-
-        index_info = index.get_module_object(update)
+        index_info = index.get_module_object(update.name)
         if not index_info:
             log.warning(
-                "Module '%s' not present in the index, cannot update it", module["name"]
-            )
-            continue
-
-        if (
-            module["version"] != index_info["version"]
-            and module["commit"] == index_info["commit"]
-        ):
-            log.warning(
-                "Version and commit mismatch detected."
-                + " The module %s has the same commit but different version"
-                + " locally (%s) and in the index (%s)."
-                + " Skipping its update.",
-                module["name"],
-                module["version"],
-                index_info["version"],
+                "Module '%s' not present in the index, cannot update it."
+                % module["name"]
             )
             continue
 
