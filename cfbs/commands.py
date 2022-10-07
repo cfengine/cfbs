@@ -503,11 +503,11 @@ def update_command(to_update):
 
         local_ver = [
             int(version_number)
-            for version_number in re.split("[-\.]", module["version"])
+            for version_number in re.split(r"[-\.]", module["version"])
         ]
         index_ver = [
             int(version_number)
-            for version_number in re.split("[-\.]", index_info["version"])
+            for version_number in re.split(r"[-\.]", index_info["version"])
         ]
         if local_ver == index_ver:
             continue
