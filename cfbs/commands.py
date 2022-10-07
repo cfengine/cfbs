@@ -510,6 +510,7 @@ def update_command(to_update):
             for version_number in re.split(r"[-\.]", index_info["version"])
         ]
         if local_ver == index_ver:
+            print("Module '%s' already up to date" % module["name"])
             continue
         elif local_ver > index_ver:
             log.warning(
