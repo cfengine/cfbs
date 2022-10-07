@@ -538,6 +538,7 @@ def update_command(to_update):
                     )
                     if ans.lower() in ["y", "yes"]:
                         module["steps"] = index_info["steps"]
+                        changes_made = True
                     else:
                         print(
                             "Please make sure the old build steps work"
