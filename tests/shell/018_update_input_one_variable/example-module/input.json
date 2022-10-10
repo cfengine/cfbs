@@ -1,0 +1,10 @@
+[
+  {
+    "type": "string",
+    "variable": "filename",
+    "label": "Filename",
+    "question": "What file should this module create?",
+    "response": "/tmp/create-single-file.txt",
+    "default": "/tmp/example.txt"
+  }
+]

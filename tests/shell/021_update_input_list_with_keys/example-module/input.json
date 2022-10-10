@@ -1,0 +1,28 @@
+[
+  {
+    "type": "list",
+    "variable": "files",
+    "label": "Files",
+    "subtype": [
+      {
+        "key": "name",
+        "type": "string",
+        "label": "Name",
+        "question": "What file should this module create?",
+        "default": "/tmp/example.txt"
+      },
+      {
+        "key": "content",
+        "type": "string",
+        "label": "Content",
+        "question": "What content should this file have?",
+        "default": "Bye CFEngine!"
+      }
+    ],
+    "while": "Do you want to create another file?",
+    "response": [
+      { "name": "/tmp/test-1.txt", "content": "Hello CFEngine!" },
+      { "name": "/tmp/test-2.txt", "content": "Bye CFEngine!" }
+    ]
+  }
+]

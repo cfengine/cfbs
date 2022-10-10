@@ -1,0 +1,18 @@
+[
+  {
+    "type": "list",
+    "variable": "files",
+    "label": "Files",
+    "subtype": {
+      "type": "string",
+      "label": "Filename",
+      "question": "What file should this module create?",
+      "default": "/tmp/example.txt"
+    },
+    "while": "Do you want to create another file?",
+    "response": [
+      "/tmp/create-multiple-files-1.txt",
+      "/tmp/create-multiple-files-2.txt"
+    ]
+  }
+]

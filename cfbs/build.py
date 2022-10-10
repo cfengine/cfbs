@@ -1,5 +1,7 @@
 import os
+import logging as log
 from cfbs.utils import (
+    canonify,
     cp,
     merge_json,
     mkdir,
@@ -11,7 +13,7 @@ from cfbs.utils import (
     user_error,
     write_json,
 )
-from cfbs.pretty import pretty_file
+from cfbs.pretty import pretty, pretty_file
 
 
 def init_out_folder():
@@ -19,6 +21,39 @@ def init_out_folder():
     mkdir("out")
     mkdir("out/masterfiles")
     mkdir("out/steps")
+
+
+def _generate_augment(module_name, input_data):
+    """
+    Generate augment from input data.
+
+    :param module_name: name of module
+    :param input_data: input data
+    :return: generated augment or None if input data is incomplete
+    """
+    if not isinstance(input_data, list):
+        return None
+
+    augment = {"variables": {}}
+
+    for variable in input_data:
+        if not isinstance(variable, dict) or any(
+            key not in variable for key in ("variable", "response")
+        ):
+            return None
+
+        name = variable["variable"]
+        namespace = variable.get("namespace", "cfbs")
+        bundle = variable.get("bundle", canonify(module_name))
+        value = variable["response"]
+        comment = variable.get("comment", "Added by 'cfbs input'")
+
+        augment["variables"]["%s:%s.%s" % (namespace, bundle, name)] = {
+            "value": value,
+            "comment": comment,
+        }
+
+    return augment
 
 
 def _perform_build_step(module, step, max_length):
@@ -106,6 +141,35 @@ def _perform_build_step(module, step, max_length):
         else:
             merged["inputs"] = inputs
         write_json(defjson, merged)
+    elif operation == "input":
+        src, dst = args
+        if dst in [".", "./"]:
+            dst = ""
+        print("%s input '%s' 'masterfiles/%s'" % (prefix, src, dst))
+        if "subdirectory" in module:
+            src = os.path.join(module["subdirectory"], src)
+        dst = os.path.join(destination, dst)
+        if not os.path.isfile(os.path.join(src)):
+            log.warning(
+                "Input data '%s' does not exist: Skipping build step."
+                % os.path.basename(src)
+            )
+            return
+        extras, original = read_json(src), read_json(dst)
+        extras = _generate_augment(module["name"], extras)
+        log.debug("Generated augment: %s", pretty(extras))
+        if not extras:
+            user_error(
+                "Input data '%s' is incomplete: Skipping build step."
+                % os.path.basename(src)
+            )
+        if original:
+            log.debug("Original def.json: %s", pretty(original))
+            merged = merge_json(original, extras)
+        else:
+            merged = extras
+        log.debug("Merged def.json: %s", pretty(merged))
+        write_json(dst, merged)
     else:
         user_error("Unknown build step operation: %s" % operation)
 

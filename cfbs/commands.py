@@ -4,6 +4,7 @@ in main.py for -h/--help/help.
 """
 import os
 import re
+import copy
 import logging as log
 import json
 from cfbs.args import get_args
@@ -13,6 +14,7 @@ from cfbs.utils import (
     cfbs_filename,
     is_cfbs_repo,
     item_index,
+    read_json,
     user_error,
     strip_right,
     pad_right,
@@ -25,7 +27,7 @@ from cfbs.utils import (
 )
 
 from cfbs.args import get_args
-from cfbs.pretty import pretty_check_file, pretty_file
+from cfbs.pretty import pretty, pretty_check_file, pretty_file
 from cfbs.build import init_out_folder, perform_build_steps
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import CFBSIndexException, validate_index
@@ -35,7 +37,7 @@ from cfbs.internal_file_management import (
     local_module_copy,
     SUPPORTED_ARCHIVES,
 )
-from cfbs.index import _VERSION_INDEX
+from cfbs.index import _VERSION_INDEX, Index
 from cfbs.git import (
     is_git_repo,
     git_get_config,
@@ -46,6 +48,11 @@ from cfbs.git import (
 from cfbs.git_magic import Result, commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 from cfbs.module import Module
+
+
+class InputDataUpdateFailed(Exception):
+    def __init__(self, message):
+        super().__init__(message)
 
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
@@ -120,8 +127,11 @@ def init_command(index=None, non_interactive=False) -> int:
     if is_cfbs_repo():
         user_error("Already initialized - look at %s" % cfbs_filename())
 
-    name = prompt_user("Please enter name of this CFBS repository", default="Example")
+    name = prompt_user(
+        non_interactive, "Please enter name of this CFBS repository", default="Example"
+    )
     description = prompt_user(
+        non_interactive,
         "Please enter description of this CFBS repository",
         default="Example description",
     )
@@ -140,12 +150,14 @@ def init_command(index=None, non_interactive=False) -> int:
     if do_git is None:
         if is_git:
             git_ans = prompt_user(
+                non_interactive,
                 "This is a git repository. Do you want cfbs to make commits to it?",
                 choices=YES_NO_CHOICES,
                 default="yes",
             )
         else:
             git_ans = prompt_user(
+                non_interactive,
                 "Do you want cfbs to initialize a git repository and make commits to it?",
                 choices=YES_NO_CHOICES,
                 default="yes",
@@ -160,6 +172,7 @@ def init_command(index=None, non_interactive=False) -> int:
         if not user_name:
             user_name = git_get_config("user.name")
             user_name = prompt_user(
+                non_interactive,
                 "Please enter user name to use for git commits",
                 default=user_name or "cfbs",
             )
@@ -169,6 +182,7 @@ def init_command(index=None, non_interactive=False) -> int:
             user_email = git_get_config("user.email")
             node_name = os.uname().nodename
             user_email = prompt_user(
+                non_interactive,
                 "Please enter user email to use for git commits",
                 default=user_email or ("cfbs@%s" % node_name),
             )
@@ -215,6 +229,7 @@ def init_command(index=None, non_interactive=False) -> int:
     CFBSConfig.reload()
 
     if prompt_user(
+        non_interactive,
         "Do you wish to build on top of the default policy set, masterfiles? (Recommended)",
         choices=YES_NO_CHOICES,
         default="yes",
@@ -222,7 +237,9 @@ def init_command(index=None, non_interactive=False) -> int:
         to_add = "masterfiles"
     else:
         to_add = prompt_user(
-            "Specify policy set to use instead (empty to skip)", default=""
+            non_interactive,
+            "Specify policy set to use instead (empty to skip)",
+            default="",
         )
 
     if to_add:
@@ -335,6 +352,8 @@ def remove_command(to_remove: list):
         return r
 
     num_removed = 0
+    msg = ""
+    files = []
     for name in to_remove:
         if name.startswith(("https://", "ssh://", "git://")):
             matches = _get_modules_by_url(name)
@@ -342,6 +361,7 @@ def remove_command(to_remove: list):
                 user_error("Could not find module with URL '%s'" % name)
             for module in matches:
                 answer = prompt_user(
+                    config.non_interactive,
                     "Do you wish to remove '%s'?" % module["name"],
                     choices=YES_NO_CHOICES,
                     default="yes",
@@ -349,15 +369,36 @@ def remove_command(to_remove: list):
                 if answer.lower() in ("yes", "y"):
                     print("Removing module '%s'" % module["name"])
                     modules.remove(module)
+                    msg += "\n - Removed module '%s'" % module["name"]
                     num_removed += 1
         else:
             module = _get_module_by_name(name)
             if module:
                 print("Removing module '%s'" % name)
                 modules.remove(module)
+                msg += "\n - Removed module '%s'" % module["name"]
                 num_removed += 1
             else:
                 print("Module '%s' not found" % name)
+        input_path = os.path.join(".", name, "input.json")
+        if os.path.isfile(input_path) and prompt_user(
+            config.non_interactive,
+            "Module '%s' has input data '%s'. Do you want to remove it?"
+            % (name, input_path),
+            choices=YES_NO_CHOICES,
+            default="no",
+        ).lower() in ("yes", "y"):
+            rm(input_path)
+            files.append(input_path)
+            msg += "\n - Removed input data for module '%s'" % name
+            log.debug("Deleted module data '%s'" % input_path)
+
+    num_lines = len(msg.strip().splitlines())
+    changes_made = num_lines > 0
+    if num_lines > 1:
+        msg = "Removed %d modules\n" % num_removed + msg
+    else:
+        msg = msg[4:]  # Remove the '\n - ' part of the message
 
     config.save()
     if num_removed:
@@ -365,9 +406,7 @@ def remove_command(to_remove: list):
             _clean_unused_modules(config)
         except CFBSReturnWithoutCommit:
             pass
-        return 0
-    else:
-        raise CFBSReturnWithoutCommit(0)
+    return Result(0, changes_made, msg, files)
 
 
 @commit_after_command("Cleaned unused modules")
@@ -406,7 +445,10 @@ def _clean_unused_modules(config=None):
         print("%s - %s - added by: %s" % (name, description, added_by))
 
     answer = prompt_user(
-        "Do you wish to remove these modules?", choices=YES_NO_CHOICES, default="yes"
+        config.non_interactive,
+        "Do you wish to remove these modules?",
+        choices=YES_NO_CHOICES,
+        default="yes",
     )
     if answer.lower() in ("yes", "y"):
         for module in to_remove:
@@ -416,88 +458,184 @@ def _clean_unused_modules(config=None):
     return 0
 
 
+def update_input_data(module, input_data):
+    """
+    Update input data from module definition
+
+    :param module: Module with updated input definition
+    :param input_data: Input data to update
+    :return: True if changes are made
+    """
+    module_name = module["name"]
+    input_def = module["input"]
+
+    if len(input_def) != len(input_data):
+        raise InputDataUpdateFailed(
+            "Failed to update input data for module '%s': " % module_name
+            + "Input definition has %d variables, " % len(input_def)
+            + "while current input data has %d variables." % len(input_data)
+        )
+
+    def _update_keys(input_def, input_data, keys):
+        """
+        Update keys that can be safily updated in input data.
+        """
+        changes_made = False
+        for key in keys:
+            new = input_def.get(key)
+            old = input_data.get(key)
+            if new != old:
+                # Make sure that one of the keys are not 'None'
+                if new is None or old is None:
+                    raise InputDataUpdateFailed(
+                        "Failed to update input data for module '%s': " % module_name
+                        + "Missing matching attribute '%s'." % key
+                    )
+                input_data[key] = input_def[key]
+                changes_made = True
+                log.warning(
+                    "Updated attribute '%s' from '%s' to '%s' in module '%s'."
+                    % (key, old, new, module_name)
+                )
+        return changes_made
+
+    def _check_keys(input_def, input_data, keys):
+        """
+        Compare keys that cannot safily be updated for equality.
+        """
+        for key in keys:
+            new = input_def.get(key)
+            old = input_data.get(key)
+            if new != old:
+                raise InputDataUpdateFailed(
+                    "Failed to update input data for module '%s': " % module_name
+                    + "Updating attribute '%s' from '%s' to '%s'," % (key, old, new)
+                    + "may cause module to break."
+                )
+
+    def _update_variable(input_def, input_data):
+        _check_keys(input_def, input_data, ("type", "namespace", "bundle", "variable"))
+        changes_made = _update_keys(
+            input_def, input_data, ("label", "comment", "question", "while", "default")
+        )
+
+        if input_def["type"] == "list":
+            def_subtype = input_def["subtype"]
+            data_subtype = input_data["subtype"]
+            if type(def_subtype) != type(data_subtype):
+                raise InputDataUpdateFailed(
+                    "Failed to update input data for module '%s': " % module_name
+                    + "Different subtypes in list ('%s' != '%s')."
+                    % (type(def_subtype).__name__, type(data_subtype).__name__)
+                )
+            if isinstance(def_subtype, list):
+                if len(def_subtype) != len(data_subtype):
+                    raise InputDataUpdateFailed(
+                        "Failed to update input data for module '%s': " % module_name
+                        + "Different amount of elements in list ('%s' != '%s')."
+                        % (len(def_subtype), len(data_subtype))
+                    )
+                for i in range(len(def_subtype)):
+                    _check_keys(def_subtype[i], data_subtype[i], ("key", "type"))
+                    changes_made |= _update_keys(
+                        def_subtype[i],
+                        data_subtype[i],
+                        ("label", "question", "default"),
+                    )
+            elif isinstance(def_subtype, dict):
+                _check_keys(def_subtype, data_subtype, ("type",))
+                changes_made |= _update_keys(
+                    def_subtype, data_subtype, ("label", "question", "default")
+                )
+            else:
+                user_error(
+                    "Unsupported subtype '%s' in input definition for module '%s'."
+                    % (type(def_subtype).__name__, module_name)
+                )
+        return changes_made
+
+    changes_made = False
+    for i in range(len(input_def)):
+        changes_made |= _update_variable(input_def[i], input_data[i])
+    return changes_made
+
+
 @commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update):
     config = CFBSConfig.get_instance()
-    index = config.index
+    build = config["build"]
 
-    if to_update:
-        to_update = [Module(m) for m in to_update]
-        index.translate_aliases(to_update)
-        skip = (
-            m for m in to_update if all(n["name"] != m.name for n in config["build"])
-        )
-        for m in skip:
-            log.warning("Module '%s' not in build. Skipping its update.", m.name)
-            to_update.remove(m)
-    else:
-        # Update all modules in build if no modules are specified
-        to_update = [Module(m["name"]) for m in config["build"]]
+    # Update all modules in build if none specified
+    to_update = (
+        [Module(m) for m in to_update]
+        if to_update
+        else [Module(m["name"]) for m in build]
+    )
 
     new_deps = []
     new_deps_added_by = dict()
     changes_made = False
     msg = ""
+    files = []
     updated = []
 
     for update in to_update:
         module = config.get_module_from_build(update.name)
-        assert module is not None  # Checked above when logging skipped modules
+
+        custom_index = module is not None and "index" in module
+        index = Index(module["index"]) if custom_index else config.index
+
+        if not module:
+            index.translate_alias(update)
+            module = config.get_module_from_build(update.name)
+
+        if not module:
+            log.warning("Module '%s' not in build. Skipping its update." % update.name)
+            continue
+
+        custom_index = module is not None and "index" in module
+        index = Index(module["index"]) if custom_index else config.index
+
+        if not module:
+            index.translate_alias(update)
+            module = config.get_module_from_build(update.name)
+
+        if not module:
+            log.warning("Module '%s' not in build. Skipping its update." % update.name)
+            continue
 
         if "version" not in module:
-            print("Module '%s' not updatable" % module["name"])
+            log.warning(
+                "Module '%s' not updatable. Skipping its update." % module["name"]
+            )
+            log.debug("Module '%s' has no version attribute." % module["name"])
             continue
         old_version = module["version"]
 
-        if "index" in module:
-            # TODO: Support custom index
-            log.warning(
-                "Module '%s' is not from the default index. "
-                + "Updating from custom index is currently not supported. "
-                + "Skipping its update.",
-                module["name"],
-            )
-            continue
-
-        index_info = index.get_module_object(update)
+        index_info = index.get_module_object(update.name)
         if not index_info:
             log.warning(
-                "Module '%s' not present in the index, cannot update it", module["name"]
-            )
-            continue
-
-        if (
-            module["version"] != index_info["version"]
-            and module["commit"] == index_info["commit"]
-        ):
-            log.warning(
-                "Version and commit mismatch detected."
-                + " The module %s has the same commit but different version"
-                + " locally (%s) and in the index (%s)."
-                + " Skipping its update.",
-                module["name"],
-                module["version"],
-                index_info["version"],
+                "Module '%s' not present in the index, cannot update it."
+                % module["name"]
             )
             continue
 
         local_ver = [
             int(version_number)
-            for version_number in re.split("[-\.]", module["version"])
+            for version_number in re.split(r"[-\.]", module["version"])
         ]
         index_ver = [
             int(version_number)
-            for version_number in re.split("[-\.]", index_info["version"])
+            for version_number in re.split(r"[-\.]", index_info["version"])
         ]
         if local_ver == index_ver:
+            print("Module '%s' already up to date" % module["name"])
             continue
         elif local_ver > index_ver:
             log.warning(
                 "The requested version of module '%s' is older than current version (%s < %s)."
-                " Skipping its update.",
-                module["name"],
-                index_info["version"],
-                module["version"],
+                " Skipping its update."
+                % (module["name"], index_info["version"], module["version"])
             )
             continue
 
@@ -509,6 +647,7 @@ def update_command(to_update):
                 # same commit => user modifications, don't revert them
                 if commit_differs:
                     ans = prompt_user(
+                        config.non_interactive,
                         "Module %s has different build steps now\n" % module["name"]
                         + "old steps: %s\n" % module["steps"]
                         + "new steps: %s\n" % index_info["steps"]
@@ -518,11 +657,44 @@ def update_command(to_update):
                     )
                     if ans.lower() in ["y", "yes"]:
                         module["steps"] = index_info["steps"]
+                        changes_made = True
                     else:
                         print(
                             "Please make sure the old build steps work"
                             + " with the new version of the module"
                         )
+            elif key == "input":
+                if commit_differs:
+                    module["input"] = index_info["input"]
+
+                    input_path = os.path.join(".", module["name"], "input.json")
+                    input_data = read_json(input_path)
+                    if input_data == None:
+                        log.debug(
+                            "Skipping input update for module '%s': "
+                            + "No input found in '%s'" % (module["name"], input_path)
+                        )
+                    else:
+                        try:
+                            changes_made |= update_input_data(module, input_data)
+                        except InputDataUpdateFailed as e:
+                            log.warning(e)
+                            if prompt_user(
+                                config.non_interactive,
+                                "Input for module '%s' has changed " % module["name"]
+                                + "and may no longer be compatible. "
+                                + "Do you want to re-enter input now?",
+                                YES_NO_CHOICES,
+                                "no",
+                            ).lower() in ("no", "n"):
+                                continue
+                            input_data = copy.deepcopy(module["input"])
+                            config.input_command(module["name"], input_data)
+                            changes_made = True
+
+                    if changes_made:
+                        write_json(input_path, input_data)
+                        files.append(input_path)
             else:
                 if key == "dependencies":
                     extra = set(index_info["dependencies"]) - set(
@@ -557,16 +729,12 @@ def update_command(to_update):
     config.save()
 
     if changes_made:
-        if len(updated) > 1:
-            msg = "Updated %d modules\n" % len(updated) + msg
-        else:
-            assert updated
-            msg = msg[4:]  # Remove the '\n - ' part of the message
+        msg = "Updated %d module%s\n" % (len(updated), "s" if updated else "") + msg
         print("%s\n" % msg)
     else:
         print("Modules are already up to date")
 
-    return Result(0, changes_made, msg)
+    return Result(0, changes_made, msg, files)
 
 
 def validate_command():
@@ -765,3 +933,37 @@ def info_command(modules):
 # show_command here to auto-populate into help in main.py
 def show_command(module):
     return info_command(module)
+
+
+@commit_after_command("Added input for module%s", [PLURAL_S])
+def input_command(args, input_from="cfbs input"):
+    config = CFBSConfig.get_instance()
+    do_commit = False
+    files_to_commit = []
+    for module_name in args:
+        module = config.get_module_from_build(module_name)
+        if not module:
+            print("Skipping module '%s', module not found" % module_name)
+            continue
+        if "input" not in module:
+            print("Skipping module '%s', no input needed" % module_name)
+            continue
+
+        input_path = os.path.join(".", module_name, "input.json")
+        if os.path.isfile(input_path):
+            if prompt_user(
+                config.non_interactive,
+                "Input already exists for this module, do you want to overwrite it?",
+                YES_NO_CHOICES,
+                "no",
+            ).lower() in ("no", "n"):
+                continue
+
+        input_data = copy.deepcopy(module["input"])
+        config.input_command(module_name, input_data)
+
+        write_json(input_path, input_data)
+        do_commit = True
+        files_to_commit.append(input_path)
+    config.save()
+    return Result(0, do_commit, None, files_to_commit)

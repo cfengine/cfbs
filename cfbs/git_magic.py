@@ -4,16 +4,14 @@ Here it's okay to depend on other parts of the CFBS codebase,
 do prompts, etc.
 """
 
-from collections import namedtuple
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.git import git_commit, git_discard_changes_in_file, CFBSGitError, is_git_repo
 from cfbs.args import get_args
+from cfbs.result import Result
 import logging as log
 from functools import partial
 
-
-Result = namedtuple("Result", ["rc", "commit", "msg"])
 
 first_commit = True
 
@@ -43,6 +41,7 @@ def git_commit_maybe_prompt(commit_msg, non_interactive, scope="all"):
             prompt += "\nEdit it?"
 
         ans = prompt_user(
+            non_interactive,
             prompt,
             choices=YES_NO_CHOICES,
             default="no",
@@ -70,13 +69,14 @@ def with_git_commit(
             try:
                 result = fn(*args, **kwargs)
             except CFBSReturnWithoutCommit as e:
-                # Legacy; do not use. Use the 'Result' tuple instead.
+                # Legacy; do not use. Use the Result namedtuple instead.
                 return e.retval
-            ret, should_commit, msg = (
-                result if isinstance(result, Result) else (result, True, None)
+            ret, should_commit, msg, files = (
+                result if isinstance(result, Result) else (result, True, None, [])
             )
+            files += files_to_commit
 
-            # Message from the namedtuple overrides message from decorator
+            # Message from the Result namedtuple overrides message from decorator
             if not msg:
                 if positional_args_lambdas:
                     positional_args = (
@@ -108,11 +108,11 @@ def with_git_commit(
                 return ret
 
             try:
-                git_commit_maybe_prompt(msg, config.non_interactive, files_to_commit)
+                git_commit_maybe_prompt(msg, config.non_interactive, files)
             except CFBSGitError as e:
                 print(str(e))
                 try:
-                    for file_name in files_to_commit:
+                    for file_name in files:
                         git_discard_changes_in_file(file_name)
                 except CFBSGitError as e:
                     print(str(e))

@@ -1,0 +1,53 @@
+{
+  "name": "example-project",
+  "type": "policy-set",
+  "description": "Example project",
+  "git": false,
+  "index": {
+    "example-module": {
+      "description": "Example module",
+      "repo": "https://github.com/example-user/example-modules.git",
+      "by": "https://github.com/example-user",
+      "version": "1.0.1",
+      "commit": "3827a0da69d73ec2f973660d3c640b33cad58655",
+      "subdirectory": "./example-module/",
+      "input": [
+        {
+          "type": "string",
+          "bundle": "my_bundle",
+          "variable": "filename",
+          "label": "Filename",
+          "question": "What file should this module create?",
+          "default": "/tmp/example.txt"
+        }
+      ],
+      "steps": [
+        "input ./input.json def.json"
+      ]
+    }
+  },
+  "build": [
+    {
+      "name": "example-module",
+      "description": "Example module",
+      "repo": "https://github.com/example-user/example-modules.git",
+      "commit": "0000000000000000000000000000000000000000",
+      "by": "https://github.com/example-user",
+      "version": "1.0.0",
+      "subdirectory": "./example-module/",
+      "input": [
+        {
+          "type": "string",
+          "variable": "filename",
+          "label": "Filename",
+          "question": "What file should this module create?",
+          "default": "/tmp/example.txt"
+        }
+      ],
+      "steps": [
+        "input ./input.json def.json"
+      ],
+      "added_by": "cfbs add"
+    }
+  ]
+}

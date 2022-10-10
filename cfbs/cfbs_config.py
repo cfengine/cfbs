@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 import os
+import copy
 import logging as log
+from collections import OrderedDict
 
+from cfbs.result import Result
 from cfbs.utils import (
     user_error,
     read_file,
     find,
+    write_json,
 )
 from cfbs.internal_file_management import (
     clone_url_repo,
@@ -15,6 +19,7 @@ from cfbs.internal_file_management import (
 from cfbs.pretty import pretty
 from cfbs.cfbs_json import CFBSJson
 from cfbs.module import Module
+from cfbs.prompts import prompt_user, YES_NO_CHOICES
 
 
 # Legacy; do not use. Use the 'Result' namedtuple instead.
@@ -286,7 +291,7 @@ class CFBSConfig(CFBSJson):
         if not to_add:
             user_error("Must specify at least one module to add")
 
-        before_adding = len(self["build"])
+        before = {m["name"] for m in self["build"]}
 
         if to_add[0].endswith(SUPPORTED_ARCHIVES) or to_add[0].startswith(
             ("https://", "git://", "ssh://")
@@ -300,9 +305,120 @@ class CFBSConfig(CFBSJson):
         else:
             self._add_modules(to_add, added_by, checksum)
 
-        if len(self["build"]) == before_adding:
-            # Not an error, we just want to exit successfully without
-            # making a git commit
-            raise CFBSReturnWithoutCommit(0)
+        added = {m["name"] for m in self["build"]}.difference(before)
 
-        return 0
+        msg = ""
+        count = 0
+        files = []
+        for name in added:
+            msg += "\n - Added module '%s'" % name
+            count += 1
+
+            module = self.get_module_from_build(name)
+            input_path = os.path.join(".", name, "input.json")
+            if "input" in module:
+                if os.path.isfile(input_path):
+                    log.warning(
+                        "There seems to already be input for module '%s'. " % name
+                        + "Note that old input may break the module. "
+                        + "Please make sure to run 'cfbs input' to re-enter input "
+                        + "before building and depolying/installing your project."
+                    )
+                elif prompt_user(
+                    self.non_interactive,
+                    "The added module '%s' accepts user input. " % name
+                    + "Do you want to add it now?",
+                    YES_NO_CHOICES,
+                    "no",
+                ).lower() in ("yes", "y"):
+                    input_data = copy.deepcopy(module["input"])
+                    self.input_command(name, input_data)
+                    write_json(input_path, input_data)
+                    files.append(input_path)
+                    msg += "\n - Added input for module '%s'" % name
+        if count > 1:
+            msg = "Added %d modules\n" % count + msg
+        else:
+            msg = msg[4:]  # Remove the '\n - ' part of the message
+
+        changes_made = count > 0
+        return Result(0, changes_made, msg, files)
+
+    def input_command(self, module_name, input_data):
+        def _check_keys(keys, input_data):
+            for key in keys:
+                if key not in input_data:
+                    user_error(
+                        "Expected attribute '%s' in input definition: %s"
+                        % (key, pretty(input_data))
+                    )
+
+        def _input_string(input_data):
+            _check_keys(["question"], input_data)
+            response = prompt_user(
+                self.non_interactive,
+                input_data["question"],
+                default=input_data.get("default"),
+            )
+            return response
+
+        def _input_elements(subtype):
+            result = OrderedDict()
+            for element in subtype:
+                _check_keys(["type", "label", "question", "key"], element)
+                if element["type"] != "string":
+                    user_error(
+                        "Subtype of type '%s' not supported for type list"
+                        % element["type"]
+                    )
+                result[element["key"]] = _input_string(element)
+            return result
+
+        def _input_list(input_data):
+            _check_keys(["subtype", "while"], input_data)
+            subtype = input_data["subtype"]
+
+            if isinstance(subtype, list):
+                result = []
+
+                result.append(_input_elements(subtype))
+                while prompt_user(
+                    self.non_interactive,
+                    input_data["while"],
+                    choices=YES_NO_CHOICES,
+                    default="no",
+                ).lower() in ("yes", "y"):
+                    result.append(_input_elements(subtype))
+                return result
+
+            elif isinstance(subtype, dict):
+                _check_keys(["type", "label", "question"], subtype)
+                if subtype["type"] != "string":
+                    user_error(
+                        "Subtype of type '%s' not supported for type list"
+                        % subtype["type"]
+                    )
+                result = [_input_string(subtype)]
+                while prompt_user(
+                    self.non_interactive,
+                    input_data["while"],
+                    choices=YES_NO_CHOICES,
+                    default="no",
+                ).lower() in ("yes", "y"):
+                    result.append(_input_string(subtype))
+                return result
+            user_error(
+                "Expected the value of attribute 'subtype' to be a JSON list or object, not: %s"
+                % pretty(input_data["subtype"])
+            )
+
+        print("Collecting input for module '%s'" % module_name)
+        for definition in input_data:
+            _check_keys(["type", "variable", "label"], definition)
+
+            if definition["type"] == "string":
+                definition["response"] = _input_string(definition)
+            elif definition["type"] == "list":
+                definition["response"] = _input_list(definition)
+            else:
+                user_error("Unsupported input type '%s'" % definition["type"])

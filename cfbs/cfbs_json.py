@@ -26,6 +26,8 @@ def _construct_provided_module(name, data, url, commit):
     dependencies = data.get("dependencies")
     if dependencies:
         module["dependencies"] = dependencies
+    if "input" in data:
+        module["input"] = data["input"]
     if "steps" not in data:
         user_error(
             "missing required key 'steps' in module definition: %s" % pretty(data)

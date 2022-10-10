@@ -20,3 +20,11 @@ bash tests/shell/014_add_nonexistent.sh
 bash tests/shell/015_add_version.sh
 bash tests/shell/016_add_folders.sh
 bash tests/shell/017_info.sh
+bash tests/shell/018_update_input_one_variable.sh
+bash tests/shell/019_update_input_two_variables.sh
+bash tests/shell/020_update_input_list.sh
+bash tests/shell/021_update_input_list_with_keys.sh
+bash tests/shell/022_update_input_fail_variable.sh
+bash tests/shell/023_update_input_fail_number.sh
+bash tests/shell/024_update_input_fail_bundle.sh
+bash tests/shell/025_add_input_remove.sh
