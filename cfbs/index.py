@@ -159,6 +159,10 @@ class Index:
             object = _generate_local_module_object(name)
         else:
             object = self[name]
+            if "alias" in object:
+                name = object["alias"]
+                module["name"] = name
+                object = self[name]
             if version:
                 versions = get_json(_VERSION_INDEX)
                 new_values = versions[name][version]
