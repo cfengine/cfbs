@@ -188,6 +188,17 @@ def _perform_build_step(module, step, max_length):
         merged = merge_json(original, augment) if original else augment
         log.debug("Merged def.json: %s", pretty(merged))
         write_json(path, merged)
+    elif operation == "bundles":
+        bundles = args
+        print("%s bundles '%s'" % (prefix, "' '".join(bundles) if bundles else ""))
+        augment = {"vars": {"control_common_bundlesequence_end": bundles}}
+        log.debug("Generated augment: %s" % pretty(augment))
+        path = os.path.join(destination, "def.json")
+        original = read_json(path)
+        log.debug("Original def.json: %s" % pretty(original))
+        merged = merge_json(original, augment) if original else augment
+        log.debug("Merged def.json: %s", pretty(merged))
+        write_json(path, merged)
     else:
         user_error("Unknown build step operation: %s" % operation)
 
