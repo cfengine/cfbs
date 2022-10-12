@@ -1,4 +1,5 @@
 import os
+import glob
 import logging as log
 from cfbs.utils import (
     canonify,
@@ -161,6 +162,32 @@ def _perform_build_step(module, step, max_length):
             merged = extras
         log.debug("Merged def.json: %s", pretty(merged))
         write_json(dst, merged)
+    elif operation == "policy_files":
+        files = []
+        for file in args:
+            if file.startswith("./"):
+                file = file[2:]
+            if file.endswith(".cf"):
+                files.append(file)
+            elif file.endswith("/"):
+                pattern = "%s**/*.cf" % file
+                files += glob.glob(pattern, recursive=True)
+            else:
+                user_error(
+                    "Unsupported filetype '%s' for build step '%s': "
+                    % (file, operation)
+                    + "Expected directory (*/) of policy file (*.cf)"
+                )
+        files = [os.path.join("services", "cfbs", file) for file in files]
+        print("%s policy_files '%s'" % (prefix, "' '".join(files) if files else ""))
+        augment = {"inputs": files}
+        log.debug("Generated augment: %s" % pretty(augment))
+        path = os.path.join(destination, "def.json")
+        original = read_json(path)
+        log.debug("Original def.json: %s" % pretty(original))
+        merged = merge_json(original, augment) if original else augment
+        log.debug("Merged def.json: %s", pretty(merged))
+        write_json(path, merged)
     else:
         user_error("Unknown build step operation: %s" % operation)
 
