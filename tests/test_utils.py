@@ -34,6 +34,26 @@ def test_merge_json():
         == "Added by 'cfbs input'"
     )
 
+    original = {
+        "classes": {"services_autorun": ["any"]},
+        "inputs": ["services/cfbs/bogus.cf"],
+        "vars": {"control_common_bundlesequence_end": ["bogus"]},
+    }
+    extras = {
+        "inputs": ["services/cfbs/doofus/doofus.cf", "services/cfbs/doofus/foo/foo.cf"]
+    }
+    merged = merge_json(original, extras)
+    expected = {
+        "classes": {"services_autorun": ["any"]},
+        "inputs": [
+            "services/cfbs/bogus.cf",
+            "services/cfbs/doofus/doofus.cf",
+            "services/cfbs/doofus/foo/foo.cf",
+        ],
+        "vars": {"control_common_bundlesequence_end": ["bogus"]},
+    }
+    assert merged == expected
+
 
 def test_loads_bundlenames_single_bundle():
     policy = """bundle agent bogus
