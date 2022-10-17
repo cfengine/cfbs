@@ -120,26 +120,17 @@ def _perform_build_step(module, step, max_length):
         merged = read_json(defjson)
         if not merged:
             merged = {}
-        if "classes" not in merged:
-            merged["classes"] = {}
-        if "services_autorun_bundles" not in merged["classes"]:
-            merged["classes"]["services_autorun_bundles"] = ["any"]
-        inputs = []
-        for root, dirs, files in os.walk(src):
+        for root, _, files in os.walk(src):
             for f in files:
-                if f.endswith(".cf"):
-                    inputs.append(os.path.join(dstarg, f))
-                    cp(os.path.join(root, f), os.path.join(destination, dstarg, f))
-                elif f == "def.json":
+                if f == "def.json":
                     extra = read_json(os.path.join(root, f))
                     if extra:
                         merged = merge_json(merged, extra)
                 else:
-                    cp(os.path.join(root, f), os.path.join(destination, dstarg, f))
-        if "inputs" in merged:
-            merged["inputs"].extend(inputs)
-        else:
-            merged["inputs"] = inputs
+                    s = os.path.join(root, f)
+                    d = os.path.join(destination, dstarg, root[len(src) :], f)
+                    log.debug("Copying '%s' to '%s'" % (s, d))
+                    cp(s, d)
         write_json(defjson, merged)
     elif operation == "input":
         src, dst = args
