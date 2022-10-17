@@ -14,12 +14,11 @@ _VERSION_INDEX = (
 
 
 def _local_module_data_cf_file(module):
-    target = os.path.basename(module)
+    dst = os.path.join("services", "cfbs", module[2:])
     return {
         "description": "Local policy file added using cfbs command line",
         "tags": ["local"],
-        "dependencies": ["autorun"],
-        "steps": ["copy %s services/autorun/%s" % (module, target)],
+        "steps": ["copy %s %s" % (module, dst)],
         "added_by": "cfbs add",
     }
 
