@@ -51,27 +51,6 @@ class CFBSConfig(CFBSJson):
     def exists(path="./cfbs.json"):
         return os.path.exists(path)
 
-    @staticmethod
-    def validate_added_module(module):
-        """Try to help the user with warnings in appropriate cases"""
-
-        name = module["name"]
-        if name.startswith("./") and name.endswith(".cf"):
-            assert os.path.isfile(name)
-            if not _has_autorun_tag(name):
-                log.warning("No autorun tag found in policy file: '%s'" % name)
-                log.warning("Tag the bundle(s) you want evaluated:")
-                log.warning('  meta: "tags" slist => { "autorun" };')
-            return
-        if name.startswith("./") and name.endswith("/"):
-            assert os.path.isdir(name)
-            policy_files = list(find(name, extension=".cf"))
-            with_autorun = (x for x in policy_files if _has_autorun_tag(x))
-            if any(policy_files) and not any(with_autorun):
-                log.warning("No bundles tagged with autorun found in: '%s'" % name)
-                log.warning("Tag the bundle(s) you want evaluated in .cf policy files:")
-                log.warning('  meta: "tags" slist => { "autorun" };')
-
     @classmethod
     def get_instance(cls, index=None, non_interactive=False):
         if cls.instance is not None:
@@ -128,7 +107,6 @@ class CFBSConfig(CFBSJson):
             print("Added module: %s (Dependency of %s)" % (module["name"], dependent))
         else:
             print("Added module: %s" % module["name"])
-        self.validate_added_module(module)
 
     def _add_using_url(
         self,
@@ -311,7 +289,6 @@ class CFBSConfig(CFBSJson):
             if self.index.custom_index != None:
                 module["index"] = self.index.custom_index
             self["build"].append(module)
-            self.validate_added_module(module)
             self._handle_local_module(module)
 
             added_by = module["added_by"]
