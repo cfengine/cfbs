@@ -5,63 +5,54 @@ mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
 rm -rf .git
-rm -rf one
-rm -rf two
 
-mkdir one
-echo '
-bundle agent bundle_one
-{
-  meta:
-    "tags" slist => { "autorun" };
+mkdir -p doofus
+echo 'bundle agent doofus {
   reports:
-    "one";
+      "This is $(this.promise_filename):$(this.bundle)!";
 }
-' > one/policy.cf
+' > doofus/doofus.cf
+
+mkdir -p doofus/foo
+echo 'bundle agent foo {
+  reports:
+      "This is $(this.promise_filename):$(this.bundle)!";
+}
+' > doofus/foo/foo.cf
+
 echo '{}
-' > one/data.json
+' > doofus/data.json
 
-mkdir two
-mkdir two/three
-echo '
-bundle agent bundle_two
-{
-  meta:
-    "tags" slist => { "autorun" };
-  reports:
-    "two";
-}
-' > two/three/policy.cf
 echo '{
   "vars": {
     "foo_thing": "awesome"
   }
 }
 
-' > two/three/def.json
-echo 'Hello
-' > two/three/file.txt
+' > doofus/foo/def.json
 
 cfbs --non-interactive init
 cfbs status
 
-cfbs --non-interactive add ./one
-cfbs --non-interactive add ./two/
+cfbs --non-interactive add ./doofus/
 cfbs status
 
-cfbs status | grep "./one/"
-cfbs status | grep "./two/"
-cat cfbs.json | grep "directory ./ services/cfbs/one/"
-cat cfbs.json | grep "directory ./ services/cfbs/two/"
+cfbs status | grep "./doofus/"
+grep '"name": "./doofus/"' cfbs.json
+grep '"directory ./ services/cfbs/doofus/"' cfbs.json
+grep '"policy_files ./doofus/"' cfbs.json
+grep '"bundles doofus"' cfbs.json
 
 cfbs build
 
-ls out/masterfiles/services/cfbs/one
-grep "bundle_one" out/masterfiles/services/cfbs/one/policy.cf
-ls out/masterfiles/services/cfbs/one/data.json
+grep '"inputs"' out/masterfiles/def.json
+grep '"services/cfbs/doofus/doofus.cf"' out/masterfiles/def.json
+grep '"services/cfbs/doofus/foo/foo.cf"' out/masterfiles/def.json
 
-ls out/masterfiles/services/cfbs/two
-grep "bundle_two" out/masterfiles/services/cfbs/two/policy.cf
-grep "Hello" out/masterfiles/services/cfbs/two/file.txt
+grep '"control_common_bundlesequence_end"' out/masterfiles/def.json
+grep '"doofus"' out/masterfiles/def.json
 
-grep "awesome" out/masterfiles/def.json
+grep '"foo_thing": "awesome"' out/masterfiles/def.json
+
+ls out/masterfiles/services/cfbs/doofus/doofus.cf
+ls out/masterfiles/services/cfbs/doofus/foo/foo.cf

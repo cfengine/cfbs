@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import copy
+import glob
 import logging as log
 from collections import OrderedDict
 
@@ -10,6 +11,7 @@ from cfbs.utils import (
     read_file,
     find,
     write_json,
+    load_bundlenames,
 )
 from cfbs.internal_file_management import (
     clone_url_repo,
@@ -48,27 +50,6 @@ class CFBSConfig(CFBSJson):
     @staticmethod
     def exists(path="./cfbs.json"):
         return os.path.exists(path)
-
-    @staticmethod
-    def validate_added_module(module):
-        """Try to help the user with warnings in appropriate cases"""
-
-        name = module["name"]
-        if name.startswith("./") and name.endswith(".cf"):
-            assert os.path.isfile(name)
-            if not _has_autorun_tag(name):
-                log.warning("No autorun tag found in policy file: '%s'" % name)
-                log.warning("Tag the bundle(s) you want evaluated:")
-                log.warning('  meta: "tags" slist => { "autorun" };')
-            return
-        if name.startswith("./") and name.endswith("/"):
-            assert os.path.isdir(name)
-            policy_files = list(find(name, extension=".cf"))
-            with_autorun = (x for x in policy_files if _has_autorun_tag(x))
-            if any(policy_files) and not any(with_autorun):
-                log.warning("No bundles tagged with autorun found in: '%s'" % name)
-                log.warning("Tag the bundle(s) you want evaluated in .cf policy files:")
-                log.warning('  meta: "tags" slist => { "autorun" };')
 
     @classmethod
     def get_instance(cls, index=None, non_interactive=False):
@@ -126,7 +107,6 @@ class CFBSConfig(CFBSJson):
             print("Added module: %s (Dependency of %s)" % (module["name"], dependent))
         else:
             print("Added module: %s" % module["name"])
-        self.validate_added_module(module)
 
     def _add_using_url(
         self,
@@ -225,6 +205,79 @@ class CFBSConfig(CFBSJson):
             dependencies += self._find_dependencies(dependencies, exclude)
         return dependencies
 
+    def _add_to_inputs(self, module):
+        name = module["name"]
+        step = "policy_files %s" % name
+        module["steps"].append(step)
+        log.debug("Added build step '%s' for module '%s'" % (step, name))
+
+    def _add_to_bundleseqence(self, module, policy_files):
+        name = module["name"]
+        choices = []
+        first = True
+        prompt_str = "Which bundle should be evaluated (added to bundle sequence)?"
+
+        for file in policy_files:
+            log.debug("Looking for bundles in policy file '%s'" % file)
+            for bundle in load_bundlenames(file):
+                log.debug("Found bundle '%s'" % bundle)
+                choices.append(bundle)
+                prompt_str += "\n%2d. %s:%s" % (len(choices), file, bundle)
+                if first:
+                    prompt_str += " (default)"
+                    first = False
+
+        if not choices:
+            log.warning("Did not find any bundles to add to bundlesequence")
+            return
+
+        choices.append(None)
+        prompt_str += "\n%2d. (None)\n" % (len(choices))
+
+        response = prompt_user(
+            self.non_interactive,
+            prompt_str,
+            [str(i + 1) for i in range(len(choices))],
+            1,
+        )
+        bundle = choices[int(response) - 1]
+        if bundle is None:
+            log.debug("User chose not to add any bundles to the bundlesequence")
+            return
+        log.debug("User chose to add '%s' to the bundlesequence" % bundle)
+
+        step = "bundles %s" % bundle
+        module["steps"].append(step)
+        log.debug("Added build step '%s' for module '%s'" % (step, name))
+
+    def _handle_local_module(self, module):
+        name = module["name"]
+        if not (
+            name.startswith("./")
+            and name.endswith((".cf", "/"))
+            and "local" in module["tags"]
+        ):
+            log.debug("Module '%s' does not appear to be a local module" % name)
+            return
+
+        if name.endswith(".cf"):
+            policy_files = [name]
+        else:
+            pattern = "%s/**/*.cf" % name
+            policy_files = glob.glob(pattern, recursive=True)
+
+        for file in policy_files:
+            if _has_autorun_tag(file):
+                log.warning(
+                    "Found bundle tagged with autorun in local policy file '%s': "
+                    % file
+                    + "Note that the autorun tag is ignored when adding local policy files or subdirectories."
+                )
+                # TODO: Support adding local modules with autorun tag
+
+        self._add_to_inputs(module)
+        self._add_to_bundleseqence(module, policy_files)
+
     def _add_without_dependencies(self, modules):
         assert modules
         assert len(modules) > 0
@@ -236,7 +289,7 @@ class CFBSConfig(CFBSJson):
             if self.index.custom_index != None:
                 module["index"] = self.index.custom_index
             self["build"].append(module)
-            self.validate_added_module(module)
+            self._handle_local_module(module)
 
             added_by = module["added_by"]
             if added_by == "cfbs add":

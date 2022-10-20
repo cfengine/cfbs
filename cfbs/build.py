@@ -1,4 +1,5 @@
 import os
+import glob
 import logging as log
 from cfbs.utils import (
     canonify,
@@ -120,26 +121,17 @@ def _perform_build_step(module, step, max_length):
         merged = read_json(defjson)
         if not merged:
             merged = {}
-        if "classes" not in merged:
-            merged["classes"] = {}
-        if "services_autorun_bundles" not in merged["classes"]:
-            merged["classes"]["services_autorun_bundles"] = ["any"]
-        inputs = []
-        for root, dirs, files in os.walk(src):
+        for root, _, files in os.walk(src):
             for f in files:
-                if f.endswith(".cf"):
-                    inputs.append(os.path.join(dstarg, f))
-                    cp(os.path.join(root, f), os.path.join(destination, dstarg, f))
-                elif f == "def.json":
+                if f == "def.json":
                     extra = read_json(os.path.join(root, f))
                     if extra:
                         merged = merge_json(merged, extra)
                 else:
-                    cp(os.path.join(root, f), os.path.join(destination, dstarg, f))
-        if "inputs" in merged:
-            merged["inputs"].extend(inputs)
-        else:
-            merged["inputs"] = inputs
+                    s = os.path.join(root, f)
+                    d = os.path.join(destination, dstarg, root[len(src) :], f)
+                    log.debug("Copying '%s' to '%s'" % (s, d))
+                    cp(s, d)
         write_json(defjson, merged)
     elif operation == "input":
         src, dst = args
@@ -170,6 +162,43 @@ def _perform_build_step(module, step, max_length):
             merged = extras
         log.debug("Merged def.json: %s", pretty(merged))
         write_json(dst, merged)
+    elif operation == "policy_files":
+        files = []
+        for file in args:
+            if file.startswith("./"):
+                file = file[2:]
+            if file.endswith(".cf"):
+                files.append(file)
+            elif file.endswith("/"):
+                pattern = "%s**/*.cf" % file
+                files += glob.glob(pattern, recursive=True)
+            else:
+                user_error(
+                    "Unsupported filetype '%s' for build step '%s': "
+                    % (file, operation)
+                    + "Expected directory (*/) of policy file (*.cf)"
+                )
+        files = [os.path.join("services", "cfbs", file) for file in files]
+        print("%s policy_files '%s'" % (prefix, "' '".join(files) if files else ""))
+        augment = {"inputs": files}
+        log.debug("Generated augment: %s" % pretty(augment))
+        path = os.path.join(destination, "def.json")
+        original = read_json(path)
+        log.debug("Original def.json: %s" % pretty(original))
+        merged = merge_json(original, augment) if original else augment
+        log.debug("Merged def.json: %s", pretty(merged))
+        write_json(path, merged)
+    elif operation == "bundles":
+        bundles = args
+        print("%s bundles '%s'" % (prefix, "' '".join(bundles) if bundles else ""))
+        augment = {"vars": {"control_common_bundlesequence_end": bundles}}
+        log.debug("Generated augment: %s" % pretty(augment))
+        path = os.path.join(destination, "def.json")
+        original = read_json(path)
+        log.debug("Original def.json: %s" % pretty(original))
+        merged = merge_json(original, augment) if original else augment
+        log.debug("Merged def.json: %s", pretty(merged))
+        write_json(path, merged)
     else:
         user_error("Unknown build step operation: %s" % operation)
 

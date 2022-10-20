@@ -1,4 +1,4 @@
-from cfbs.utils import canonify, merge_json
+from cfbs.utils import canonify, merge_json, loads_bundlenames
 
 
 def test_canonify():
@@ -33,3 +33,53 @@ def test_merge_json():
         merged["variables"]["cfbs:create_single_file.filename"]["comment"]
         == "Added by 'cfbs input'"
     )
+
+    original = {
+        "classes": {"services_autorun": ["any"]},
+        "inputs": ["services/cfbs/bogus.cf"],
+        "vars": {"control_common_bundlesequence_end": ["bogus"]},
+    }
+    extras = {
+        "inputs": ["services/cfbs/doofus/doofus.cf", "services/cfbs/doofus/foo/foo.cf"]
+    }
+    merged = merge_json(original, extras)
+    expected = {
+        "classes": {"services_autorun": ["any"]},
+        "inputs": [
+            "services/cfbs/bogus.cf",
+            "services/cfbs/doofus/doofus.cf",
+            "services/cfbs/doofus/foo/foo.cf",
+        ],
+        "vars": {"control_common_bundlesequence_end": ["bogus"]},
+    }
+    assert merged == expected
+
+
+def test_loads_bundlenames_single_bundle():
+    policy = """bundle agent bogus
+{
+  reports:
+      "Hello World";
+}
+"""
+    bundles = loads_bundlenames(policy)
+    assert len(bundles) == 1
+    assert bundles[0] == "bogus"
+
+
+def test_loads_bundlenames_multiple_bundles():
+    policy = """bundle\tagent bogus {
+  reports:
+      "Bogus!";
+}
+
+bundle agent doofus
+{
+  reports:
+      "Doofus!";
+}
+"""
+    bundles = loads_bundlenames(policy)
+    assert len(bundles) == 2
+    assert bundles[0] == "bogus"
+    assert bundles[1] == "doofus"
