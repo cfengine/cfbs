@@ -45,6 +45,11 @@ def main() -> int:
         print("")
         user_error("No command given")
 
+    if args.masterfiles and args.command != "init":
+        user_error(
+            "The option --masterfiles is only for cfbs init, not cfbs %s" % args.command
+        )
+
     if args.non_interactive and args.command not in (
         "init",
         "add",
@@ -75,7 +80,9 @@ Warning: The --non-interactive option is only meant for testing (!)
 
     if args.command == "init":
         return commands.init_command(
-            index=args.index, non_interactive=args.non_interactive
+            index=args.index,
+            masterfiles=args.masterfiles,
+            non_interactive=args.non_interactive,
         )
 
     if args.command == "search":
