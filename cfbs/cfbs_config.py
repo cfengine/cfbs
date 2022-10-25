@@ -9,7 +9,6 @@ from cfbs.result import Result
 from cfbs.utils import (
     user_error,
     read_file,
-    find,
     write_json,
     load_bundlenames,
 )
@@ -205,13 +204,13 @@ class CFBSConfig(CFBSJson):
             dependencies += self._find_dependencies(dependencies, exclude)
         return dependencies
 
-    def _add_to_inputs(self, module):
+    def _add_policy_files_build_step(self, module):
         name = module["name"]
         step = "policy_files %s" % name
         module["steps"].append(step)
         log.debug("Added build step '%s' for module '%s'" % (step, name))
 
-    def _add_to_bundleseqence(self, module, policy_files):
+    def _add_bundles_build_step(self, module, policy_files):
         name = module["name"]
         choices = []
         first = True
@@ -275,8 +274,8 @@ class CFBSConfig(CFBSJson):
                 )
                 # TODO: Support adding local modules with autorun tag
 
-        self._add_to_inputs(module)
-        self._add_to_bundleseqence(module, policy_files)
+        self._add_policy_files_build_step(module)
+        self._add_bundles_build_step(module, policy_files)
 
     def _add_without_dependencies(self, modules):
         assert modules
