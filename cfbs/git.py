@@ -17,6 +17,24 @@ class CFBSGitError(Exception):
     pass
 
 
+def ls_remote(remote, branch):
+    """Returns the hash of the commit that the current HEAD of a given branch
+    on a given remote is pointing to.
+
+    :param remote: the remote to list
+    :param branch: the branch on the remote
+    """
+    try:
+        return (
+            check_output(["git", "ls-remote", remote, branch])
+            .decode()
+            .strip()
+            .split()[0]
+        )
+    except:
+        return None
+
+
 def is_git_repo(path=None):
     """Is the given path a Git repository?)
 
