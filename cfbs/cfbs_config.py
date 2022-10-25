@@ -9,7 +9,6 @@ from cfbs.result import Result
 from cfbs.utils import (
     user_error,
     read_file,
-    find,
     write_json,
     load_bundlenames,
 )
