@@ -7,6 +7,7 @@ import re
 import copy
 import logging as log
 import json
+from collections import OrderedDict
 from cfbs.args import get_args
 
 from cfbs.utils import (
@@ -1000,3 +1001,66 @@ def input_command(args, input_from="cfbs input"):
         files_to_commit.append(input_path)
     config.save()
     return Result(0, do_commit, None, files_to_commit)
+
+
+def set_input_command(name, infile):
+    config = CFBSConfig.get_instance()
+    module = config.get_module_from_build(name)
+    if module is None:
+        log.error("Module '%s' not found" % name)
+        return 1
+
+    spec = module.get("input")
+    if spec is None:
+        log.error("Module '%s' does not accept input" % name)
+        return 1
+    log.debug("Input spec for module '%s': %s" % (name, pretty(spec)))
+
+    try:
+        data = json.load(infile, object_pairs_hook=OrderedDict)
+    except json.decoder.JSONDecodeError as e:
+        log.error("Error reading json from stdin: %s" % e)
+        return 1
+    log.debug("Input data for module '%s': %s" % (name, pretty(data)))
+
+    def _compare_dict(a, b, ignore={}):
+        assert isinstance(a, dict) and isinstance(b, dict)
+        if set(a.keys()) != set(b.keys()) - ignore:
+            return False
+        # Avoid code duplication by converting the values of the two dicts
+        # into two lists in the same order and compare the lists instead
+        keys = a.keys()
+        return _compare_list([a[key] for key in keys], [b[key] for key in keys])
+
+    def _compare_list(a, b):
+        assert isinstance(a, list) and isinstance(b, list)
+        if len(a) != len(b):
+            return False
+        for x, y in zip(a, b):
+            if type(x) != type(y):
+                return False
+            if isinstance(x, dict) and not _compare_dict(x, y):
+                return False
+            if isinstance(x, list) and not _compare_list(x, y):
+                return False
+            if x != y:
+                return False
+        return True
+
+    for a, b in zip(spec, data):
+        if (
+            not isinstance(a, dict)
+            or not isinstance(b, dict)
+            or not _compare_dict(a, b, ignore={"response"})
+        ):
+            log.error(
+                "Input data for module '%s' does not conform with input definition"
+                % name
+            )
+            return 1
+
+    path = os.path.join(name, "input.json")
+    log.debug("Writing json to file '%s'" % path)
+    write_json(path, data)
+
+    return 0
