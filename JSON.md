@@ -93,7 +93,7 @@ Unless otherwise noted, all steps are run inside the module's folder (`out/steps
   - Only edits `def.json`, does not copy files. Should be used after a `copy` or `directory` build step.
   - Does not add any bundles to the bundle sequence, to ensure a bundle is evaluated, use the `bundles` build step or the autorun mechanism.
 - All paths are relative to `out/masterfiles`.
-- If any of the paths are directories (end with `/`), the folder(s) are searched and all `.cf` files are added.
+- If any of the paths are directories (end with `/`), the folder(s) are recursively searched and all `.cf` files are added.
   - **Note:** Directories should be module-specific, otherwise this build step can find policy files from other modules (when they are mixed in the same directory).
 
 #### `input <source input.json> <target def.json>`
