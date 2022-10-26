@@ -102,8 +102,50 @@ cfbs clean
 ### Add module input
 
 ```
-cfbs input create-single-file
+cfbs input delete-files
 ```
+
+This command prompts the user for module input to configure what the module should do.
+
+Only works for modules which accept input, indicated by the `"input"` key.
+This `input` key contains the specification for what input the module accepts, if any.
+
+User's responses are stored in `<module-name>/input.json`.
+For completeness, the input specification is also stored with the responses.
+Here is an example of a `input.json` file with responses:
+
+```json
+[
+  {
+    "type": "list",
+    "variable": "files",
+    "bundle": "delete_files",
+    "label": "Files",
+    "subtype": [
+      {
+        "key": "path",
+        "type": "string",
+        "label": "Path",
+        "question": "Enter path to file"
+      },
+      {
+        "key": "why",
+        "type": "string",
+        "label": "Why",
+        "question": "Why should this file be deleted?",
+        "default": "It's malicious."
+      }
+    ],
+    "while": "Do you want the module to delete more files?",
+    "response": [
+      { "path": "/tmp/virus", "why": "It's malicious." },
+      { "path": "/home/alice/.ssh/authorized_keys", "why": "She left the company." }
+    ]
+  }
+]
+```
+
+The `input.json` file is converted and merged into the main `def.json` during the build, using the `input` build step.
 
 ### Deploy your policy set to a remote hub
 
@@ -178,82 +220,7 @@ from pydantic import (
 $
 ```
 
-## Build Steps
+## The cfbs.json format
 
-The standard commands for adding content such as `cfbs add` will handle most common needs.
-If you are creating a new module or needing more control you can edit `cfbs.json` and the `steps` entry.
-
-An example of the result of `cfbs add ./policy.cf`:
-
-```json
-{
-  "name": "./policy.cf",
-  "description": "Local policy file added using cfbs command line",
-  "tags": ["local"],
-  "dependencies": ["autorun"],
-  "steps": ["copy ./policy.cf services/autorun/policy.cf"],
-  "added_by": "cfbs add"
-}
-```
-
-In most cases the steps are designed to copy something locally to the resulting `out/masterfiles` output directory created when running `cfbs build`.
-
-The `source` parameters in each step are relative either to the local cfbs project directory or the `subdirectory` specified in the module definition.
-
-Here is an example from the `client-initiated-reporting` module
-
-```json
-{
-  "name": "client-initiated-reporting",
-  "description": "Enable client initiated reporting and disable pull collection",
-  "tags": ["experimental", "reporting"],
-  "repo": "https://github.com/cfengine/modules",
-  "by": "https://github.com/cfengine",
-  "version": "0.1.1",
-  "commit": "c3b7329b240cf7ad062a0a64ee8b607af2cb912a",
-  "subdirectory": "reporting/client-initiated-reporting",
-  "steps": ["json def.json def.json"],
-  "added_by": "cfbs add"
-}
-```
-
-The source `def.json` to be merged above will be located at `reporting/client-initiated-reporting/def.json`.
-
-During `cfbs build` either the local contents or the repository contents are copied to an auto-generated numeric directory of the form: `out/steps/<step#>_<module_name>_<commit_sha>`.
-This is the working directory where commands are run and where `source` paths should be specified relative to.
-
-```
-out/steps/001_masterfiles_5c7dc5b43088e259a94de4e5a9f17c0ce9781a0f/
-```
-
-The `destination` parameter below should all be relative paths to `out/masterfiles`.
-
-
-### Available steps are:
-
-Note that the build steps are run inside each modules directory (the temporary copy of it inside `out/steps`).
-Scripts and source files are read from that directory.
-Destination is relative to the output policy set (`out/masterfiles`).
-
-#### `copy <source> <destination>`
-- Copy a single file or a directory recursively.
-
-#### `run <command>`
-- Run a shell command / script.
-- Usually used to prepare the module directory, delete files, etc. before a copy step.
-- Running scripts should be avoided if possible.
-
-#### `delete <paths ...>`
-- Delete multiple files or paths recursively.
-
-#### `json <source> <destination>`
-- Merge the source json file into the destination json file.
-
-#### `append <source> <destination>`
-- Append the source file to the end of destination file.
-
-#### `directory <source> <destination>`
-- Copy any .cf policy files recursively and add their paths to `def.json`'s `inputs`.
-- Enable `services_autorun_bundles` class in `def.json`.
-- Merge any `def.json` recursively into `out/masterfiles/def.json`.
-- Copy any other files with their existing directory structure to destination.
+More advanced users and module authors may need to understand, write, or edit `cfbs.json` files.
+The format of those files and how `cfbs` uses them is explained in detail in [JSON.md](./JSON.md).

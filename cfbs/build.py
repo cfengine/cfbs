@@ -1,15 +1,16 @@
 import os
-import glob
 import logging as log
 from cfbs.utils import (
     canonify,
     cp,
+    find,
     merge_json,
     mkdir,
     pad_right,
     read_json,
     rm,
     sh,
+    strip_left,
     touch,
     user_error,
     write_json,
@@ -170,15 +171,14 @@ def _perform_build_step(module, step, max_length):
             if file.endswith(".cf"):
                 files.append(file)
             elif file.endswith("/"):
-                pattern = "%s**/*.cf" % file
-                files += glob.glob(pattern, recursive=True)
+                cf_files = find("out/masterfiles/" + file, extension=".cf")
+                files += (strip_left(f, "out/masterfiles/") for f in cf_files)
             else:
                 user_error(
                     "Unsupported filetype '%s' for build step '%s': "
                     % (file, operation)
                     + "Expected directory (*/) of policy file (*.cf)"
                 )
-        files = [os.path.join("services", "cfbs", file) for file in files]
         print("%s policy_files '%s'" % (prefix, "' '".join(files) if files else ""))
         augment = {"inputs": files}
         log.debug("Generated augment: %s" % pretty(augment))
