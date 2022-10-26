@@ -28,3 +28,5 @@ bash tests/shell/022_update_input_fail_variable.sh
 bash tests/shell/023_update_input_fail_number.sh
 bash tests/shell/024_update_input_fail_bundle.sh
 bash tests/shell/025_add_input_remove.sh
+
+echo "All cfbs shell tests completed successfully!"
