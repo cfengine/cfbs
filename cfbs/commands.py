@@ -44,6 +44,7 @@ from cfbs.git import (
     git_set_config,
     git_init,
     CFBSGitError,
+    ls_remote,
 )
 from cfbs.git_magic import Result, commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
@@ -123,7 +124,7 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     return 0
 
 
-def init_command(index=None, non_interactive=False) -> int:
+def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     if is_cfbs_repo():
         user_error("Already initialized - look at %s" % cfbs_filename())
 
@@ -228,22 +229,52 @@ def init_command(index=None, non_interactive=False) -> int:
     """
     CFBSConfig.reload()
 
-    if prompt_user(
-        non_interactive,
-        "Do you wish to build on top of the default policy set, masterfiles? (Recommended)",
-        choices=YES_NO_CHOICES,
-        default="yes",
-    ) in ("yes", "y"):
-        to_add = "masterfiles"
-    else:
-        to_add = prompt_user(
+    branch = None
+    to_add = ""
+    if masterfiles is None:
+        if prompt_user(
             non_interactive,
-            "Specify policy set to use instead (empty to skip)",
-            default="",
-        )
+            "Do you wish to build on top of the default policy set, masterfiles? (Recommended)",
+            choices=YES_NO_CHOICES,
+            default="yes",
+        ) in ("yes", "y"):
+            to_add = "masterfiles"
+        else:
+            to_add = prompt_user(
+                non_interactive,
+                "Specify policy set to use instead (empty to skip)",
+                default="",
+            )
+    elif re.match(r"[0-9]+(\.[0-9]+){2}(\-[0-9]+)?", masterfiles):
+        log.debug("--masterfiles=%s appears to be a version number" % masterfiles)
+        to_add = "masterfiles@%s" % masterfiles
+    elif masterfiles != "no":
+        """This appears to be a branch. Thus we'll add masterfiles normally
+        and try to do the necessary modifications needed afterwards. I.e.
+        changing the 'repo' attribute to be 'url' and changing the commit to
+        be the current HEAD of the upstream branch."""
+
+        log.debug("--masterfiles=%s appears to be a branch" % masterfiles)
+        branch = masterfiles
+        to_add = "masterfiles"
 
     if to_add:
-        return add_command([to_add])
+        ret = add_command([to_add])
+        if ret != 0:
+            return ret
+
+    if branch is not None:
+        config = CFBSConfig.get_instance()
+        module = config.get_module_from_build("masterfiles")
+        remote = module["repo"]
+        commit = ls_remote(remote, branch)
+        if commit is None:
+            user_error("Failed to add masterfiles from branch %s" % branch)
+        log.debug("Current commit for masterfiles branch %s is %s" % (branch, commit))
+        module["url"] = remote
+        del module["repo"]
+        module["commit"] = commit
+        config.save()
 
     return 0
 

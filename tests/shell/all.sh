@@ -28,5 +28,9 @@ bash tests/shell/022_update_input_fail_variable.sh
 bash tests/shell/023_update_input_fail_number.sh
 bash tests/shell/024_update_input_fail_bundle.sh
 bash tests/shell/025_add_input_remove.sh
+bash tests/shell/026_init_no_masterfiles.sh
+bash tests/shell/027_init_masterfiles_version_master.sh
+bash tests/shell/028_init_masterfiles_version_3.18.2.sh
+bash tests/shell/029_init_masterfiles_version_3.18.1-1.sh
 
 echo "All cfbs shell tests completed successfully!"

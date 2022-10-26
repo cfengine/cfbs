@@ -84,4 +84,7 @@ def _get_arg_parser():
         help="Ignore versions.json. Necessary in case of a custom index or testing changes to the default index.",
         action="store_true",
     )
+    parser.add_argument(
+        "--masterfiles", help="Add masterfiles on cfbs init choose between"
+    )
     return parser
