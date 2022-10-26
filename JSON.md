@@ -80,10 +80,13 @@ Unless otherwise noted, all steps are run inside the module's folder (`out/steps
 
 #### `bundles <bundles ...>`
 - Ensure bundles are evaluated by adding them to the bundle sequence, using `def.json`.
+  - Note that this relies on using the default policy set from the CFEngine team, the Masterfiles Policy Framework, commonly added as the first module (`masterfiles`). 
+    Specifically, this build step adds the bundles to the variable `default:def.control_common_bundlesequence_end`, which the MPF looks for.
 - Only manipulates the bundle sequence, to ensure policy files are copied and parsed, use other build steps, for example `copy` and `policy_files`.
 
 #### `policy_files <paths ...>`
 - Add policy (`.cf`) files to `inputs` key in `def.json`, ensuring they are parsed.
+  - Note that this relies on using the default policy set from the CFEngine team, the Masterfiles Policy Framework, commonly added as the first module (`masterfiles`).
   - Only edits `def.json`, does not copy files. Should be used after a `copy` or `directory` build step.
   - Does not add any bundles to the bundle sequence, to ensure a bundle is evaluated, use the `bundles` build step or the autorun mechanism.
 - All paths are relative to `out/masterfiles`.
