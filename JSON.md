@@ -16,6 +16,85 @@ All these 3 share 1 standard format, commonly called `cfbs.json`.
 Used by `cfbs add` and `cfbs search`, when index key is present in `cfbs.json` in the current working directory.
 When adding a module by URL, which has a `cfbs.json` inside of it, the index in that file should be ignored.
 
+## The process of building modules from a project into a policy set
+
+When you build a project with the `cfbs build` command, it loops through all modules in the project (`"build"` key), in order.
+Within each module it runs the individual build steps, specified in the `"steps"` key.
+
+As an example, here is a local policy file module with 1 build step:
+
+```json
+{
+  "name": "./policy.cf",
+  "description": "Local policy file added using cfbs command line",
+  "tags": ["local"],
+  "dependencies": ["autorun"],
+  "steps": ["copy ./policy.cf services/autorun/policy.cf"],
+  "added_by": "cfbs add"
+}
+```
+
+In the example above, the `policy.cf` file is copied to `out/masterfiles/services/autorun/policy.cf`.
+
+### Step folders
+
+As a project is built, `cfbs` creates intermediate folders for each module, for example:
+
+```
+out/steps/001_masterfiles_5c7dc5b43088e259a94de4e5a9f17c0ce9781a0f/
+```
+
+These are copies of the module directories, where it's more "safe" to do things like run scripts or delete files.
+`cfbs build` should not edit files in your project / git repository, only the generated / temporary files inside the `out/` directory.
+
+### All available build steps
+
+The build steps below manipulate the temporary files in the steps directories and write results to the output policy set, in `out/masterfiles`.
+Unless otherwise noted, all steps are run inside the module's folder (`out/steps/...`) with sources / file paths relative to that folder, and targets / destinations mentioned below are relative to the output policy set (`out/masterfiles`, which in the end will be deployed as `/var/cfengine/masterfiles`)
+
+#### `copy <source> <destination>`
+- Copy a single file or a directory recursively.
+
+#### `json <source> <destination>`
+- Merge the source json file into the destination json file.
+
+#### `append <source> <destination>`
+- Append the source file to the end of destination file.
+
+#### `run <command>`
+- Run a shell command / script.
+- Usually used to prepare the module directory, delete files, etc. before a copy step.
+- Running scripts should be avoided if possible.
+- Script is run inside the module directory (the step folder).
+
+#### `delete <paths ...>`
+- Delete multiple files or paths recursively.
+- Files are deleted from the step folder.
+- Typically used before copying files to the output policy set with the `copy` step. 
+
+#### `directory <source> <destination>`
+- Copy any .cf policy files recursively and add their paths to `def.json`'s `inputs`.
+- Enable `services_autorun_bundles` class in `def.json`.
+- Merge any `def.json` recursively into `out/masterfiles/def.json`.
+- Copy any other files with their existing directory structure to destination.
+
+#### `bundles <bundles ...>`
+- Ensure bundles are evaluated by adding them to the bundle sequence, using `def.json`.
+- Only manipulates the bundle sequence, to ensure policy files are copied and parsed, use other build steps, for example `copy` and `policy_files`.
+
+#### `policy_files <paths ...>`
+- Add policy (`.cf`) files to `inputs` key in `def.json`, ensuring they are parsed.
+  - Only edits `def.json`, does not copy files. Should be used after a `copy` or `directory` build step.
+  - Does not add any bundles to the bundle sequence, to ensure a bundle is evaluated, use the `bundles` build step or the autorun mechanism.
+- All paths are relative to `out/masterfiles`.
+- If any of the paths are directories (end with `/`), the folder(s) are searched and all `.cf` files are added.
+  - **Note:** Directories should be module-specific, otherwise this build step can find policy files from other modules (when they are mixed in the same directory).
+
+#### `input <source input.json> <target def.json>`
+- Converts the input data for a module into the augments format and merges it with the target augments file.
+- Source is relative to module directory and target is relative to `out/masterfiles`.
+  - In most cases, the build step should be: `input ./input.json def.json`
+
 ## Examples
 
 ### New project
