@@ -21,7 +21,7 @@ When adding a module by URL, which has a `cfbs.json` inside of it, the index in 
 When you build a project with the `cfbs build` command, it loops through all modules in the project (`"build"` key), in order.
 Within each module it runs the individual build steps, specified in the `"steps"` key.
 
-As an example, here is a local policy file module with 1 build step:
+As an example, here is a local policy file module with 3 common build steps:
 
 ```json
 {
@@ -31,13 +31,17 @@ As an example, here is a local policy file module with 1 build step:
   "added_by": "cfbs add",
   "steps": [
     "copy ./policy.cf services/cfbs/policy.cf",
-    "policy_files ./policy.cf",
+    "policy_files ./services/cfbs/policy.cf",
     "bundles my_bundle"
   ]
 }
 ```
 
-In the example above, the `policy.cf` file is copied to `out/masterfiles/services/autorun/policy.cf`.
+The 3 build steps above achieve 3 distinct things:
+1. The policy file `policy.cf` is included in the policy set. It will be deployed to `/var/cfengine/masterfiles/services/cfbs/policy.cf` on the hub.
+2. The path to `policy.cf` is added to `"inputs"` making cf-agent and other binaries aware of it and parse it.
+3. The bundle `my_bundle` within `policy.cf` is added to the bundle sequence, making `cf-agent` find the correct bundle to run (commonly called the entry point of a policy). In the end, this causes `cf-agent` to actually evaluate the promises within the bundle and enforce your desired state (potentially making changes to the system).
+
 
 ### Step folders
 
