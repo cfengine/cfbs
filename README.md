@@ -105,6 +105,48 @@ cfbs clean
 cfbs input create-single-file
 ```
 
+This command prompts the user for module input to configure what the module should do.
+
+Only works for modules which accept input, indicated by the `"input"` key.
+This `input` key contains the specification for what input the module accepts, if any.
+
+User's responses are stored in `<module-name>/input.json`.
+For completeness, the input specification is also stored with the responses.
+Here is an example of a `input.json` file with responses:
+
+```json
+[
+  {
+    "type": "list",
+    "variable": "files",
+    "bundle": "delete_files",
+    "label": "Files",
+    "subtype": [
+      {
+        "key": "path",
+        "type": "string",
+        "label": "Path",
+        "question": "Enter path to file"
+      },
+      {
+        "key": "why",
+        "type": "string",
+        "label": "Why",
+        "question": "Why should this file be deleted?",
+        "default": "It's malicious."
+      }
+    ],
+    "while": "Do you want the module to delete more files?",
+    "response": [
+      { "path": "/tmp/virus", "why": "It's malicious." },
+      { "path": "/home/alice/.ssh/authorized_keys", "why": "She left the company." }
+    ]
+  }
+]
+```
+
+The `input.json` file is converted and merged into the main `def.json` during the build, using the `input` build step.
+
 ### Deploy your policy set to a remote hub
 
 ```
@@ -257,3 +299,20 @@ Destination is relative to the output policy set (`out/masterfiles`).
 - Enable `services_autorun_bundles` class in `def.json`.
 - Merge any `def.json` recursively into `out/masterfiles/def.json`.
 - Copy any other files with their existing directory structure to destination.
+
+#### `bundles <bundles ...>`
+- Ensure bundles are evaluated by adding them to the bundle sequence, using `def.json`.
+- Only manipulates the bundle sequence, to ensure policy files are copied and parsed, use other build steps, for example `copy` and `policy_files`.
+
+#### `policy_files <paths ...>`
+- Add policy (`.cf`) files to `inputs` key in `def.json`, ensuring they are parsed.
+  - Only edits `def.json`, does not copy files. Should be used after a `copy` or `directory` build step.
+  - Does not add any bundles to the bundle sequence, to ensure a bundle is evaluated, use the `bundles` build step or the autorun mechanism.
+- All paths are relative to `out/masterfiles`.
+- If any of the paths are directories (end with `/`), the folder(s) are searched and all `.cf` files are added.
+  - **Note:** Directories should be module-specific, otherwise this build step can find policy files from other modules (when they are mixed in the same directory).
+
+#### `input <source input.json> <target def.json>`
+- Converts the input data for a module into the augments format and merges it with the target augments file.
+- Source is relative to module directory and target is relative to `out/masterfiles`.
+  - In most cases, the build step should be: `input ./input.json def.json`
