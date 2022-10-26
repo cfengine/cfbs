@@ -102,7 +102,7 @@ cfbs clean
 ### Add module input
 
 ```
-cfbs input create-single-file
+cfbs input delete-files
 ```
 
 This command prompts the user for module input to configure what the module should do.
