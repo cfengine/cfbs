@@ -28,9 +28,12 @@ As an example, here is a local policy file module with 1 build step:
   "name": "./policy.cf",
   "description": "Local policy file added using cfbs command line",
   "tags": ["local"],
-  "dependencies": ["autorun"],
-  "steps": ["copy ./policy.cf services/autorun/policy.cf"],
-  "added_by": "cfbs add"
+  "added_by": "cfbs add",
+  "steps": [
+    "copy ./policy.cf services/cfbs/policy.cf",
+    "policy_files ./policy.cf",
+    "bundles my_bundle"
+  ]
 }
 ```
 
