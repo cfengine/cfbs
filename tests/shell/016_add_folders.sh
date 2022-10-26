@@ -40,7 +40,7 @@ cfbs status
 cfbs status | grep "./doofus/"
 grep '"name": "./doofus/"' cfbs.json
 grep '"directory ./ services/cfbs/doofus/"' cfbs.json
-grep '"policy_files ./doofus/"' cfbs.json
+grep '"policy_files services/cfbs/doofus/"' cfbs.json
 grep '"bundles doofus"' cfbs.json
 
 cfbs build

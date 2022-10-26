@@ -206,7 +206,9 @@ class CFBSConfig(CFBSJson):
 
     def _add_policy_files_build_step(self, module):
         name = module["name"]
-        step = "policy_files %s" % name
+        step = "policy_files services/cfbs/" + (
+            name[2:] if name.startswith("./") else name
+        )
         module["steps"].append(step)
         log.debug("Added build step '%s' for module '%s'" % (step, name))
 
