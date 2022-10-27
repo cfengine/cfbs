@@ -129,11 +129,13 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
         user_error("Already initialized - look at %s" % cfbs_filename())
 
     name = prompt_user(
-        non_interactive, "Please enter name of this CFBS repository", default="Example"
+        non_interactive,
+        "Please enter the name of this CFEngine Build project",
+        default="Example project",
     )
     description = prompt_user(
         non_interactive,
-        "Please enter description of this CFBS repository",
+        "Please enter the description of this CFEngine Build project",
         default="Example description",
     )
 
