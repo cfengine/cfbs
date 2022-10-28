@@ -47,7 +47,8 @@ def main() -> int:
 
     if args.masterfiles and args.command != "init":
         user_error(
-            "The option --masterfiles is only for cfbs init, not cfbs %s" % args.command
+            "The option --masterfiles is only for 'cfbs init', not 'cfbs %s'"
+            % args.command
         )
 
     if args.non_interactive and args.command not in (
