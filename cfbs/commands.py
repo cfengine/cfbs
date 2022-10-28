@@ -1064,3 +1064,31 @@ def set_input_command(name, infile):
     write_json(path, data)
 
     return 0
+
+
+def get_input_command(name, outfile):
+    config = CFBSConfig.get_instance()
+    module = config.get_module_from_build(name)
+    if module is None:
+        log.error("Module '%s' not found" % name)
+        return 1
+
+    if "input" not in module:
+        log.error("Module '%s' does not accept input" % name)
+        return 1
+
+    path = os.path.join(name, "input.json")
+    data = read_json(path)
+    if data is None:
+        log.debug("Loaded input from module '%s' definition" % name)
+        data = module["input"]
+    else:
+        log.debug("Loaded input from '%s'" % path)
+
+    data = pretty(data) + "\n"
+    try:
+        outfile.write(data)
+    except OSError as e:
+        log.error("Failed to write json: %s" % e)
+        return 1
+    return 0
