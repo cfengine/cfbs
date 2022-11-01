@@ -131,4 +131,33 @@ echo '[
 ]' > expected.output
 diff actual.output expected.output
 
+# Igor asks for input of a module that is not in the project
+cfbs get-input delete-files@0.0.1 actual.output
+echo '[
+  {
+    "type": "list",
+    "variable": "files",
+    "namespace": "delete_files",
+    "bundle": "delete_files",
+    "label": "Files",
+    "subtype": [
+      {
+        "key": "path",
+        "type": "string",
+        "label": "Path",
+        "question": "Path to file"
+      },
+      {
+        "key": "why",
+        "type": "string",
+        "label": "Why",
+        "question": "Why should this file be deleted?",
+        "default": "Unknown"
+      }
+    ],
+    "while": "Specify another file you want deleted on your hosts?"
+  }
+]' > expected.output
+diff actual.output expected.output
+
 echo "Igor is happy!"

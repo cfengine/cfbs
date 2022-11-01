@@ -1070,6 +1070,8 @@ def get_input_command(name, outfile):
     config = CFBSConfig.get_instance()
     module = config.get_module_from_build(name)
     if module is None:
+        module = config.index.get_module_object(name)
+    if module is None:
         log.error("Module '%s' not found" % name)
         return 1
 
