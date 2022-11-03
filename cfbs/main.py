@@ -4,6 +4,7 @@
 __copyright__ = ["Northern.tech AS"]
 
 import logging as log
+import sys
 
 from cfbs.version import string as version
 from cfbs.utils import user_error, is_cfbs_repo
@@ -119,6 +120,40 @@ Warning: The --non-interactive option is only meant for testing (!)
         return commands.update_command(args.args)
     if args.command == "input":
         return commands.input_command(args.args)
+    if args.command in ("set-input", "get-input"):
+        filename = "stdin" if args.command == "set-input" else "stdout"
+        if len(args.args) <= 0:
+            log.error(
+                "Missing required arguments <module> and <filename (or - for %s)>"
+                % filename
+            )
+            return 1
+        if len(args.args) == 1:
+            log.error("Missing required argument <filename (or - for %s)>" % filename)
+            return 1
+        if len(args.args) > 2:
+            log.error(
+                "Too many arguments: expected <module> and <filename (or - for %s)>"
+                % filename
+            )
+            return 1
+
+        module, filename = args.args[0], args.args[1]
+
+        if filename == "-":
+            file = sys.stdin if args.command == "set-input" else sys.stdout
+        else:
+            try:
+                file = open(filename, "r" if args.command == "set-input" else "w")
+            except OSError as e:
+                log.error("Can't open '%s': %s" % (filename, e))
+                return 1
+        try:
+            if args.command == "set-input":
+                return commands.set_input_command(module, file)
+            return commands.get_input_command(module, file)
+        finally:
+            file.close()
 
     print_help()
     user_error("Command '%s' not found" % args.command)
