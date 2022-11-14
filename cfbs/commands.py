@@ -1051,7 +1051,7 @@ def set_input_command(name, infile):
         if (
             not isinstance(a, dict)
             or not isinstance(b, dict)
-            or not _compare_dict(a, b, ignore={"response"})
+            or not _compare_dict(a, b, ignore=(set({"response"}))
         ):
             log.error(
                 "Input data for module '%s' does not conform with input definition"
