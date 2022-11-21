@@ -1039,12 +1039,18 @@ def set_input_command(name, infile):
         for x, y in zip(a, b):
             if type(x) != type(y):
                 return False
-            if isinstance(x, dict) and not _compare_dict(x, y):
-                return False
-            if isinstance(x, list) and not _compare_list(x, y):
-                return False
-            if x != y:
-                return False
+            if isinstance(x, dict):
+                if not _compare_dict(x, y):
+                    return False
+            elif isinstance(x, list):
+                if not _compare_list(x, y):
+                    return False
+            else:
+                assert isinstance(
+                    x, (int, float, str, bool, None)
+                ), "Illegal value type"
+                if x != y:
+                    return False
         return True
 
     for a, b in zip(spec, data):
