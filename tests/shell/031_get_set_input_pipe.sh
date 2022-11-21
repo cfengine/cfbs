@@ -5,7 +5,7 @@ mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
 rm -rf .git
-rm -rf create-single-file
+rm -rf delete-files
 
 cfbs --non-interactive init
 cfbs --non-interactive add delete-files@0.0.1
