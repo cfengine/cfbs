@@ -40,3 +40,12 @@ echo '[
     "while": "Specify another file you want deleted on your hosts?"
   }
 ]' | cfbs --log=debug set-input delete-files -
+
+# Error if the file has never been added:
+git ls-files --error-unmatch delete-files/input.json
+
+# Error if there are staged (added, not yet commited)
+git diff --exit-code --staged
+
+# Error if there are uncommited changes (to tracked files):
+git diff --exit-code

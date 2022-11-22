@@ -9,6 +9,9 @@ rm -rf delete-files
 
 cfbs --non-interactive init
 cfbs --non-interactive add delete-files@0.0.1
+
+commit_a=$(git rev-parse HEAD)
+
 echo '[
   {
     "type": "list",
@@ -39,4 +42,21 @@ echo '[
   }
 ]' | cfbs set-input delete-files -
 
+commit_b=$(git rev-parse HEAD)
+
+test "x$commit_a" != "x$commit_b"
+
 cfbs get-input delete-files - | cfbs set-input delete-files -
+
+commit_c=$(git rev-parse HEAD)
+
+test "x$commit_b" = "x$commit_c"
+
+# Error if the file has never been added:
+git ls-files --error-unmatch delete-files/input.json
+
+# Error if there are staged (added, not yet commited)
+git diff --exit-code --staged
+
+# Error if there are uncommited changes (to tracked files):
+git diff --exit-code
