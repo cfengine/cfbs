@@ -41,6 +41,7 @@ from cfbs.internal_file_management import (
 from cfbs.index import _VERSION_INDEX, Index
 from cfbs.git import (
     is_git_repo,
+    git_commit,
     git_get_config,
     git_set_config,
     git_init,
@@ -1067,9 +1068,21 @@ def set_input_command(name, infile):
             return 1
 
     path = os.path.join(name, "input.json")
-    log.debug("Writing json to file '%s'" % path)
-    write_json(path, data)
 
+    log.debug("Comparing with data already in file '%s'" % path)
+    old_data = read_json(path)
+    if old_data == data:
+        log.debug("Input data for '%s' unchanged, nothing to write / commit" % name)
+        return 0
+
+    log.debug("Input data for '%s' changed, writing json to file '%s'" % (name, path))
+    write_json(path, data)
+    if config.get("git", False):
+        git_commit(
+            "Set the input for module '%s'" % name,
+            edit_commit_msg=False,
+            scope=[path],
+        )
     return 0
 
 
