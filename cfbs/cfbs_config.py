@@ -367,6 +367,8 @@ class CFBSConfig(CFBSJson):
         for name in added:
             msg += "\n - Added module '%s'" % name
             count += 1
+            if name.startswith("./"):
+                files.append(name)
 
             module = self.get_module_from_build(name)
             input_path = os.path.join(".", name, "input.json")
