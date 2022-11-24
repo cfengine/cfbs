@@ -1025,9 +1025,9 @@ def set_input_command(name, infile):
     log.debug("Input data for module '%s': %s" % (name, pretty(data)))
 
     def _compare_dict(a, b, ignore=None):
-        assert ignore is None or isinstance(ignore, set)
         assert isinstance(a, dict) and isinstance(b, dict)
-        if set(a.keys()) != set(b.keys()) - (set() if ignore is None else ignore):
+        ignore = ignore or set()
+        if set(a.keys()) != set(b.keys()) - ignore:
             return False
         # Avoid code duplication by converting the values of the two dicts
         # into two lists in the same order and compare the lists instead
