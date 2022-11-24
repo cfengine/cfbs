@@ -35,5 +35,6 @@ bash tests/shell/029_init_masterfiles_version_3.18.1-1.sh
 bash tests/shell/030_get_set_input.sh
 bash tests/shell/031_get_set_input_pipe.sh
 bash tests/shell/032_set_input_unordered.sh
+bash tests/shell/033_add_commits_local_files.sh
 
 echo "All cfbs shell tests completed successfully!"
