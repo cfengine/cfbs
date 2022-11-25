@@ -220,6 +220,77 @@ from pydantic import (
 $
 ```
 
+## Reproducible builds
+
+When you run `cfbs build` locally, and when your hub runs it after pulling the latest changes from git, the resulting policy sets will be identical.
+(This does not extend to providing reproducibility after running arbitrary combinations of `cfbs init`, `cfbs add` commands, etc.).
+This gives you some assurance, that what you've tested actually matches what is running on your hub(s) and thus the rest of your machines.
+Currently, two `masterfiles.tgz` gzipped tarballs of policy sets are not bit-by-bit identical due to file metadata (modification time, etc.).
+The file contents themselves are (should be) identical.
+There is also no testing of reproducible builds or checking to enforce that what you built locally and what your hub built are the same.
+We'd like to improve all of this.
+To see the progress in this area, take a look at this JIRA ticket:
+
+https://tracker.mender.io/browse/CFE-4102
+
+## Available commands
+
+We expect policy writers and module authors to use the `cfbs` tooling from the command line, when working on projects, in combination with their editor of choice, much in a similar way to `git`, `cargo`, or `npm`.
+When humans are running the tool in a shell, manually typing in commands, we want it to be intuitive, and have helpful prompts to make it easy to use.
+However, we also expect some of the commands to be run inside scripts, and as part of the code and automation which deploys your policy to your hosts.
+In these situations, prompts are undesireable, and stability is very important (you don't want the deployment to start failing).
+For these reasons, we've outlined 2 categories of commands below.
+
+**Note:** The 2 categories below are not strict rules.
+They are here to communicate our development philosophy and set expectations in terms of what changes to expect (and how frequent).
+We run both user-oriented and automation-oriented commands in automated tests as well as inside Build in Mission Portal.
+
+### User-oriented / Interactive commands
+
+These commands are centered around a user making changes to a project (manually from the shell / command line), not a computer building/deploying it:
+
+* `cfbs add`: Add a module to the project (local files/folders, prepended with `./` are also considered modules).
+* `cfbs clean`: Remove modules which were added as dependencies, but are no longer needed.
+* `cfbs help`: Print the help menu.
+* `cfbs info`: Print information about a module.
+* `cfbs init`: Initialize a new CFEngine Build project.
+* `cfbs input`: Enter input for a module which accepts input.
+* `cfbs remove`: Remove a module from the project.
+* `cfbs search`: Search for modules in the index.
+* `cfbs show`: Same as `cfbs info`.
+* `cfbs status`: Show the status of the current project, including name, description, and modules.
+* `cfbs update`: Update modules to newer versions.
+
+They try to help the user with interactive prompts / menus.
+You can always add the `--non-interactive` to skip all interactive prompts (equivalent to pressing enter to use defaults).
+In order to improve the user experience we change the behavior of these, especially when it comes to how prompts work, how they are presented to the user, what options are available, etc.
+
+**Note:** Some of the commands above are not interactive yet, but they might be in the future.
+
+### Automation-oriented / Non-interactive commands
+
+These commands are intended to be run as part of build systems / deployment pipelines (in addition to being run by human users):
+
+* `cfbs download`: Download all modules / dependencies for the project.
+  Modules are skipped if already downloaded.
+* `cfbs build`: Build the project, combining all the modules into 1 output policy set.
+  Download modules if necessary.
+  Should work offline if things are already downloaded (by `cfbs download`).
+* `cfbs get-input`: Get input data for a module.
+  Includes both the specification for what the module accepts as well as the user's responses.
+  Can be used on modules not yet added to project to get just the specification.
+* `cfbs install`: Run this on a hub as root to install the policy set (copy the files from `out/masterfiles` to `/var/cfengine/masterfiles`).
+* `cfbs pretty`: Run on a JSON file to pretty-format it. (May be expanded to other formats in the future).
+* `cfbs set-input`: Set input data for a module.
+  Non-interactive version of `cfbs input`, takes the input as a JSON, validates it and stores it.
+  `cfbs set-input` and `cfbs get-input` can be though of as ways to save and load the input file.
+  Similar to `cfbs get-input` the JSON contains both the specification (what the module accepts and how it's presented to the user) as well as the user's responses (if present).
+  Expected usage is to run `cfbs get-input` to get the JSON, and then fill out the response part and run `cfbs set-input`.
+* `cfbs validate`: Used to validate the [index JSON file](https://github.com/cfengine/build-index/blob/master/cfbs.json).
+  May be expanded to validate other files and formats in the future.
+
+They don't have interactive prompts, you can expect fewer changes to them, and backwards compatibility is much more important than with the interactive commands above.
+
 ## The cfbs.json format
 
 More advanced users and module authors may need to understand, write, or edit `cfbs.json` files.
