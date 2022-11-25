@@ -17,9 +17,7 @@ def print_help():
 
 @cache
 def _get_arg_parser():
-    command_list = [
-        cmd.split("_")[0] for cmd in dir(commands) if cmd.endswith("_command")
-    ]
+    command_list = commands.get_command_names()
     parser = argparse.ArgumentParser(description="CFEngine Build System.")
     parser.add_argument(
         "command",

@@ -1,6 +1,7 @@
 set -e
 set -x
 cd tests/
+source shell/common.sh
 mkdir -p ./tmp/
 cd ./tmp/
 rm -rf cfbs.json .git def.json policy.cf foo
@@ -45,11 +46,8 @@ EOF
 
 cfbs --non-interactive add ./def.json ./policy.cf ./foo
 
-# Error if the file has never been added:
-git ls-files --error-unmatch def.json policy.cf foo/bar.json foo/baz.cf
-
-# Error if there are staged (added, not yet commited)
-git diff --exit-code --staged
-
-# Error if there are uncommited changes (to tracked files):
-git diff --exit-code
+git-must-track def.json
+git-must-track policy.cf
+git-must-track foo/bar.json
+git-must-track foo/baz.cf
+git-no-diffs

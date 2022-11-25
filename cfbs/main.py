@@ -7,7 +7,7 @@ import logging as log
 import sys
 
 from cfbs.version import string as version
-from cfbs.utils import user_error, is_cfbs_repo
+from cfbs.utils import user_error, is_cfbs_repo, ProgrammerError
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
 from cfbs.args import get_args, print_help
@@ -46,6 +46,10 @@ def main() -> int:
         print("")
         user_error("No command given")
 
+    if args.command not in commands.get_command_names():
+        print_help()
+        user_error("Command '%s' not found" % args.command)
+
     if args.masterfiles and args.command != "init":
         user_error(
             "The option --masterfiles is only for 'cfbs init', not 'cfbs %s'"
@@ -61,17 +65,6 @@ def main() -> int:
         "input",
     ):
         user_error("The option --non-interactive is not for cfbs %s" % (args.command))
-
-    if args.non_interactive:
-        print(
-            """
-Warning: The --non-interactive option is only meant for testing (!)
-         DO NOT run commands with --non-interactive as part of your deployment
-         pipeline. Instead, run cfbs commands manually, commit the resulting
-         cfbs.json and only run cfbs build + cfbs install when deploying your
-         policy set. Thank you for your cooperation.
-""".strip()
-        )
 
     # Commands you can run outside a cfbs repo:
     if args.command == "help":
@@ -155,5 +148,6 @@ Warning: The --non-interactive option is only meant for testing (!)
         finally:
             file.close()
 
-    print_help()
-    user_error("Command '%s' not found" % args.command)
+    raise ProgrammerError(
+        "Command '%s' not handled appropriately by the code above" % args.command
+    )
