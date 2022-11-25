@@ -16,6 +16,10 @@ SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
+class ProgrammerError(RuntimeError):
+    pass
+
+
 def _sh(cmd: str):
     # print(cmd)
     try:

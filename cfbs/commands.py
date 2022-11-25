@@ -20,6 +20,7 @@ from cfbs.utils import (
     user_error,
     strip_right,
     pad_right,
+    ProgrammerError,
     get_json,
     write_json,
     rm,
@@ -930,7 +931,7 @@ def install_command(args) -> int:
 
 @cfbs_command("help")
 def help_command():
-    pass  # no-op here, all *_command functions are presented in help contents
+    raise ProgrammerError("help_command should not be called, as we use argparse")
 
 
 def _print_module_info(data):

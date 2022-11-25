@@ -148,5 +148,6 @@ def main() -> int:
         finally:
             file.close()
 
-    print_help()
-    user_error("Command '%s' not found" % args.command)
+    raise ProgrammerError(
+        "Command '%s' not handled appropriately by the code above" % args.command
+    )
