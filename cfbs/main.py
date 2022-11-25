@@ -66,17 +66,6 @@ def main() -> int:
     ):
         user_error("The option --non-interactive is not for cfbs %s" % (args.command))
 
-    if args.non_interactive:
-        print(
-            """
-Warning: The --non-interactive option is only meant for testing (!)
-         DO NOT run commands with --non-interactive as part of your deployment
-         pipeline. Instead, run cfbs commands manually, commit the resulting
-         cfbs.json and only run cfbs build + cfbs install when deploying your
-         policy set. Thank you for your cooperation.
-""".strip()
-        )
-
     # Commands you can run outside a cfbs repo:
     if args.command == "help":
         print_help()
