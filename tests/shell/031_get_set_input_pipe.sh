@@ -1,6 +1,7 @@
 set -e
 set -x
 cd tests/
+source shell/common.sh
 mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
@@ -52,11 +53,5 @@ commit_c=$(git rev-parse HEAD)
 
 test "x$commit_b" = "x$commit_c"
 
-# Error if the file has never been added:
-git ls-files --error-unmatch delete-files/input.json
-
-# Error if there are staged (added, not yet commited)
-git diff --exit-code --staged
-
-# Error if there are uncommited changes (to tracked files):
-git diff --exit-code
+git-must-track delete-files/input.json
+git-no-diffs
