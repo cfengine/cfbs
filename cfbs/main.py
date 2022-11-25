@@ -7,7 +7,7 @@ import logging as log
 import sys
 
 from cfbs.version import string as version
-from cfbs.utils import user_error, is_cfbs_repo
+from cfbs.utils import user_error, is_cfbs_repo, ProgrammerError
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
 from cfbs.args import get_args, print_help
@@ -45,6 +45,10 @@ def main() -> int:
         print_help()
         print("")
         user_error("No command given")
+
+    if args.command not in commands.get_command_names():
+        print_help()
+        user_error("Command '%s' not found" % args.command)
 
     if args.masterfiles and args.command != "init":
         user_error(

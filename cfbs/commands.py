@@ -7,6 +7,7 @@ import re
 import copy
 import logging as log
 import json
+import sys
 from collections import OrderedDict
 from cfbs.args import get_args
 
@@ -63,7 +64,27 @@ _MODULES_URL = "https://archive.build.cfengine.com/modules"
 PLURAL_S = lambda args, _: "s" if len(args[0]) > 1 else ""
 FIRST_ARG_SLIST = lambda args, _: ", ".join("'%s'" % module for module in args[0])
 
+_commands = OrderedDict()
 
+# Decorator to specify that a function is a command (verb in the CLI)
+# Adds the name + function pair to the global dict of commands
+# Does not modify/wrap the function it decorates.
+def cfbs_command(name):
+    def inner(function):
+        global _commands
+        _commands[name] = function
+        return function  # Unmodified, we've just added it to the dict
+
+    return inner
+
+
+def get_command_names():
+    global _commands
+    names = _commands.keys()
+    return names
+
+
+@cfbs_command("pretty")
 def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     if not filenames:
         user_error("Filenames missing for cfbs pretty command")
@@ -126,6 +147,7 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     return 0
 
 
+@cfbs_command("init")
 def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     if is_cfbs_repo():
         user_error("Already initialized - look at %s" % cfbs_filename())
@@ -283,6 +305,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     return 0
 
 
+@cfbs_command("status")
 def status_command() -> int:
 
     config = CFBSConfig.get_instance()
@@ -311,6 +334,7 @@ def status_command() -> int:
     return 0
 
 
+@cfbs_command("search")
 def search_command(terms: list) -> int:
     index = CFBSConfig.get_instance().index
     results = {}
@@ -353,6 +377,7 @@ def search_command(terms: list) -> int:
     return 0 if any(results) else 1
 
 
+@cfbs_command("add")
 @commit_after_command("Added module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
 def add_command(
     to_add: list,
@@ -365,6 +390,7 @@ def add_command(
     return r
 
 
+@cfbs_command("remove")
 @commit_after_command("Removed module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
 def remove_command(to_remove: list):
     config = CFBSConfig.get_instance()
@@ -444,6 +470,7 @@ def remove_command(to_remove: list):
     return Result(0, changes_made, msg, files)
 
 
+@cfbs_command("clean")
 @commit_after_command("Cleaned unused modules")
 def clean_command(config=None):
     return _clean_unused_modules(config)
@@ -595,6 +622,7 @@ def update_input_data(module, input_data):
     return changes_made
 
 
+@cfbs_command("update")
 @commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update):
     config = CFBSConfig.get_instance()
@@ -772,6 +800,7 @@ def update_command(to_update):
     return Result(0, changes_made, msg, files)
 
 
+@cfbs_command("validate")
 def validate_command():
     index = CFBSConfig.get_instance().index
     if not index:
@@ -858,11 +887,13 @@ def _download_dependencies(
         counter += 1
 
 
+@cfbs_command("download")
 def download_command(force, ignore_versions=False):
     config = CFBSConfig.get_instance()
     _download_dependencies(config, redownload=force, ignore_versions=ignore_versions)
 
 
+@cfbs_command("build")
 def build_command(ignore_versions=False) -> int:
     config = CFBSConfig.get_instance()
     init_out_folder()
@@ -870,6 +901,7 @@ def build_command(ignore_versions=False) -> int:
     perform_build_steps(config)
 
 
+@cfbs_command("install")
 def install_command(args) -> int:
     if len(args) > 1:
         user_error(
@@ -896,6 +928,7 @@ def install_command(args) -> int:
     return 0
 
 
+@cfbs_command("help")
 def help_command():
     pass  # no-op here, all *_command functions are presented in help contents
 
@@ -924,6 +957,8 @@ def _print_module_info(data):
             print("{}: {}".format(key.title().replace("_", " "), value))
 
 
+@cfbs_command("show")
+@cfbs_command("info")
 def info_command(modules):
     if not modules:
         user_error("info/show command requires one or more module names as arguments")
@@ -965,11 +1000,7 @@ def info_command(modules):
     return 0
 
 
-# show_command here to auto-populate into help in main.py
-def show_command(module):
-    return info_command(module)
-
-
+@cfbs_command("input")
 @commit_after_command("Added input for module%s", [PLURAL_S])
 def input_command(args, input_from="cfbs input"):
     config = CFBSConfig.get_instance()
@@ -1004,6 +1035,7 @@ def input_command(args, input_from="cfbs input"):
     return Result(0, do_commit, None, files_to_commit)
 
 
+@cfbs_command("set-input")
 def set_input_command(name, infile):
     config = CFBSConfig.get_instance()
     module = config.get_module_from_build(name)
@@ -1086,6 +1118,7 @@ def set_input_command(name, infile):
     return 0
 
 
+@cfbs_command("get-input")
 def get_input_command(name, outfile):
     config = CFBSConfig.get_instance()
     module = config.get_module_from_build(name)
