@@ -396,6 +396,9 @@ class CFBSConfig(CFBSJson):
             msg = "Added %d modules\n" % count + msg
         else:
             msg = msg[4:]  # Remove the '\n - ' part of the message
+            # If there are multiple lines, add an additional newline between
+            # the short- & long description.
+            msg = msg.replace("\n", "\n\n", 1)
 
         changes_made = count > 0
         return Result(0, changes_made, msg, files)
