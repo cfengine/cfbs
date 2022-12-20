@@ -63,6 +63,7 @@ class InputDataUpdateFailed(Exception):
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
 
 PLURAL_S = lambda args, _: "s" if len(args[0]) > 1 else ""
+FIRST_ARG = lambda args, _: "'%s'" % args[0]
 FIRST_ARG_SLIST = lambda args, _: ", ".join("'%s'" % module for module in args[0])
 
 _commands = OrderedDict()
@@ -1037,6 +1038,7 @@ def input_command(args, input_from="cfbs input"):
 
 
 @cfbs_command("set-input")
+@commit_after_command("Set input for module %s", [FIRST_ARG])
 def set_input_command(name, infile):
     config = CFBSConfig.get_instance()
     module = config.get_module_from_build(name)
@@ -1104,19 +1106,17 @@ def set_input_command(name, infile):
 
     log.debug("Comparing with data already in file '%s'" % path)
     old_data = read_json(path)
-    if old_data == data:
-        log.debug("Input data for '%s' unchanged, nothing to write / commit" % name)
-        return 0
+    changes_made = old_data != data
 
-    log.debug("Input data for '%s' changed, writing json to file '%s'" % (name, path))
-    write_json(path, data)
-    if config.get("git", False):
-        git_commit(
-            "Set the input for module '%s'" % name,
-            edit_commit_msg=False,
-            scope=[path],
+    if changes_made:
+        write_json(path, data)
+        log.debug(
+            "Input data for '%s' changed, writing json to file '%s'" % (name, path)
         )
-    return 0
+    else:
+        log.debug("Input data for '%s' unchanged, nothing to write / commit" % name)
+
+    return Result(0, changes_made, None, [path])
 
 
 @cfbs_command("get-input")
