@@ -42,7 +42,7 @@ def sh(cmd: str, directory=None):
 
 
 def mkdir(path: str):
-    sh("mkdir -p %s" % path)
+    os.makedirs(path, exist_ok=True)
 
 
 def touch(path: str):
