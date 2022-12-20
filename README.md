@@ -279,11 +279,12 @@ These commands are intended to be run as part of build systems / deployment pipe
 * `cfbs get-input`: Get input data for a module.
   Includes both the specification for what the module accepts as well as the user's responses.
   Can be used on modules not yet added to project to get just the specification.
+  Empty list `[]` is returned if the module was found, but it does not accept any input.
 * `cfbs install`: Run this on a hub as root to install the policy set (copy the files from `out/masterfiles` to `/var/cfengine/masterfiles`).
 * `cfbs pretty`: Run on a JSON file to pretty-format it. (May be expanded to other formats in the future).
 * `cfbs set-input`: Set input data for a module.
   Non-interactive version of `cfbs input`, takes the input as a JSON, validates it and stores it.
-  `cfbs set-input` and `cfbs get-input` can be though of as ways to save and load the input file.
+  `cfbs set-input` and `cfbs get-input` can be thought of as ways to save and load the input file.
   Similar to `cfbs get-input` the JSON contains both the specification (what the module accepts and how it's presented to the user) as well as the user's responses (if present).
   Expected usage is to run `cfbs get-input` to get the JSON, and then fill out the response part and run `cfbs set-input`.
 * `cfbs validate`: Used to validate the [index JSON file](https://github.com/cfengine/build-index/blob/master/cfbs.json).

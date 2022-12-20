@@ -1130,16 +1130,15 @@ def get_input_command(name, outfile):
         return 1
 
     if "input" not in module:
-        log.error("Module '%s' does not accept input" % name)
-        return 1
-
-    path = os.path.join(name, "input.json")
-    data = read_json(path)
-    if data is None:
-        log.debug("Loaded input from module '%s' definition" % name)
-        data = module["input"]
+        data = []
     else:
-        log.debug("Loaded input from '%s'" % path)
+        path = os.path.join(name, "input.json")
+        data = read_json(path)
+        if data is None:
+            log.debug("Loaded input from module '%s' definition" % name)
+            data = module["input"]
+        else:
+            log.debug("Loaded input from '%s'" % path)
 
     data = pretty(data) + "\n"
     try:
