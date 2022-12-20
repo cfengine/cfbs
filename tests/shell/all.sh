@@ -36,5 +36,6 @@ bash tests/shell/030_get_set_input.sh
 bash tests/shell/031_get_set_input_pipe.sh
 bash tests/shell/032_set_input_unordered.sh
 bash tests/shell/033_add_commits_local_files.sh
+bash tests/shell/034_git_user_name_git_user_email.sh
 
 echo "All cfbs shell tests completed successfully!"
