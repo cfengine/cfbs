@@ -856,11 +856,23 @@ def _download_dependencies(
             module_dir = commit_dir
         if not os.path.exists(module_dir):
             if url.endswith(SUPPORTED_ARCHIVES):
+                if os.path.exists(commit_dir) and "subdirectory" in module:
+                    user_error(
+                        "Subdirectory '%s' for module '%s' was not found in fetched archive '%s': "
+                        % (module["subdirectory"], name, url)
+                        + "Please check cfbs.json for possible typos."
+                    )
                 fetch_archive(url, commit)
             # a couple of cases where there will not be an archive available:
             # - using an alternate index (index property in module data)
             # - added by URL instead of name (no version property in module data)
             elif "index" in module or "url" in module or ignore_versions:
+                if os.path.exists(commit_dir) and "subdirectory" in module:
+                    user_error(
+                        "Subdirectory '%s' for module '%s' was not found in cloned repository '%s': "
+                        % (module["subdirectory"], name, url)
+                        + "Please check cfbs.json for possible typos."
+                    )
                 sh("git clone %s %s" % (url, commit_dir))
                 sh("(cd %s && git checkout %s)" % (commit_dir, commit))
             else:
