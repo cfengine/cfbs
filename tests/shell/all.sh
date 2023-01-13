@@ -2,6 +2,7 @@ echo "Warning: These shell based tests use the cfbs you have installed"
 echo "         If you haven't already, run: pip install ."
 set -e
 set -x
+export CFBS_USER_AGENT=CI # this user agent will be excluded from the build modules statistics
 
 bash tests/shell/001_init.sh
 bash tests/shell/002_add.sh
