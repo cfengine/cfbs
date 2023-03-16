@@ -794,7 +794,11 @@ def update_command(to_update):
     config.save()
 
     if changes_made:
-        msg = "Updated %d module%s\n" % (len(updated), "s" if updated else "") + msg
+        if len(updated) > 1:
+            msg = "Updated %d modules\n" % len(updated) + msg
+        else:
+            # Remove the '\n - ' part of the message
+            msg = msg[len("\n - ") :]
         print("%s\n" % msg)
     else:
         print("Modules are already up to date")
