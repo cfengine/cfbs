@@ -231,7 +231,7 @@ There is also no testing of reproducible builds or checking to enforce that what
 We'd like to improve all of this.
 To see the progress in this area, take a look at this JIRA ticket:
 
-https://tracker.mender.io/browse/CFE-4102
+https://northerntech.atlassian.net/browse/CFE-4102
 
 ## Available commands
 
