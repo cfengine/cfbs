@@ -139,8 +139,14 @@ def _perform_build_step(module, step, max_length):
         if dst in [".", "./"]:
             dst = ""
         print("%s input '%s' 'masterfiles/%s'" % (prefix, src, dst))
-        if "subdirectory" in module:
-            src = os.path.join(module["subdirectory"], src)
+        if src.startswith(module["name"] + "/"):
+            log.warning(
+                "Deprecated 'input' build step behavior - it should be: 'input ./input.json def.json'"
+            )
+            # We'll translate it to what it should be
+            # TODO: Consider removing this behavior for cfbs 4?
+            src = "." + src[len(module["name"]) :]
+        src = os.path.join(module["name"], src)
         dst = os.path.join(destination, dst)
         if not os.path.isfile(os.path.join(src)):
             log.warning(
