@@ -84,7 +84,11 @@ def _perform_build_step(module, step, max_length):
         as_string = " ".join(["'%s'" % f for f in files])
         print("%s delete %s" % (prefix, as_string))
         for file in files:
-            rm(os.path.join(source, file))
+            if not rm(os.path.join(source, file), True):
+                print(
+                    "Warning: tried to delete '%s' but path did not exist."
+                    % os.path.join(source, file)
+                )
     elif operation == "json":
         src, dst = args
         if dst in [".", "./"]:

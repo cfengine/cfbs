@@ -5,6 +5,7 @@ import json
 import copy
 import subprocess
 import hashlib
+import logging as log
 import urllib
 import urllib.request  # needed on some platforms
 from collections import OrderedDict
@@ -56,10 +57,13 @@ def touch(path: str):
 def rm(path: str, missing_ok=False):
     if not missing_ok:
         assert os.path.exists(path)
+    if missing_ok and not os.path.exists(path):
+        return False
     if os.path.isdir(path):
         rmtree(path)
     if os.path.isfile(path):
         os.remove(path)
+    return True
 
 
 def cp(src, dst):
