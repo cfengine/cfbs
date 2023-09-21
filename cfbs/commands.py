@@ -68,6 +68,7 @@ FIRST_ARG_SLIST = lambda args, _: ", ".join("'%s'" % module for module in args[0
 
 _commands = OrderedDict()
 
+
 # Decorator to specify that a function is a command (verb in the CLI)
 # Adds the name + function pair to the global dict of commands
 # Does not modify/wrap the function it decorates.
@@ -286,30 +287,25 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
         branch = masterfiles
         to_add = "masterfiles"
 
+    if branch is not None:
+        remote = "https://github.com/cfengine/masterfiles"
+        commit = ls_remote(remote, branch)
+        if commit is None:
+            user_error(
+                "Failed to find branch or tag %s at remote %s" % (branch, remote)
+            )
+        log.debug("Current commit for masterfiles branch %s is %s" % (branch, commit))
+        to_add = "%s@%s" % (remote, commit)
     if to_add:
         ret = add_command([to_add])
         if ret != 0:
             return ret
-
-    if branch is not None:
-        config = CFBSConfig.get_instance()
-        module = config.get_module_from_build("masterfiles")
-        remote = module["repo"]
-        commit = ls_remote(remote, branch)
-        if commit is None:
-            user_error("Failed to add masterfiles from branch %s" % branch)
-        log.debug("Current commit for masterfiles branch %s is %s" % (branch, commit))
-        module["url"] = remote
-        del module["repo"]
-        module["commit"] = commit
-        config.save()
 
     return 0
 
 
 @cfbs_command("status")
 def status_command() -> int:
-
     config = CFBSConfig.get_instance()
     print("Name:        %s" % config["name"])
     print("Description: %s" % config["description"])
