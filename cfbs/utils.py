@@ -61,8 +61,8 @@ def rm(path: str, missing_ok=False):
         return False
     if os.path.isdir(path):
         rmtree(path)
-    if os.path.isfile(path):
-        os.remove(path)
+    else: # Assume path is a file
+        os.remove(path) # Will raise exception if missing
     return True
 
 
