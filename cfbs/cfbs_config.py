@@ -137,8 +137,11 @@ class CFBSConfig(CFBSJson):
             if not any(modules):
                 user_error("no modules available, nothing to do")
             if not self.non_interactive:
-                answer = input(
-                    "Do you want to add all %d of them? [y/N] " % (len(modules))
+                answer = prompt_user(
+                    non_interactive=self.non_interactive,
+                    prompt="Do you want to add all %d of them?" % (len(modules)),
+                    choices=YES_NO_CHOICES,
+                    default="no",
                 )
                 if answer.lower() not in ("y", "yes"):
                     return
