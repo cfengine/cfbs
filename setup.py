@@ -30,7 +30,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/cfengine/cfbs",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=["tests*"]),
     package_data={'cfbs': ['VERSION']},
     include_package_data=True,
     classifiers=[
