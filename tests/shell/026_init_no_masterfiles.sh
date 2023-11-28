@@ -8,4 +8,5 @@ rm -rf .git
 
 cfbs --non-interactive init --masterfiles=no
 !( grep '"name": "masterfiles"' cfbs.json )
-cfbs build
+cfbs status
+!( cfbs build )
