@@ -51,14 +51,16 @@ class CFBSConfig(CFBSJson):
         return os.path.exists(path)
 
     @classmethod
-    def get_instance(cls, index=None, non_interactive=False):
+    def get_instance(cls, filename="./cfbs.json", index=None, non_interactive=False):
         if cls.instance is not None:
             if index is not None:
                 raise RuntimeError(
                     "Instance of %s already exists, cannot specify index" % cls.__name__
                 )
         else:
-            cls.instance = cls(index, non_interactive)
+            cls.instance = cls(
+                filename=filename, index=index, non_interactive=non_interactive
+            )
         return cls.instance
 
     @classmethod
@@ -66,12 +68,11 @@ class CFBSConfig(CFBSJson):
         if not cls.instance:
             return
         # Create a new instance with the same __init__ args as last time:
-        index, non_interactive = cls.instance._reload_args
-        cls.instance = cls(index, non_interactive)
+        cls.instance = cls(*cls.instance._reload_args)
 
-    def __init__(self, index=None, non_interactive=False):
-        self._reload_args = (index, non_interactive)
-        super().__init__(path="./cfbs.json", index_argument=index)
+    def __init__(self, filename="./cfbs.json", index=None, non_interactive=False):
+        self._reload_args = (filename, index, non_interactive)
+        super().__init__(path=filename, index_argument=index)
         self.non_interactive = non_interactive
 
     def save(self):
