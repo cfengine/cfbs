@@ -97,19 +97,28 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
 
     cfbs_sorting_rules = None
     if not keep_order:
+        # These sorting rules achieve 3 things:
+        # 1. Top level keys are sorted according to a specified list
+        # 2. Module names in "index" and "provides" are sorted alphabetically
+        # 3. Fields inside module objects are sorted according to a specified list
+        #    for "index", "provides", and "build"
+
+        module_key_sorting = (
+            MODULE_KEYS,
+            None,
+        )
         cfbs_sorting_rules = {
             None: (
                 TOP_LEVEL_KEYS,
                 {
                     "(index|provides)": (
-                        "alphabetic",
-                        {
-                            ".*": (
-                                MODULE_KEYS,
-                                None,
-                            )
-                        },
-                    )
+                        "alphabetic",  # Module names are sorted alphabetically
+                        {".*": module_key_sorting},
+                    ),
+                    "build": (  # An array, not an object
+                        None,  # Don't sort elements of array
+                        {".*": module_key_sorting},
+                    ),
                 },
             ),
         }

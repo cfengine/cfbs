@@ -78,7 +78,24 @@ def _children_sort(child, name, sorting_rules):
        Only JSON objects (dictionaries) are sorted by this function, arrays are ignored.
 
     """
-    assert type(child) == OrderedDict
+    if type(child) is not OrderedDict:
+        return
+
+    for key in child:
+        if type(child[key]) not in (list, tuple):
+            continue
+        if name not in sorting_rules:
+            continue
+        if key not in sorting_rules[name][1]:
+            continue
+        print("Found list: " + key)
+        rules = sorting_rules[name][1][key][1]
+        print(pretty(rules))
+        if key in sorting_rules:
+            print("sorting_rules found for " + key)
+        for element in child[key]:
+            if type(element) is OrderedDict:
+                _children_sort(element, key, rules)
 
     rules = None
     if name in sorting_rules.keys():
@@ -111,7 +128,7 @@ def _children_sort(child, name, sorting_rules):
     # a tuple of strings to sort by this order
     if child_key_fn == "alphabetic":
         child_key_fn = lambda x: x[0]
-    if type(child_key_fn) is tuple:
+    if type(child_key_fn) in (tuple, list):
         values = copy(child_key_fn)
         child_key_fn = lambda x: _item_index(values, x[0])
 
