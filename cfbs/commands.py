@@ -35,6 +35,7 @@ from cfbs.build import (
     init_out_folder,
     perform_build_steps,
 )
+from cfbs.cfbs_json import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import CFBSIndexException, validate_config
 from cfbs.internal_file_management import (
@@ -97,29 +98,16 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
 
     cfbs_sorting_rules = None
     if not keep_order:
-        top_level_keys = ("name", "description", "type", "index")
-        module_keys = (
-            "name",
-            "description",
-            "tags",
-            "repo",
-            "by",
-            "version",
-            "commit",
-            "subdirectory",
-            "dependencies",
-            "steps",
-        )
         cfbs_sorting_rules = {
             None: (
-                lambda child_item: item_index(top_level_keys, child_item[0]),
+                lambda child_item: item_index(TOP_LEVEL_KEYS, child_item[0]),
                 {
                     "index": (
                         lambda child_item: child_item[0],
                         {
                             ".*": (
                                 lambda child_item: item_index(
-                                    module_keys, child_item[0]
+                                    MODULE_KEYS, child_item[0]
                                 ),
                                 None,
                             )
