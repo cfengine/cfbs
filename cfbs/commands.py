@@ -102,7 +102,7 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
             None: (
                 lambda child_item: item_index(TOP_LEVEL_KEYS, child_item[0]),
                 {
-                    "index": (
+                    "(index|provides)": (
                         lambda child_item: child_item[0],
                         {
                             ".*": (
