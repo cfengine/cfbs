@@ -31,7 +31,11 @@ from cfbs.utils import (
 
 from cfbs.args import get_args
 from cfbs.pretty import pretty, pretty_check_file, pretty_file
-from cfbs.build import init_out_folder, perform_build_steps
+from cfbs.build import (
+    init_out_folder,
+    perform_build_steps,
+    validate_config_for_build_field,
+)
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import CFBSIndexException, validate_index
 from cfbs.internal_file_management import (
@@ -904,12 +908,14 @@ def _download_dependencies(
 @cfbs_command("download")
 def download_command(force, ignore_versions=False):
     config = CFBSConfig.get_instance()
+    validate_config_for_build_field(config)
     _download_dependencies(config, redownload=force, ignore_versions=ignore_versions)
 
 
 @cfbs_command("build")
 def build_command(ignore_versions=False) -> int:
     config = CFBSConfig.get_instance()
+    validate_config_for_build_field(config)
     init_out_folder()
     _download_dependencies(config, prefer_offline=True, ignore_versions=ignore_versions)
     perform_build_steps(config)
