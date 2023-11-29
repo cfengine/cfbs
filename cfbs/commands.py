@@ -15,7 +15,6 @@ from cfbs.utils import (
     cfbs_dir,
     cfbs_filename,
     is_cfbs_repo,
-    item_index,
     read_json,
     user_error,
     strip_right,
@@ -100,15 +99,13 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     if not keep_order:
         cfbs_sorting_rules = {
             None: (
-                lambda child_item: item_index(TOP_LEVEL_KEYS, child_item[0]),
+                TOP_LEVEL_KEYS,
                 {
                     "(index|provides)": (
-                        lambda child_item: child_item[0],
+                        "alphabetic",
                         {
                             ".*": (
-                                lambda child_item: item_index(
-                                    MODULE_KEYS, child_item[0]
-                                ),
+                                MODULE_KEYS,
                                 None,
                             )
                         },
