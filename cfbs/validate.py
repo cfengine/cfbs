@@ -4,6 +4,7 @@ import sys
 import re
 
 from cfbs.utils import is_a_commit_hash, user_error
+from cfbs.cfbs_config import CFBSConfig
 
 
 class CFBSIndexException(Exception):
@@ -266,18 +267,12 @@ def _validate_config_for_build_field(config):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file")
+    parser.add_argument("file", nargs="?", default="./cfbs.json")
     args = parser.parse_args()
 
-    with open(args.file, "r") as f:
-        data = f.read()
-    index = json.loads(data)
+    config = CFBSConfig.get_instance(filename=args.file, non_interactive=True)
+    validate_config(config)
 
-    try:
-        _validate_index(index)
-    except CFBSIndexException as e:
-        print(e)
-        sys.exit(1)
     sys.exit(0)
 
 
