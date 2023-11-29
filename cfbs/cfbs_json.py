@@ -6,19 +6,22 @@ from cfbs.pretty import pretty
 
 # Globals for the keys in cfbs.json and their order
 # Used for validation and prettifying / sorting.
-# TODO: Update these lists with the new keys
-TOP_LEVEL_KEYS = ("name", "description", "type", "index")
+TOP_LEVEL_KEYS = ("name", "description", "type", "index", "git", "provides", "build")
+
 MODULE_KEYS = (
     "name",
     "description",
     "tags",
     "repo",
+    "url",
     "by",
     "version",
     "commit",
     "subdirectory",
     "dependencies",
+    "added_by",
     "steps",
+    "input",
 )
 
 
