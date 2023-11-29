@@ -34,10 +34,9 @@ from cfbs.pretty import pretty, pretty_check_file, pretty_file
 from cfbs.build import (
     init_out_folder,
     perform_build_steps,
-    validate_config_for_build_field,
 )
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
-from cfbs.validate import CFBSIndexException, validate_index
+from cfbs.validate import CFBSIndexException, validate_config
 from cfbs.internal_file_management import (
     fetch_archive,
     get_download_path,
@@ -808,22 +807,8 @@ def update_command(to_update):
 
 @cfbs_command("validate")
 def validate_command():
-    index = CFBSConfig.get_instance().index
-    if not index:
-        user_error("Index not found")
-
-    data = index.data
-    if "type" not in data:
-        user_error("Index is missing a type field")
-
-    if data["type"] != "index":
-        user_error("Only validation of index files is currently implemented")
-
-    try:
-        validate_index(data)
-    except CFBSIndexException as e:
-        print(e)
-        return 1
+    config = CFBSConfig.get_instance()
+    validate_config(config)
     return 0
 
 
@@ -908,14 +893,14 @@ def _download_dependencies(
 @cfbs_command("download")
 def download_command(force, ignore_versions=False):
     config = CFBSConfig.get_instance()
-    validate_config_for_build_field(config)
+    validate_config(config, build=True)
     _download_dependencies(config, redownload=force, ignore_versions=ignore_versions)
 
 
 @cfbs_command("build")
 def build_command(ignore_versions=False) -> int:
     config = CFBSConfig.get_instance()
-    validate_config_for_build_field(config)
+    validate_config(config, build=True)
     init_out_folder()
     _download_dependencies(config, prefer_offline=True, ignore_versions=ignore_versions)
     perform_build_steps(config)

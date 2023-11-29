@@ -3,7 +3,7 @@ import json
 import sys
 import re
 
-from cfbs.utils import is_a_commit_hash
+from cfbs.utils import is_a_commit_hash, user_error
 
 
 class CFBSIndexException(Exception):
@@ -14,7 +14,44 @@ class CFBSIndexException(Exception):
             super().__init__("Error in index for module '%s': " % name + message)
 
 
-def validate_index(index):
+def validate_config(config, build=False):
+    # First validate the config i.e. the user's cfbs.json
+
+    # TODO: Add more validation for other things in config:
+    #       missing keys, types of keys, accepted values, etc.
+    #       https://northerntech.atlassian.net/browse/CFE-4060
+
+    if build:
+        _validate_config_for_build_field(config)
+    else:
+        # If we're not expecting to build anything yet
+        # (running a build or download command),
+        # we will accept a missing build field or empty list.
+        # Other bad values should still error:
+        if "build" in config and config["build"] != []:
+            _validate_config_for_build_field(config)
+
+    # Then resolve the index, and validate that:
+    index = config.index
+    if not index:
+        user_error("Index not found")
+
+    data = index.data
+    if "type" not in data:
+        user_error("Index is missing a type field")
+
+    if data["type"] != "index":
+        user_error("The loaded index has incorrect type: " + str(data["type"]))
+
+    try:
+        _validate_index(data)
+    except CFBSIndexException as e:
+        print(e)
+        return 1
+    return 0
+
+
+def _validate_index(index):
     def validate_alias(name, modules):
         if len(modules[name]) != 1:
             raise CFBSIndexException(
@@ -148,6 +185,85 @@ def validate_index(index):
             validate_url_field(name, modules, "documentation")
 
 
+def _validate_config_for_build_field(config):
+    """Validate that neccessary fields are in the config for the build/download commands to work"""
+    if not "build" in config:
+        user_error(
+            'A "build" field is missing in ./cfbs.json'
+            + " - The 'cfbs build' command loops through all modules in this list to find build steps to perform"
+        )
+    if type(config["build"]) is not list:
+        user_error(
+            'The "build" field in ./cfbs.json must be a list (of modules involved in the build)'
+        )
+    if config["build"] == []:
+        user_error(
+            "The \"build\" field in ./cfbs.json is empty - add modules with 'cfbs add'"
+        )
+    for index, module in enumerate(config["build"]):
+        if not "name" in module:
+            user_error(
+                "The module at index "
+                + str(index)
+                + ' of "build" in ./cfbs.json is missing a "name"'
+            )
+        name = module["name"]
+        if type(name) is not str:
+            user_error(
+                "The module at index "
+                + str(index)
+                + ' of "build" in ./cfbs.json has a name which is not a string'
+            )
+        if not name:
+            user_error(
+                "The module at index "
+                + str(index)
+                + ' of "build" in ./cfbs.json has an empty name'
+            )
+        if (
+            not "steps" in module
+            or type(module["steps"]) is not list
+            or module["steps"] == []
+        ):
+            user_error(
+                'Build steps are missing for the "'
+                + name
+                + '" module in ./cfbs.json - the "steps" field must have a non-empty list of steps to perform (strings)'
+            )
+
+        steps = module["steps"]
+        not_strings = len([step for step in steps if type(step) is not str])
+        if not_strings == 1:
+            user_error(
+                "The module '"
+                + name
+                + '\' in "build" in ./cfbs.json has 1 step which is not a string'
+            )
+        if not_strings > 1:
+            user_error(
+                "The module '"
+                + name
+                + '\' in "build" in ./cfbs.json has '
+                + str(not_strings)
+                + " steps which are not strings"
+            )
+        empty_strings = len([step for step in steps if step == ""])
+        if empty_strings == 1:
+            user_error(
+                "The module '"
+                + name
+                + '\' in "build" in ./cfbs.json has 1 step which is empty'
+            )
+        if empty_strings > 1:
+            user_error(
+                "The module '"
+                + name
+                + '\' in "build" in ./cfbs.json has '
+                + str(empty_strings)
+                + " steps which are empty"
+            )
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("file")
@@ -158,7 +274,7 @@ def main():
     index = json.loads(data)
 
     try:
-        validate_index(index)
+        _validate_index(index)
     except CFBSIndexException as e:
         print(e)
         sys.exit(1)
