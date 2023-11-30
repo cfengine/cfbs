@@ -4,6 +4,26 @@ from cfbs.index import Index
 from cfbs.utils import read_json, user_error
 from cfbs.pretty import pretty
 
+# Globals for the keys in cfbs.json and their order
+# Used for validation and prettifying / sorting.
+TOP_LEVEL_KEYS = ("name", "description", "type", "index", "git", "provides", "build")
+
+MODULE_KEYS = (
+    "name",
+    "description",
+    "tags",
+    "repo",
+    "url",
+    "by",
+    "version",
+    "commit",
+    "subdirectory",
+    "dependencies",
+    "added_by",
+    "steps",
+    "input",
+)
+
 
 def _construct_provided_module(name, data, url, commit):
     # At this point the @commmit part should be removed from url so:

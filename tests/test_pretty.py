@@ -199,7 +199,123 @@ def test_pretty_check_string():
     assert pretty_check_string('{ "name": "lars", "age": 27 }') == True
 
 
-def test_pretty_sorting():
+def test_pretty_sorting_simple_top_level():
+    """Show that simple ways of sorting top level keys work"""
+
+    lex_sorting = {
+        None: (
+            "alphabetic",  # Sort keys lexically / alphabetically
+            None,
+        ),
+    }
+    assert pretty_string("""{}""", lex_sorting) == """{}"""
+    assert pretty_string("""{"a":1}""", lex_sorting) == """{ "a": 1 }"""
+    assert pretty_string("""{"b":2,"a":1}""", lex_sorting) == """{ "a": 1, "b": 2 }"""
+    assert (
+        pretty_string("""{"b":2,"a":1,"c":3}""", lex_sorting)
+        == """{ "a": 1, "b": 2, "c": 3 }"""
+    )
+
+    length_sorting = {
+        None: (
+            lambda x: len(x[0]),  # Sort by the length of the key
+            None,
+        ),
+    }
+
+    assert pretty_string("""{}""", length_sorting) == """{}"""
+    assert pretty_string("""{"aa":1}""", length_sorting) == """{ "aa": 1 }"""
+    assert (
+        pretty_string("""{"bbb":2,"aa":1}""", length_sorting)
+        == """{ "aa": 1, "bbb": 2 }"""
+    )
+    assert (
+        pretty_string("""{"bbb":2,"aa":1,"c":3}""", length_sorting)
+        == """{ "c": 3, "aa": 1, "bbb": 2 }"""
+    )
+
+    integer_sorting = {
+        None: (
+            lambda x: x[1],  # Sort by the value (integer)
+            None,
+        ),
+    }
+
+    assert pretty_string("""{}""", integer_sorting) == """{}"""
+    assert pretty_string("""{"a":1}""", integer_sorting) == """{ "a": 1 }"""
+    assert (
+        pretty_string("""{"b":2,"a":1}""", integer_sorting) == """{ "a": 1, "b": 2 }"""
+    )
+    assert (
+        pretty_string("""{"b":2,"a":1,"c":3}""", integer_sorting)
+        == """{ "a": 1, "b": 2, "c": 3 }"""
+    )
+    assert (
+        pretty_string("""{"b":2,"a":1,"c":3,"z":-1}""", integer_sorting)
+        == """{ "z": -1, "a": 1, "b": 2, "c": 3 }"""
+    )
+
+    specific_sorting = {
+        None: (
+            ["z", "b", "a", "c"],
+            None,
+        ),
+    }
+
+    assert pretty_string("""{}""", specific_sorting) == """{}"""
+    assert pretty_string("""{"a":1}""", specific_sorting) == """{ "a": 1 }"""
+    assert (
+        pretty_string("""{"b":2,"a":1}""", specific_sorting) == """{ "b": 2, "a": 1 }"""
+    )
+    assert (
+        pretty_string("""{"b":2,"a":1,"c":3}""", specific_sorting)
+        == """{ "b": 2, "a": 1, "c": 3 }"""
+    )
+    assert (
+        pretty_string("""{"b":2,"a":1,"c":3,"z":-1}""", specific_sorting)
+        == """{ "z": -1, "b": 2, "a": 1, "c": 3 }"""
+    )
+
+
+def test_pretty_sorting_array():
+    """Test that we can sort the keys inside objects in an array"""
+    data = """{
+        "yes":[{"a": 1, "b": 2, "c": 3}, {"a": 4, "c": 5, "b": 6}, {"b": 7, "c": 8, "a": 9}],
+        "no": [{"a": 1, "b": 2, "c": 3}, {"a": 4, "c": 5, "b": 6}, {"b": 7, "c": 8, "a": 9}]
+    }"""
+
+    sorting = {
+        None: (
+            None,  # Top level keys ("yes", "no") will not be sorted
+            {
+                "yes": (  # Recurse into "yes" key, ignore "no" key
+                    None,  # No sorting for indices of "yes" array
+                    {
+                        ".*": (  # all keys inside each element will be sorted
+                            "alphabetic",
+                            None,
+                        )
+                    },
+                )
+            },
+        ),
+    }
+    expected = """{
+  "yes": [
+    { "a": 1, "b": 2, "c": 3 },
+    { "a": 4, "b": 6, "c": 5 },
+    { "a": 9, "b": 7, "c": 8 }
+  ],
+  "no": [
+    { "a": 1, "b": 2, "c": 3 },
+    { "a": 4, "c": 5, "b": 6 },
+    { "b": 7, "c": 8, "a": 9 }
+  ]
+}"""
+    assert pretty_string(data, sorting) == expected
+
+
+def test_pretty_sorting_real_examples():
     test_json = """{
   "description": "The official (default) index of modules for CFEngine Build",
   "type": "index",

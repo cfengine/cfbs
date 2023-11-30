@@ -15,7 +15,6 @@ from cfbs.utils import (
     cfbs_dir,
     cfbs_filename,
     is_cfbs_repo,
-    item_index,
     read_json,
     user_error,
     strip_right,
@@ -34,10 +33,10 @@ from cfbs.pretty import pretty, pretty_check_file, pretty_file
 from cfbs.build import (
     init_out_folder,
     perform_build_steps,
-    validate_config_for_build_field,
 )
+from cfbs.cfbs_json import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
-from cfbs.validate import CFBSIndexException, validate_index
+from cfbs.validate import CFBSIndexException, validate_config
 from cfbs.internal_file_management import (
     fetch_archive,
     get_download_path,
@@ -98,34 +97,28 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
 
     cfbs_sorting_rules = None
     if not keep_order:
-        top_level_keys = ("name", "description", "type", "index")
-        module_keys = (
-            "name",
-            "description",
-            "tags",
-            "repo",
-            "by",
-            "version",
-            "commit",
-            "subdirectory",
-            "dependencies",
-            "steps",
+        # These sorting rules achieve 3 things:
+        # 1. Top level keys are sorted according to a specified list
+        # 2. Module names in "index" and "provides" are sorted alphabetically
+        # 3. Fields inside module objects are sorted according to a specified list
+        #    for "index", "provides", and "build"
+
+        module_key_sorting = (
+            MODULE_KEYS,
+            None,
         )
         cfbs_sorting_rules = {
             None: (
-                lambda child_item: item_index(top_level_keys, child_item[0]),
+                TOP_LEVEL_KEYS,
                 {
-                    "index": (
-                        lambda child_item: child_item[0],
-                        {
-                            ".*": (
-                                lambda child_item: item_index(
-                                    module_keys, child_item[0]
-                                ),
-                                None,
-                            )
-                        },
-                    )
+                    "(index|provides)": (
+                        "alphabetic",  # Module names are sorted alphabetically
+                        {".*": module_key_sorting},
+                    ),
+                    "build": (  # An array, not an object
+                        None,  # Don't sort elements of array
+                        {".*": module_key_sorting},
+                    ),
                 },
             ),
         }
@@ -808,22 +801,8 @@ def update_command(to_update):
 
 @cfbs_command("validate")
 def validate_command():
-    index = CFBSConfig.get_instance().index
-    if not index:
-        user_error("Index not found")
-
-    data = index.data
-    if "type" not in data:
-        user_error("Index is missing a type field")
-
-    if data["type"] != "index":
-        user_error("Only validation of index files is currently implemented")
-
-    try:
-        validate_index(data)
-    except CFBSIndexException as e:
-        print(e)
-        return 1
+    config = CFBSConfig.get_instance()
+    validate_config(config)
     return 0
 
 
@@ -908,14 +887,14 @@ def _download_dependencies(
 @cfbs_command("download")
 def download_command(force, ignore_versions=False):
     config = CFBSConfig.get_instance()
-    validate_config_for_build_field(config)
+    validate_config(config, build=True)
     _download_dependencies(config, redownload=force, ignore_versions=ignore_versions)
 
 
 @cfbs_command("build")
 def build_command(ignore_versions=False) -> int:
     config = CFBSConfig.get_instance()
-    validate_config_for_build_field(config)
+    validate_config(config, build=True)
     init_out_folder()
     _download_dependencies(config, prefer_offline=True, ignore_versions=ignore_versions)
     perform_build_steps(config)

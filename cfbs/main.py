@@ -71,7 +71,7 @@ def main() -> int:
         print_help()
         return 0
 
-    CFBSConfig.get_instance(args.index, args.non_interactive)
+    CFBSConfig.get_instance(index=args.index, non_interactive=args.non_interactive)
 
     if args.command == "init":
         return commands.init_command(

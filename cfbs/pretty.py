@@ -1,5 +1,6 @@
 import json
 import re
+from copy import copy
 from collections import OrderedDict
 
 
@@ -77,7 +78,24 @@ def _children_sort(child, name, sorting_rules):
        Only JSON objects (dictionaries) are sorted by this function, arrays are ignored.
 
     """
-    assert type(child) == OrderedDict
+    if type(child) is not OrderedDict:
+        return
+
+    for key in child:
+        if type(child[key]) not in (list, tuple):
+            continue
+        if name not in sorting_rules:
+            continue
+        if key not in sorting_rules[name][1]:
+            continue
+        print("Found list: " + key)
+        rules = sorting_rules[name][1][key][1]
+        print(pretty(rules))
+        if key in sorting_rules:
+            print("sorting_rules found for " + key)
+        for element in child[key]:
+            if type(element) is OrderedDict:
+                _children_sort(element, key, rules)
 
     rules = None
     if name in sorting_rules.keys():
@@ -92,6 +110,28 @@ def _children_sort(child, name, sorting_rules):
         return
 
     child_key_fn = rules[0]
+
+    # This is the same as item_index in utils.py
+    # Copy-pasted here to avoid circular import.
+    def _item_index(iterable, item, extra_at_end=True):
+        try:
+            return iterable.index(item)
+        except ValueError:
+            if extra_at_end:
+                return len(iterable)
+            else:
+                return -1
+
+    # To make this function a bit easier to use / read, allow 2 alternatives to
+    # providing key functions:
+    # "alphabetic" to sort alphabetically
+    # a tuple of strings to sort by this order
+    if child_key_fn == "alphabetic":
+        child_key_fn = lambda x: x[0]
+    if type(child_key_fn) in (tuple, list):
+        values = copy(child_key_fn)
+        child_key_fn = lambda x: _item_index(values, x[0])
+
     if child_key_fn is not None:
         for key, value in sorted(child.items(), key=child_key_fn):
             child.move_to_end(key)
