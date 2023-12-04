@@ -36,7 +36,7 @@ from cfbs.build import (
 )
 from cfbs.cfbs_json import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
-from cfbs.validate import CFBSIndexException, validate_config
+from cfbs.validate import validate_config
 from cfbs.internal_file_management import (
     fetch_archive,
     get_download_path,
