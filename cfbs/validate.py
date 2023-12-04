@@ -51,8 +51,7 @@ def validate_config(config, build=False):
         return 1
     return 0
 
-
-def _validate_index(index):
+def _validate_module_object(mode, name, module, modules):
     def validate_alias(name, modules):
         if len(modules[name]) != 1:
             raise CFBSIndexException(
@@ -161,6 +160,25 @@ def _validate_index(index):
         if url and not url.startswith("https://"):
             raise CFBSIndexException(name, "'%s' must be an HTTPS URL" % field)
 
+    if "alias" in modules[name]:
+        validate_alias(name, modules)
+    else:
+        validate_description(name, modules)
+        validate_tags(name, modules)
+        validate_repo(name, modules)
+        validate_by(name, modules)
+        if "dependencies" in modules[name]:  # optional attribute
+            validate_dependencies(name, modules)
+        validate_version(name, modules)
+        validate_commit(name, modules)
+        if "subdirectory" in modules[name]:  # optional attribute
+            validate_subdirectory(name, modules)
+        validate_steps(name, modules)
+        validate_url_field(name, modules, "website")
+        validate_url_field(name, modules, "documentation")
+
+
+def _validate_index(index):
     # Make sure index has a collection named modules
     if not "index" in index:
         raise CFBSIndexException(None, "Missing required attribute 'index'")
@@ -168,22 +186,8 @@ def _validate_index(index):
 
     # Validate each entry in modules
     for name in modules:
-        if "alias" in modules[name]:
-            validate_alias(name, modules)
-        else:
-            validate_description(name, modules)
-            validate_tags(name, modules)
-            validate_repo(name, modules)
-            validate_by(name, modules)
-            if "dependencies" in modules[name]:  # optional attribute
-                validate_dependencies(name, modules)
-            validate_version(name, modules)
-            validate_commit(name, modules)
-            if "subdirectory" in modules[name]:  # optional attribute
-                validate_subdirectory(name, modules)
-            validate_steps(name, modules)
-            validate_url_field(name, modules, "website")
-            validate_url_field(name, modules, "documentation")
+        module = modules[name]
+        _validate_module_object("index", name, module, modules)
 
 
 def _validate_config_for_build_field(config):
