@@ -174,7 +174,7 @@ def _validate_module_object(mode, name, module, modules):
 
     # Step 1 - Handle special cases (alias):
 
-    if "alias" in modules[name]:
+    if "alias" in module:
         if mode in ("index", "provides"):
             validate_alias(name, module)
             return
