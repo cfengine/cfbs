@@ -163,22 +163,32 @@ def _validate_module_object(mode, name, module, modules):
         if url and not url.startswith("https://"):
             raise CFBSValidationError(name, '"%" must be an HTTPS URL' % field)
 
+    assert module == modules[name]
+    assert mode in ("index", "provides", "build")
+
+    # Step 1 - Handle special cases (alias):
     if "alias" in modules[name]:
-        validate_alias(name, modules)
-    else:
-        validate_description(name, modules)
-        validate_tags(name, modules)
-        validate_repo(name, modules)
-        validate_by(name, modules)
-        if "dependencies" in modules[name]:  # optional attribute
-            validate_dependencies(name, modules)
-        validate_version(name, modules)
-        validate_commit(name, modules)
-        if "subdirectory" in modules[name]:  # optional attribute
-            validate_subdirectory(name, modules)
-        validate_steps(name, modules)
-        validate_url_field(name, modules, "website")
-        validate_url_field(name, modules, "documentation")
+        if mode in ("index", "provides"):
+            validate_alias(name, modules)
+            return
+        else:
+            assert mode == "build"
+            raise ValidationError(name, '"alias" is not supported in "build"')
+
+    # Step 2 - Validate fields:
+    validate_description(name, modules)
+    validate_tags(name, modules)
+    validate_repo(name, modules)
+    validate_by(name, modules)
+    if "dependencies" in modules[name]:  # optional attribute
+        validate_dependencies(name, modules)
+    validate_version(name, modules)
+    validate_commit(name, modules)
+    if "subdirectory" in modules[name]:  # optional attribute
+        validate_subdirectory(name, modules)
+    validate_steps(name, modules)
+    validate_url_field(name, modules, "website")
+    validate_url_field(name, modules, "documentation")
 
 
 def _validate_index(index):
