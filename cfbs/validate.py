@@ -16,9 +16,9 @@ class CFBSValidationError(Exception):
             name = None
             message = name_or_message
         if name is None:
-            super().__init__("Error in index: " + message)
+            super().__init__("Error in cfbs.json: " + message)
         else:
-            super().__init__("Error in index for module '%s': " % name + message)
+            super().__init__("Error in cfbs.json for module '%s': " % name + message)
 
 
 def validate_config(config, build=False):
