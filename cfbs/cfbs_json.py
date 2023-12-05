@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from copy import deepcopy
 import logging as log
 
 from cfbs.index import Index
@@ -83,8 +84,13 @@ class CFBSJson:
         else:
             self.index = Index()
 
+    @property
+    def raw_data(self):
+        """Read-only access to the original data, for validation purposes"""
+        return deepcopy(self._data)
+
     def _find_all_module_objects(self):
-        data = self._data
+        data = self.raw_data
         modules = []
         if "index" in data and type(data["index"]):
             modules += data["index"].values()
@@ -105,7 +111,7 @@ class CFBSJson:
         For the more complete validation, see validate.py.
         """
 
-        data = self._data
+        data = self.raw_data
         for key in data:
             if key not in TOP_LEVEL_KEYS:
                 log.warning(
