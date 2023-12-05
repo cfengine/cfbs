@@ -8,7 +8,13 @@ from cfbs.cfbs_config import CFBSConfig
 
 
 class CFBSValidationError(Exception):
-    def __init__(self, name, message) -> None:
+    def __init__(self, name_or_message, message=None) -> None:
+        assert name_or_message
+        if message:
+            name = name_or_message
+        else:
+            name = None
+            message = name_or_message
         if name is None:
             super().__init__("Error in index: " + message)
         else:
