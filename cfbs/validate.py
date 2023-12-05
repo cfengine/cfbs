@@ -5,7 +5,7 @@ import re
 from collections import OrderedDict
 
 from cfbs.utils import is_a_commit_hash, user_error
-from cfbs.cfbs_json import TOP_LEVEL_KEYS
+from cfbs.cfbs_json import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig
 
 
@@ -244,6 +244,7 @@ def _validate_module_object(mode, name, module, modules):
         required_fields.append("commit")
 
     for required_field in required_fields:
+        assert required_field in MODULE_KEYS
         if required_field not in module:
             raise CFBSValidationError(name, '"%s" field is required, but missing')
 
