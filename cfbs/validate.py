@@ -16,6 +16,8 @@ class CFBSValidationError(Exception):
 
 
 def validate_config(config, build=False):
+    config.warn_about_unknown_keys()
+
     # First validate the config i.e. the user's cfbs.json
 
     # TODO: Add more validation for other things in config:

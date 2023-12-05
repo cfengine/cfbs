@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import logging as log
 
 from cfbs.index import Index
 from cfbs.utils import read_json, user_error
@@ -81,6 +82,45 @@ class CFBSJson:
             self.index = Index(self._data["index"])
         else:
             self.index = Index()
+
+    def _find_all_module_objects(self):
+        data = self._data
+        modules = []
+        if "index" in data and type(data["index"]):
+            modules += data["index"].values()
+        if "provides" in data and type(data["index"]):
+            modules += data["provides"].values()
+        if "build" in data and type(data["build"]):
+            modules += data["build"]
+        return modules
+
+
+    def warn_about_unknown_keys(self):
+        """Basic validation to warn the user when a cfbs.json has unknown keys.
+
+        Unknown keys are typically due to
+        typos, or an outdated version of cfbs. This basic type of
+        validation only produces warnings (we want cfbs to still work),
+        and is run for all cfbs commands, not just cfbs validate.
+        For the more complete validation, see validate.py.
+        """
+
+        data = self._data
+        for key in data:
+            if key not in TOP_LEVEL_KEYS:
+                log.warning(
+                    'The top level key "%s" is not known to this version of cfbs.\n'
+                    + "Is it a typo? If not, try upgrading cfbs:\n"
+                    + "pip3 install --upgrade cfbs"
+                )
+        for module in self._find_all_module_objects():
+            for key in module:
+                if key not in MODULE_KEYS:
+                    log.warning(
+                        'The module level key "%s" is not known to this version of cfbs.\n'
+                        + "Is it a typo? If not, try upgrading cfbs:\n"
+                        + "pip3 install --upgrade cfbs"
+                    )
 
     def get(self, key, default=None):
         if not self._data:  # If the specified JSON file does not exist
