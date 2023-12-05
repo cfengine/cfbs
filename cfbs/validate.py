@@ -199,7 +199,7 @@ def _validate_module_object(mode, name, module, modules):
         required_fields.append("version")
         required_fields.append("commit")
 
-    for required_field in required_field:
+    for required_field in required_fields:
         if required_field not in module:
             raise CFBSValidationError(name, '"%s" field is required, but missing')
 
