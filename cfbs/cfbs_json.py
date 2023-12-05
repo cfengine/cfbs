@@ -11,6 +11,7 @@ from cfbs.pretty import pretty
 TOP_LEVEL_KEYS = ("name", "description", "type", "index", "git", "provides", "build")
 
 MODULE_KEYS = (
+    "alias",
     "name",
     "description",
     "tags",
