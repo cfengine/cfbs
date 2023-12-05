@@ -176,7 +176,7 @@ def _validate_module_object(mode, name, module, modules):
 
     if "alias" in modules[name]:
         if mode in ("index", "provides"):
-            validate_alias(name, modules)
+            validate_alias(name, module)
             return
         else:
             assert mode == "build"
