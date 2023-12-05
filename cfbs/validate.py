@@ -39,6 +39,13 @@ def _validate_top_level_keys(config):
         if field not in config:
             raise CFBSValidationError('The "%s" field is required in a cfbs.json file' % field)
 
+    # Specific error checking for "index" type files:
+
+    if config["type"] == "index" and "index" not in config:
+        raise CFBSValidationError('For a cfbs.json with "index" as type, put modules in the index by adding them to a "index" field' % field)
+    if config["type"] == "index" and type(config["index"]) not in (dict, OrderedDict):
+        raise CFBSValidationError('For a cfbs.json with "index" as type, the "index" field must be an object / dictionary' % field)
+
     # Further check types / values of those required fields:
 
     if type(config["name"]) is not str or config["name"] == "":
@@ -70,7 +77,7 @@ def validate_config(config, build=False):
     # First validate the config i.e. the user's cfbs.json
     config.warn_about_unknown_keys()
     _validate_top_level_keys(config)
-
+    raw_data = config.raw_data
 
     if build:
         _validate_config_for_build_field(config)
@@ -82,23 +89,12 @@ def validate_config(config, build=False):
         if "build" in config and config["build"] != []:
             _validate_config_for_build_field(config)
 
-    # Then resolve the index, and validate that:
-    index = config.index
-    if not index:
-        user_error("Index not found")
+    if "index" in raw_data and type(raw_data["index"]) in (dict, OrderedDict):
+        for name, module in raw_data["index"].items():
+            _validate_module_object("index", name, module, raw_data["index"])
 
-    data = index.data
-    if "type" not in data:
-        user_error("Index is missing a type field")
+    # TODO: Add "provides" here
 
-    if data["type"] != "index":
-        user_error("The loaded index has incorrect type: " + str(data["type"]))
-
-    try:
-        _validate_index(data)
-    except CFBSValidationError as e:
-        print(e)
-        return 1
     return 0
 
 
@@ -277,18 +273,6 @@ def _validate_module_object(mode, name, module, modules):
         validate_url_field(name, module, "website")
     if "documentation" in module:
         validate_url_field(name, module, "documentation")
-
-
-def _validate_index(index):
-    # Make sure index has a collection named modules
-    if not "index" in index:
-        raise CFBSValidationError(None, "Missing required attribute 'index'")
-    modules = index["index"]
-
-    # Validate each entry in modules
-    for name in modules:
-        module = modules[name]
-        _validate_module_object("index", name, module, modules)
 
 
 def _validate_config_for_build_field(config):
