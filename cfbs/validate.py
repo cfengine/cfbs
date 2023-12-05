@@ -175,7 +175,29 @@ def _validate_module_object(mode, name, module, modules):
             assert mode == "build"
             raise ValidationError(name, '"alias" is not supported in "build"')
 
-    # Step 2 - Validate fields:
+
+    # Step 2 - Check for required fields:
+
+    required_fields = ["steps"]
+
+    if mode == "build":
+        required_fields.append("name")
+    elif mode == "provides":
+        required_fields.append("description")
+    else:
+        assert mode == "index"
+        required_fields.append("description")
+        required_fields.append("tags")
+        required_fields.append("repo")
+        required_fields.append("by")
+        required_fields.append("version")
+        required_fields.append("commit")
+
+    for required_field in required_field:
+        if required_field not in module:
+            raise CFBSValidationError(name, '"%s" field is required, but missing')
+
+    # Step 3 - Validate fields:
     validate_description(name, modules)
     validate_tags(name, modules)
     validate_repo(name, modules)
