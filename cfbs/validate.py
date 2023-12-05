@@ -17,6 +17,8 @@ class CFBSValidationError(Exception):
             message = name_or_message
         if name is None:
             super().__init__("Error in cfbs.json: " + message)
+        elif type(name) is int:
+            super().__init__("Error in cfbs.json for module at index %d: " % name + message)
         else:
             super().__init__("Error in cfbs.json for module '%s': " % name + message)
 
