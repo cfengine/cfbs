@@ -92,9 +92,9 @@ class CFBSJson:
     def _find_all_module_objects(self):
         data = self.raw_data
         modules = []
-        if "index" in data and type(data["index"]):
+        if "index" in data and type(data["index"]) in (dict, OrderedDict):
             modules += data["index"].values()
-        if "provides" in data and type(data["index"]):
+        if "provides" in data and type(data["index"]) in (dict, OrderedDict):
             modules += data["provides"].values()
         if "build" in data and type(data["build"]):
             modules += data["build"]
