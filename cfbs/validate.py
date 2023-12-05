@@ -54,6 +54,7 @@ def validate_config(config, build=False):
 
 def _validate_module_object(mode, name, module, modules):
     def validate_alias(name, modules):
+        assert "alias" in modules[name]
         if len(modules[name]) != 1:
             raise CFBSValidationError(
                 name, '"alias" cannot be used with other attributes'
@@ -68,16 +69,14 @@ def _validate_module_object(mode, name, module, modules):
             raise CFBSValidationError(name, '"alias" cannot reference another alias')
 
     def validate_description(name, modules):
-        if not "description" in modules[name]:
-            raise CFBSValidationError(name, 'Missing required attribute "description"')
+        assert "description" in modules[name]
         if type(modules[name]["description"]) != str:
             raise CFBSValidationError(name, '"description" must be of type string')
         if not modules[name]["description"]:
             raise CFBSValidationError(name, '"description" must be non-empty')
 
     def validate_tags(name, modules):
-        if not "tags" in modules[name]:
-            raise CFBSValidationError(name, 'Missing required attribute "tags"')
+        assert "tags" in modules[name]
         if type(modules[name]["tags"]) != list:
             raise CFBSValidationError(name, '"tags" must be of type list')
         for tag in modules[name]["tags"]:
@@ -85,22 +84,21 @@ def _validate_module_object(mode, name, module, modules):
                 raise CFBSValidationError(name, '"tags" must be a list of strings')
 
     def validate_repo(name, modules):
-        if not "repo" in modules[name]:
-            raise CFBSValidationError(name, 'Missing required attribute "repo"')
+        assert "repo" in modules[name]
         if type(modules[name]["repo"]) != str:
             raise CFBSValidationError(name, '"repo" must be of type string')
         if not modules[name]["repo"]:
             raise CFBSValidationError(name, '"repo" must be non-empty')
 
     def validate_by(name, modules):
-        if not "by" in modules[name]:
-            raise CFBSValidationError(name, 'Missing reqired attribute "by"')
+        assert "by" in modules[name]
         if type(modules[name]["by"]) != str:
             raise CFBSValidationError(name, '"by" must be of type string')
         if not modules[name]["by"]:
             raise CFBSValidationError(name, '"by" must be non-empty')
 
     def validate_dependencies(name, modules):
+        assert "dependencies" in modules[name]
         if type(modules[name]["dependencies"]) != list:
             raise CFBSValidationError(
                 name, 'Value of attribute "dependencies" must be of type list'
@@ -120,8 +118,7 @@ def _validate_module_object(mode, name, module, modules):
                 )
 
     def validate_version(name, modules):
-        if not "version" in modules[name]:
-            raise CFBSValidationError(name, 'Missing required attribute "version"')
+        assert "version" in modules[name]
         if type(modules[name]["version"]) != str:
             raise CFBSValidationError(name, '"version" must be of type string')
         regex = r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9]+))?"
@@ -129,8 +126,7 @@ def _validate_module_object(mode, name, module, modules):
             raise CFBSValidationError(name, '"version" must match regex %s' % regex)
 
     def validate_commit(name, modules):
-        if not "commit" in modules[name]:
-            raise CFBSValidationError(name, 'Missing required attribute "commit"')
+        assert "commit" in modules[name]
         commit = modules[name]["commit"]
         if type(commit) != str:
             raise CFBSValidationError(name, '"commit" must be of type string')
@@ -138,14 +134,14 @@ def _validate_module_object(mode, name, module, modules):
             raise CFBSValidationError(name, '"commit" must be a commit reference')
 
     def validate_subdirectory(name, modules):
+        assert "subdirectory" in modules[name]
         if type(modules[name]["subdirectory"]) != str:
             raise CFBSValidationError(name, '"subdirectory" must be of type string')
         if not modules[name]["subdirectory"]:
             raise CFBSValidationError(name, '"subdirectory" must be non-empty')
 
     def validate_steps(name, modules):
-        if not "steps" in modules[name]:
-            raise CFBSValidationError(name, 'Missing required attribute "steps"')
+        assert "steps" in modules[name]
         if type(modules[name]["steps"]) != list:
             raise CFBSValidationError(name, '"steps" must be of type list')
         if not modules[name]["steps"]:
@@ -159,6 +155,7 @@ def _validate_module_object(mode, name, module, modules):
                 )
 
     def validate_url_field(name, modules, field):
+        assert field in modules[name]
         url = modules[name].get(field)
         if url and not url.startswith("https://"):
             raise CFBSValidationError(name, '"%" must be an HTTPS URL' % field)
@@ -198,19 +195,28 @@ def _validate_module_object(mode, name, module, modules):
             raise CFBSValidationError(name, '"%s" field is required, but missing')
 
     # Step 3 - Validate fields:
-    validate_description(name, modules)
-    validate_tags(name, modules)
-    validate_repo(name, modules)
-    validate_by(name, modules)
-    if "dependencies" in modules[name]:  # optional attribute
+    if "description" in module:
+        validate_description(name, modules)
+    if "tags" in module:
+        validate_tags(name, modules)
+    if "repo" in module:
+        validate_repo(name, modules)
+    if "by" in module:
+        validate_by(name, modules)
+    if "dependencies" in module:
         validate_dependencies(name, modules)
-    validate_version(name, modules)
-    validate_commit(name, modules)
-    if "subdirectory" in modules[name]:  # optional attribute
+    if "version" in module:
+        validate_version(name, modules)
+    if "commit" in module:
+        validate_commit(name, modules)
+    if "subdirectory" in module:
         validate_subdirectory(name, modules)
-    validate_steps(name, modules)
-    validate_url_field(name, modules, "website")
-    validate_url_field(name, modules, "documentation")
+    if "steps" in module:
+        validate_steps(name, modules)
+    if "website" in module:
+        validate_url_field(name, modules, "website")
+    if "documentation" in module:
+        validate_url_field(name, modules, "documentation")
 
 
 def _validate_index(index):
