@@ -173,6 +173,7 @@ def _validate_module_object(mode, name, module, modules):
     assert mode in ("index", "provides", "build")
 
     # Step 1 - Handle special cases (alias):
+
     if "alias" in modules[name]:
         if mode in ("index", "provides"):
             validate_alias(name, modules)
@@ -180,7 +181,6 @@ def _validate_module_object(mode, name, module, modules):
         else:
             assert mode == "build"
             raise ValidationError(name, '"alias" is not supported in "build"')
-
 
     # Step 2 - Check for required fields:
 
