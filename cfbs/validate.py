@@ -68,6 +68,14 @@ def _validate_module_object(mode, name, module, modules):
         if "alias" in modules[module["alias"]]:
             raise CFBSValidationError(name, '"alias" cannot reference another alias')
 
+    def validate_name(name, module):
+        assert "name" in module
+        assert name == module["name"]
+        if type(module["name"]) != str:
+            raise CFBSValidationError(name, '"name" must be of type string')
+        if not module["name"]:
+            raise CFBSValidationError(name, '"name" must be non-empty')
+
     def validate_description(name, module):
         assert "description" in module
         if type(module["description"]) != str:
@@ -196,6 +204,9 @@ def _validate_module_object(mode, name, module, modules):
             raise CFBSValidationError(name, '"%s" field is required, but missing')
 
     # Step 3 - Validate fields:
+
+    if "name" in module:
+        validate_name(name, module)
     if "description" in module:
         validate_description(name, module)
     if "tags" in module:
