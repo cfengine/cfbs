@@ -72,7 +72,7 @@ def _validate_top_level_keys(config):
         if type(index) is str and index.startswith("https://") and " " in index:
             raise CFBSValidationError('The "index" URL must not contain spaces')
 
-def validate_config(config, build=False):
+def _validate_config(config, build=False):
 
     # First validate the config i.e. the user's cfbs.json
     config.warn_about_unknown_keys()
@@ -95,8 +95,13 @@ def validate_config(config, build=False):
 
     # TODO: Add "provides" here
 
-    return 0
-
+def validate_config(config, build=False):
+    try:
+        _validate_config(config, build)
+        return 0
+    except CFBSValidationError as e:
+        print(e)
+        return 1
 
 def _validate_module_object(mode, name, module, modules):
     def validate_alias(name, module):
@@ -302,9 +307,9 @@ def main():
     args = parser.parse_args()
 
     config = CFBSConfig.get_instance(filename=args.file, non_interactive=True)
-    validate_config(config)
+    r = validate_config(config)
 
-    sys.exit(0)
+    sys.exit(r)
 
 
 if __name__ == "__main__":
