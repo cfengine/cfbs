@@ -2,8 +2,10 @@ import argparse
 import json
 import sys
 import re
+from collections import OrderedDict
 
 from cfbs.utils import is_a_commit_hash, user_error
+from cfbs.cfbs_json import TOP_LEVEL_KEYS
 from cfbs.cfbs_config import CFBSConfig
 
 
@@ -22,15 +24,53 @@ class CFBSValidationError(Exception):
         else:
             super().__init__("Error in cfbs.json for module '%s': " % name + message)
 
+def _validate_top_level_keys(config):
+    # Convert the CFBSJson object to a simple dictionary with exactly
+    # what was in the file. We don't want CFBSJson / CFBSConfig to do any
+    # translations here:
+    config = config.raw_data
+
+    # Check that required fields are there:
+
+    required_fields = ["name", "type", "description"]
+
+    for field in required_fields:
+        assert field in TOP_LEVEL_KEYS
+        if field not in config:
+            raise CFBSValidationError('The "%s" field is required in a cfbs.json file' % field)
+
+    # Further check types / values of those required fields:
+
+    if type(config["name"]) is not str or config["name"] == "":
+        raise CFBSValidationError('The "name" field must be a non-empty string')
+    if config["type"] not in ("policy-set", "index", "module"):
+        raise CFBSValidationError('The "type" field must be "policy-set", "index", or "module"')
+    if type(config["description"]) is not str:
+        raise CFBSValidationError('The "description" field must be a string')
+
+    # Check types / values of other optional fields:
+
+    if "git" in config and config["git"] not in (True, False):
+        raise CFBSValidationError('The "git" field must be true or false')
+    if "index" in config:
+        index = config["index"]
+        if type(index) not in (str, dict, OrderedDict):
+            raise CFBSValidationError('The "index" field must either be a URL / path (string) or an inline index (object / dictionary)')
+        if type(index) is str and index.strip() == "":
+            raise CFBSValidationError('The "index" string must be a URL / path (string), not "%s"' % index)
+        if type(index) is str and not index.endswith(".json"):
+            raise CFBSValidationError('The "index" string must refer to a JSON file / URL (ending in .json)')
+        if type(index) is str and not index.startswith(("https://", "./")):
+            raise CFBSValidationError('The "index" string must be a URL (starting with https://) or relative path (starting with ./)')
+        if type(index) is str and index.startswith("https://") and " " in index:
+            raise CFBSValidationError('The "index" URL must not contain spaces')
 
 def validate_config(config, build=False):
-    config.warn_about_unknown_keys()
 
     # First validate the config i.e. the user's cfbs.json
+    config.warn_about_unknown_keys()
+    _validate_top_level_keys(config)
 
-    # TODO: Add more validation for other things in config:
-    #       missing keys, types of keys, accepted values, etc.
-    #       https://northerntech.atlassian.net/browse/CFE-4060
 
     if build:
         _validate_config_for_build_field(config)
