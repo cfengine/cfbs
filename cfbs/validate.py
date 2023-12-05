@@ -292,7 +292,7 @@ def _validate_config_for_build_field(config):
             "The \"build\" field in ./cfbs.json is empty - add modules with 'cfbs add'"
         )
     for index, module in enumerate(config["build"]):
-        name = module["name"]
+        name = module["name"] if "name" in module else index
         _validate_module_object("build", name, module, config.index.data["index"])
 
 
