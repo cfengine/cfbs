@@ -108,7 +108,6 @@ def _validate_module_object(mode, name, module, modules):
             raise CFBSValidationError(name, '"by" must be non-empty')
 
     def validate_dependencies(name, module, modules):
-        assert module == modules[name]
         assert "dependencies" in module
         if type(module["dependencies"]) != list:
             raise CFBSValidationError(
@@ -171,7 +170,6 @@ def _validate_module_object(mode, name, module, modules):
         if url and not url.startswith("https://"):
             raise CFBSValidationError(name, '"%" must be an HTTPS URL' % field)
 
-    assert module == modules[name]
     assert mode in ("index", "provides", "build")
 
     # Step 1 - Handle special cases (alias):
