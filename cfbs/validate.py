@@ -7,6 +7,7 @@ from collections import OrderedDict
 from cfbs.utils import is_a_commit_hash, user_error
 from cfbs.cfbs_json import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig
+from cfbs.build import AVAILABLE_BUILD_STEPS
 
 
 class CFBSValidationError(Exception):
@@ -208,10 +209,32 @@ def _validate_module_object(mode, name, module, modules):
         for step in module["steps"]:
             if type(step) != str:
                 raise CFBSValidationError(name, '"steps" must be a list of strings')
-            if not step:
+            if not step or step.strip() == "":
                 raise CFBSValidationError(
-                    name, '"steps" must be a list of non-empty strings'
+                    name, '"steps" must be a list of non-empty / non-whitespace strings'
                 )
+            step_array = step.split(" ")
+            operation, args = step_array[0], step_array[1:]
+            if not operation in AVAILABLE_BUILD_STEPS:
+                x = ", ".join(AVAILABLE_BUILD_STEPS)
+                raise CFBSValidationError(
+                    name, 'Unknown operation in "steps", must be one of: (%s)' % x
+                )
+            expected = AVAILABLE_BUILD_STEPS[operation]
+            actual = len(args)
+            if type(expected) is int:
+                if expected != actual:
+                    raise CFBSValidationError(
+                        name, 'The %s build step expects %d arguents, %d were given' % (operation, expected, actual)
+                    )
+            else:
+                # Only other option is a string of 1+, 2+ or similar:
+                assert type(expected) is str and expected.endswith("+")
+                expected = int(expected[0:-1])
+                if actual < expected:
+                    raise CFBSValidationError(
+                        name, 'The %s build step expects %d or more arguents, %d were given' % (operation, expected, actual)
+                    )
 
     def validate_url_field(name, module, field):
         assert field in module
