@@ -390,7 +390,7 @@ def _validate_module_object(mode, name, module, modules):
             return
         else:
             assert mode == "build"
-            raise ValidationError(name, '"alias" is not supported in "build"')
+            raise CFBSValidationError(name, '"alias" is not supported in "build"')
 
     # Step 2 - Check for required fields:
 
