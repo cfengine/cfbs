@@ -199,6 +199,16 @@ def _validate_module_object(mode, name, module, modules):
             raise CFBSValidationError(name, '"subdirectory" must be of type string')
         if not module["subdirectory"]:
             raise CFBSValidationError(name, '"subdirectory" must be non-empty')
+        if module["subdirectory"].startswith("./"):
+            raise CFBSValidationError(name, '"subdirectory" must not start with ./')
+        if module["subdirectory"].startswith("/"):
+            raise CFBSValidationError(
+                name, '"subdirectory" must be a relative path, not starting with /'
+            )
+        if " " in module["subdirectory"]:
+            raise CFBSValidationError(name, '"subdirectory" cannot contain spaces')
+        if module["subdirectory"].endswith(("/", "/.")):
+            raise CFBSValidationError(name, '"subdirectory" must not end with / or /.')
 
     def validate_steps(name, module):
         assert "steps" in module
