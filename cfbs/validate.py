@@ -251,7 +251,7 @@ def _validate_module_object(mode, name, module, modules):
     for required_field in required_fields:
         assert required_field in MODULE_KEYS
         if required_field not in module:
-            raise CFBSValidationError(name, '"%s" field is required, but missing')
+            raise CFBSValidationError(name, '"%s" field is required, but missing' % required_field)
 
     # Step 3 - Validate fields:
 
