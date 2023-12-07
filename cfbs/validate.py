@@ -278,6 +278,108 @@ def _validate_module_object(mode, name, module, modules):
         if url and not url.startswith("https://"):
             raise CFBSValidationError(name, '"%" must be an HTTPS URL' % field)
 
+    def validate_module_input(name, module):
+        assert "input" in module
+        if type(module["input"]) is not list or not module["input"]:
+            raise CFBSValidationError(
+                name, 'The module\'s "input" must be a non-empty array'
+            )
+
+        required_string_fields = ["type", "variable", "namespace", "bundle", "label"]
+
+        required_string_fields_subtype = ["key", "type", "label", "question"]
+
+        for input_element in module["input"]:
+            if type(input_element) not in (dict, OrderedDict) or not input_element:
+                raise CFBSValidationError(
+                    name,
+                    'The module\'s "input" array must consist of non-empty objects (dictionaries)',
+                )
+            for field in required_string_fields:
+                if field not in input_element:
+                    raise CFBSValidationError(
+                        name,
+                        'The "%s" field is required in module input elements' % field,
+                    )
+                if (
+                    type(input_element[field]) is not str
+                    or input_element[field].strip() == ""
+                ):
+                    raise CFBSValidationError(
+                        name,
+                        'The "%s" field in input elements must be a non-empty / non-whitespace string'
+                        % field,
+                    )
+
+            if input_element["type"] not in ("string", "list"):
+                raise CFBSValidationError(
+                    name,
+                    'The input "type" must be "string" or "list", not "%s"'
+                    % input_element["type"],
+                )
+            if not re.fullmatch(r"[a-z_]+", input_element["variable"]):
+                raise CFBSValidationError(
+                    name,
+                    '"%s" is not an acceptable variable name'
+                    % input_element["variable"],
+                )
+            if not re.fullmatch(r"[a-z_]+", input_element["namespace"]):
+                raise CFBSValidationError(
+                    name,
+                    '"%s" is not an acceptable namespace' % input_element["namespace"],
+                )
+            if not re.fullmatch(r"[a-z_]+", input_element["bundle"]):
+                raise CFBSValidationError(
+                    name,
+                    '"%s" is not an acceptable bundle name' % input_element["bundle"],
+                )
+
+            if input_element["type"] == "list":
+                if not "while" in input_element:
+                    raise CFBSValidationError(
+                        name, 'For a "list" input element, a "while" prompt is required'
+                    )
+                if (
+                    type(input_element["while"]) is not str
+                    or not input_element["while"].strip()
+                ):
+                    raise CFBSValidationError(
+                        name,
+                        'The "while" prompt in an input "list" element must be a non-empty / non-whitespace string',
+                    )
+                if not "subtype" in input_element:
+                    raise CFBSValidationError(
+                        name, 'For a "list" input element, a "subtype" is required'
+                    )
+                if type(input_element["subtype"]) not in (list, dict, OrderedDict):
+                    raise CFBSValidationError(
+                        name,
+                        'The list element "subtype" must be an object or an array of objects (dictionaries)',
+                    )
+                subtype = input_element["subtype"]
+                if type(subtype) is not list:
+                    subtype = [subtype]
+                for part in subtype:
+                    for field in required_string_fields_subtype:
+                        if field not in part:
+                            raise CFBSValidationError(
+                                name,
+                                'The "%s" field is required in module input "subtype" objects'
+                                % field,
+                            )
+                        if type(part[field]) is not str or part[field].strip() == "":
+                            raise CFBSValidationError(
+                                name,
+                                'The "%s" field in module input "subtype" objects must be a non-empty / non-whitespace string'
+                                % field,
+                            )
+                    if part["type"] != "string":
+                        raise CFBSValidationError(
+                            name,
+                            'Only "string" supported for the "type" of module input list elements, not "%s"'
+                            % part["type"],
+                        )
+
     assert mode in ("index", "provides", "build")
 
     # Step 1 - Handle special cases (alias):
@@ -340,6 +442,8 @@ def _validate_module_object(mode, name, module, modules):
         validate_url_field(name, module, "website")
     if "documentation" in module:
         validate_url_field(name, module, "documentation")
+    if "input" in module:
+        validate_module_input(name, module)
 
 
 def _validate_config_for_build_field(config):
