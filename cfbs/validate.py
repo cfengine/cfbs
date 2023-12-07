@@ -21,9 +21,12 @@ class CFBSValidationError(Exception):
         if name is None:
             super().__init__("Error in cfbs.json: " + message)
         elif type(name) is int:
-            super().__init__("Error in cfbs.json for module at index %d: " % name + message)
+            super().__init__(
+                "Error in cfbs.json for module at index %d: " % name + message
+            )
         else:
             super().__init__("Error in cfbs.json for module '%s': " % name + message)
+
 
 def _validate_top_level_keys(config):
     # Convert the CFBSJson object to a simple dictionary with exactly
@@ -38,21 +41,30 @@ def _validate_top_level_keys(config):
     for field in required_fields:
         assert field in TOP_LEVEL_KEYS
         if field not in config:
-            raise CFBSValidationError('The "%s" field is required in a cfbs.json file' % field)
+            raise CFBSValidationError(
+                'The "%s" field is required in a cfbs.json file' % field
+            )
 
     # Specific error checking for "index" type files:
 
     if config["type"] == "index" and "index" not in config:
-        raise CFBSValidationError('For a cfbs.json with "index" as type, put modules in the index by adding them to a "index" field')
+        raise CFBSValidationError(
+            'For a cfbs.json with "index" as type, put modules in the index by adding them to a "index" field'
+        )
     if config["type"] == "index" and type(config["index"]) not in (dict, OrderedDict):
-        raise CFBSValidationError('For a cfbs.json with "index" as type, the "index" field must be an object / dictionary' % field)
+        raise CFBSValidationError(
+            'For a cfbs.json with "index" as type, the "index" field must be an object / dictionary'
+            % field
+        )
 
     # Further check types / values of those required fields:
 
     if type(config["name"]) is not str or config["name"] == "":
         raise CFBSValidationError('The "name" field must be a non-empty string')
     if config["type"] not in ("policy-set", "index", "module"):
-        raise CFBSValidationError('The "type" field must be "policy-set", "index", or "module"')
+        raise CFBSValidationError(
+            'The "type" field must be "policy-set", "index", or "module"'
+        )
     if type(config["description"]) is not str:
         raise CFBSValidationError('The "description" field must be a string')
 
@@ -63,18 +75,26 @@ def _validate_top_level_keys(config):
     if "index" in config:
         index = config["index"]
         if type(index) not in (str, dict, OrderedDict):
-            raise CFBSValidationError('The "index" field must either be a URL / path (string) or an inline index (object / dictionary)')
+            raise CFBSValidationError(
+                'The "index" field must either be a URL / path (string) or an inline index (object / dictionary)'
+            )
         if type(index) is str and index.strip() == "":
-            raise CFBSValidationError('The "index" string must be a URL / path (string), not "%s"' % index)
+            raise CFBSValidationError(
+                'The "index" string must be a URL / path (string), not "%s"' % index
+            )
         if type(index) is str and not index.endswith(".json"):
-            raise CFBSValidationError('The "index" string must refer to a JSON file / URL (ending in .json)')
+            raise CFBSValidationError(
+                'The "index" string must refer to a JSON file / URL (ending in .json)'
+            )
         if type(index) is str and not index.startswith(("https://", "./")):
-            raise CFBSValidationError('The "index" string must be a URL (starting with https://) or relative path (starting with ./)')
+            raise CFBSValidationError(
+                'The "index" string must be a URL (starting with https://) or relative path (starting with ./)'
+            )
         if type(index) is str and index.startswith("https://") and " " in index:
             raise CFBSValidationError('The "index" URL must not contain spaces')
 
-def _validate_config(config, build=False):
 
+def _validate_config(config, build=False):
     # First validate the config i.e. the user's cfbs.json
     config.warn_about_unknown_keys()
     _validate_top_level_keys(config)
@@ -96,6 +116,7 @@ def _validate_config(config, build=False):
 
     # TODO: Add "provides" here
 
+
 def validate_config(config, build=False):
     try:
         _validate_config(config, build)
@@ -103,6 +124,7 @@ def validate_config(config, build=False):
     except CFBSValidationError as e:
         print(e)
         return 1
+
 
 def _validate_module_object(mode, name, module, modules):
     def validate_alias(name, module):
@@ -235,7 +257,9 @@ def _validate_module_object(mode, name, module, modules):
             if type(expected) is int:
                 if expected != actual:
                     raise CFBSValidationError(
-                        name, 'The %s build step expects %d arguents, %d were given' % (operation, expected, actual)
+                        name,
+                        "The %s build step expects %d arguents, %d were given"
+                        % (operation, expected, actual),
                     )
             else:
                 # Only other option is a string of 1+, 2+ or similar:
@@ -243,7 +267,9 @@ def _validate_module_object(mode, name, module, modules):
                 expected = int(expected[0:-1])
                 if actual < expected:
                     raise CFBSValidationError(
-                        name, 'The %s build step expects %d or more arguents, %d were given' % (operation, expected, actual)
+                        name,
+                        "The %s build step expects %d or more arguents, %d were given"
+                        % (operation, expected, actual),
                     )
 
     def validate_url_field(name, module, field):
@@ -284,7 +310,9 @@ def _validate_module_object(mode, name, module, modules):
     for required_field in required_fields:
         assert required_field in MODULE_KEYS
         if required_field not in module:
-            raise CFBSValidationError(name, '"%s" field is required, but missing' % required_field)
+            raise CFBSValidationError(
+                name, '"%s" field is required, but missing' % required_field
+            )
 
     # Step 3 - Validate fields:
 

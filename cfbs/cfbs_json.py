@@ -101,7 +101,6 @@ class CFBSJson:
             modules += data["build"]
         return modules
 
-
     def warn_about_unknown_keys(self):
         """Basic validation to warn the user when a cfbs.json has unknown keys.
 
@@ -124,7 +123,8 @@ class CFBSJson:
             for key in module:
                 if key not in MODULE_KEYS:
                     log.warning(
-                        'The module level key "%s" is not known to this version of cfbs.\n' % key
+                        'The module level key "%s" is not known to this version of cfbs.\n'
+                        % key
                         + "Is it a typo? If not, try upgrading cfbs:\n"
                         + "pip3 install --upgrade cfbs"
                     )
