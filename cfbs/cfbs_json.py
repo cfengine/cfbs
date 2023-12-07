@@ -107,11 +107,14 @@ class CFBSJson:
         Unknown keys are typically due to
         typos, or an outdated version of cfbs. This basic type of
         validation only produces warnings (we want cfbs to still work),
-        and is run for all cfbs commands, not just cfbs validate.
+        and is run for various cfbs commands, not just cfbs build / validate.
         For the more complete validation, see validate.py.
         """
 
         data = self.raw_data
+        if not data:
+            return  # No data, no unknown keys
+
         for key in data:
             if key not in TOP_LEVEL_KEYS:
                 log.warning(
