@@ -42,7 +42,7 @@ def _validate_top_level_keys(config):
     # Specific error checking for "index" type files:
 
     if config["type"] == "index" and "index" not in config:
-        raise CFBSValidationError('For a cfbs.json with "index" as type, put modules in the index by adding them to a "index" field' % field)
+        raise CFBSValidationError('For a cfbs.json with "index" as type, put modules in the index by adding them to a "index" field')
     if config["type"] == "index" and type(config["index"]) not in (dict, OrderedDict):
         raise CFBSValidationError('For a cfbs.json with "index" as type, the "index" field must be an object / dictionary' % field)
 
