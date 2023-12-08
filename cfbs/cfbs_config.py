@@ -485,3 +485,17 @@ class CFBSConfig(CFBSJson):
                 definition["response"] = _input_list(definition)
             else:
                 user_error("Unsupported input type '%s'" % definition["type"])
+
+    def _get_all_module_names(self):
+        modules = []
+
+        if "build" in self:
+            modules.extend((x["name"] for x in self["build"]))
+        if "provides" in self:
+            modules.extend(self["provides"].keys())
+        modules.extend(self.index.keys())
+
+        return modules
+
+    def can_reach_dependency(self, name):
+        return name in self._get_all_module_names()

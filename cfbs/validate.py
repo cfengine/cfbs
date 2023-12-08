@@ -105,7 +105,7 @@ def _validate_config(config):
 
     if "index" in raw_data and type(raw_data["index"]) in (dict, OrderedDict):
         for name, module in raw_data["index"].items():
-            _validate_module_object("index", name, module, raw_data["index"])
+            _validate_module_object("index", name, module, config)
 
     # TODO: Add "provides" here
 
@@ -119,7 +119,7 @@ def validate_config(config):
         return 1
 
 
-def _validate_module_object(mode, name, module, modules):
+def _validate_module_object(mode, name, module, config):
     def validate_alias(name, module):
         assert "alias" in module
         if len(module) != 1:
@@ -130,7 +130,7 @@ def _validate_module_object(mode, name, module, modules):
             raise CFBSValidationError(name, '"alias" must be of type string')
         if not module["alias"]:
             raise CFBSValidationError(name, '"alias" must be non-empty')
-        if not module["alias"] in modules:
+        if config.can_reach_dependency(module["alias"]):
             raise CFBSValidationError(name, '"alias" must reference another module')
         if "alias" in modules[module["alias"]]:
             raise CFBSValidationError(name, '"alias" cannot reference another alias')
@@ -172,7 +172,7 @@ def _validate_module_object(mode, name, module, modules):
         if not module["by"]:
             raise CFBSValidationError(name, '"by" must be non-empty')
 
-    def validate_dependencies(name, module, modules):
+    def validate_dependencies(name, module, config):
         assert "dependencies" in module
         if type(module["dependencies"]) != list:
             raise CFBSValidationError(
@@ -183,9 +183,11 @@ def _validate_module_object(mode, name, module, modules):
                 raise CFBSValidationError(
                     name, '"dependencies" must be a list of strings'
                 )
-            if not dependency in modules:
+            if not config.can_reach_dependency(dependency):
                 raise CFBSValidationError(
-                    name, '"dependencies" reference other modules'
+                    name,
+                    '"dependencies" references a module which could not be found: "%s"'
+                    % dependency,
                 )
             if "alias" in modules[dependency]:
                 raise CFBSValidationError(
