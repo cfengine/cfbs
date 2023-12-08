@@ -128,7 +128,7 @@ def validate_config(config):
         return 1
 
 
-def _validate_module_object(mode, name, module, config):
+def _validate_module_object(context, name, module, config):
     def validate_alias(name, module, context):
         if context == "index":
             search_in = ("index",)
@@ -401,25 +401,25 @@ def _validate_module_object(mode, name, module, config):
                             % part["type"],
                         )
 
-    assert mode in ("index", "provides", "build")
+    assert context in ("index", "provides", "build")
 
     # Step 1 - Handle special cases (alias):
 
     if "alias" in module:
         # Needs to be validated first because it's missing the other fields:
-        validate_alias(name, module, mode)
+        validate_alias(name, module, context)
         return  # alias entries would fail the other validation below
 
     # Step 2 - Check for required fields:
 
     required_fields = ["steps"]
 
-    if mode == "build":
+    if context == "build":
         required_fields.append("name")
-    elif mode == "provides":
+    elif context == "provides":
         required_fields.append("description")
     else:
-        assert mode == "index"
+        assert context == "index"
         required_fields.extend(
             [
                 "description",
@@ -451,7 +451,7 @@ def _validate_module_object(mode, name, module, config):
     if "by" in module:
         validate_by(name, module)
     if "dependencies" in module:
-        validate_dependencies(name, module, modules, mode)
+        validate_dependencies(name, module, modules, context)
     if "version" in module:
         validate_version(name, module)
     if "commit" in module:
