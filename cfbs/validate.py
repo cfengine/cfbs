@@ -151,7 +151,7 @@ def _validate_module_object(context, name, module, config):
             raise CFBSValidationError(
                 name, '"alias" must reference another module in the index'
             )
-        if "alias" in modules[module["alias"]]:
+        if "alias" in config.find_module(module["alias"], search_in):
             raise CFBSValidationError(name, '"alias" cannot reference another alias')
 
     def validate_name(name, module):
@@ -215,7 +215,7 @@ def _validate_module_object(context, name, module, config):
                     '"dependencies" references a module which could not be found: "%s"'
                     % dependency,
                 )
-            if "alias" in modules[dependency]:
+            if "alias" in config.find_module(dependency):
                 raise CFBSValidationError(
                     name, '"dependencies" cannot reference an alias'
                 )

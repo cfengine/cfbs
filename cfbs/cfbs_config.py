@@ -500,3 +500,15 @@ class CFBSConfig(CFBSJson):
 
     def can_reach_dependency(self, name, search_in=("build", "provides", "index")):
         return name in self._get_all_module_names()
+
+    def find_module(self, name, search_in=("build", "provides", "index")):
+        if "build" in search_in and "build" in self:
+            for module in (x for x in self["build"]):
+                if module["name"] == name:
+                    return module
+        if "provides" in search_in and "provides" in self and name in self["provides"]:
+            return self["provides"][name]
+        if "index" in search_in and name in self.index:
+            return self.index[name]
+
+        return None
