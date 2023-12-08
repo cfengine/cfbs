@@ -258,7 +258,7 @@ def _validate_module_object(mode, name, module, modules):
                 if expected != actual:
                     raise CFBSValidationError(
                         name,
-                        "The %s build step expects %d arguents, %d were given"
+                        "The %s build step expects %d arguments, %d were given"
                         % (operation, expected, actual),
                     )
             else:
@@ -268,7 +268,7 @@ def _validate_module_object(mode, name, module, modules):
                 if actual < expected:
                     raise CFBSValidationError(
                         name,
-                        "The %s build step expects %d or more arguents, %d were given"
+                        "The %s build step expects %d or more arguments, %d were given"
                         % (operation, expected, actual),
                     )
 
@@ -402,12 +402,14 @@ def _validate_module_object(mode, name, module, modules):
         required_fields.append("description")
     else:
         assert mode == "index"
-        required_fields.append("description")
-        required_fields.append("tags")
-        required_fields.append("repo")
-        required_fields.append("by")
-        required_fields.append("version")
-        required_fields.append("commit")
+        required_fields.extend([
+            "description",
+            "tags",
+            "repo",
+            "by",
+            "version",
+            "commit",
+        ])
 
     for required_field in required_fields:
         assert required_field in MODULE_KEYS
