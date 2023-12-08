@@ -807,8 +807,7 @@ def update_command(to_update):
 @cfbs_command("validate")
 def validate_command():
     config = CFBSConfig.get_instance()
-    validate_config(config)
-    return 0
+    return validate_config(config)
 
 
 def _download_dependencies(
