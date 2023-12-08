@@ -129,7 +129,15 @@ def validate_config(config):
 
 
 def _validate_module_object(mode, name, module, config):
-    def validate_alias(name, module):
+    def validate_alias(name, module, context):
+        if context == "index":
+            search_in = ("index",)
+        elif context == "provides":
+            search_in = "provides"
+        else:
+            raise CFBSValidationError(
+                name, '"alias" is only allowed inside "index" or "provides"'
+            )
         assert "alias" in module
         if len(module) != 1:
             raise CFBSValidationError(
@@ -139,8 +147,10 @@ def _validate_module_object(mode, name, module, config):
             raise CFBSValidationError(name, '"alias" must be of type string')
         if not module["alias"]:
             raise CFBSValidationError(name, '"alias" must be non-empty')
-        if config.can_reach_dependency(module["alias"]):
-            raise CFBSValidationError(name, '"alias" must reference another module')
+        if config.can_reach_dependency(module["alias"], search_in):
+            raise CFBSValidationError(
+                name, '"alias" must reference another module in the index'
+            )
         if "alias" in modules[module["alias"]]:
             raise CFBSValidationError(name, '"alias" cannot reference another alias')
 
@@ -181,7 +191,14 @@ def _validate_module_object(mode, name, module, config):
         if not module["by"]:
             raise CFBSValidationError(name, '"by" must be non-empty')
 
-    def validate_dependencies(name, module, config):
+    def validate_dependencies(name, module, config, context):
+        if context == "build":
+            search_in = ("build",)
+        elif context == "provides":
+            search_in = ("index", "provides")
+        else:
+            assert context == "index"
+            search_in = ("index",)
         assert "dependencies" in module
         if type(module["dependencies"]) != list:
             raise CFBSValidationError(
@@ -192,7 +209,7 @@ def _validate_module_object(mode, name, module, config):
                 raise CFBSValidationError(
                     name, '"dependencies" must be a list of strings'
                 )
-            if not config.can_reach_dependency(dependency):
+            if not config.can_reach_dependency(dependency, search_in):
                 raise CFBSValidationError(
                     name,
                     '"dependencies" references a module which could not be found: "%s"'
@@ -389,12 +406,9 @@ def _validate_module_object(mode, name, module, config):
     # Step 1 - Handle special cases (alias):
 
     if "alias" in module:
-        if mode in ("index", "provides"):
-            validate_alias(name, module)
-            return
-        else:
-            assert mode == "build"
-            raise CFBSValidationError(name, '"alias" is not supported in "build"')
+        # Needs to be validated first because it's missing the other fields:
+        validate_alias(name, module, mode)
+        return  # alias entries would fail the other validation below
 
     # Step 2 - Check for required fields:
 
@@ -437,7 +451,7 @@ def _validate_module_object(mode, name, module, config):
     if "by" in module:
         validate_by(name, module)
     if "dependencies" in module:
-        validate_dependencies(name, module, modules)
+        validate_dependencies(name, module, modules, mode)
     if "version" in module:
         validate_version(name, module)
     if "commit" in module:

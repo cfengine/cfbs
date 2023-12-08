@@ -202,5 +202,30 @@ echo '{
 
 !( cfbs validate )
 
+# Dependency exists in index, but not in build - should error:
+
+echo '{
+  "name": "Example project",
+  "description": "Example description",
+  "type": "policy-set",
+  "git": true,
+  "build": [
+    {
+      "name": "./more.cf",
+      "description": "Local policy file added using cfbs command line",
+      "tags": ["local"],
+      "added_by": "cfbs add",
+      "dependencies": ["masterfiles"],
+      "steps": [
+        "copy ./more.cf services/cfbs/more.cf",
+        "policy_files services/cfbs/more.cf",
+        "bundles more"
+      ]
+    }
+  ]
+}' > cfbs.json
+
+!( cfbs validate )
+
 # NOTE: This shell test just covers some basic cases
 #       See the unit tests for more thorough testing of validation

@@ -486,16 +486,17 @@ class CFBSConfig(CFBSJson):
             else:
                 user_error("Unsupported input type '%s'" % definition["type"])
 
-    def _get_all_module_names(self):
+    def _get_all_module_names(self, search_in=("build", "provides", "index")):
         modules = []
 
-        if "build" in self:
+        if "build" in search_in and "build" in self:
             modules.extend((x["name"] for x in self["build"]))
-        if "provides" in self:
+        if "provides" in search_in and "provides" in self:
             modules.extend(self["provides"].keys())
-        modules.extend(self.index.keys())
+        if "index" in search_in:
+            modules.extend(self.index.keys())
 
         return modules
 
-    def can_reach_dependency(self, name):
+    def can_reach_dependency(self, name, search_in=("build", "provides", "index")):
         return name in self._get_all_module_names()
