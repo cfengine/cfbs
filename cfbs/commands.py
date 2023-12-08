@@ -891,14 +891,26 @@ def _download_dependencies(
 @cfbs_command("download")
 def download_command(force, ignore_versions=False):
     config = CFBSConfig.get_instance()
-    validate_config(config, build=True)
+    r = validate_config(config, build=True)
+    if r != 0:
+        log.warning(
+            "At least one error encountered while validating your cfbs.json file."
+            + "\nPlease see the error messages above and apply fixes accordingly."
+            + "\nIf not fixed, these errors will cause your project to not build in future cfbs versions."
+        )
     _download_dependencies(config, redownload=force, ignore_versions=ignore_versions)
 
 
 @cfbs_command("build")
 def build_command(ignore_versions=False) -> int:
     config = CFBSConfig.get_instance()
-    validate_config(config, build=True)
+    r = validate_config(config, build=True)
+    if r != 0:
+        log.warning(
+            "At least one error encountered while validating your cfbs.json file."
+            + "\nPlease see the error messages above and apply fixes accordingly."
+            + "\nIf not fixed, these errors will cause your project to not build in future cfbs versions."
+        )
     init_out_folder()
     _download_dependencies(config, prefer_offline=True, ignore_versions=ignore_versions)
     perform_build_steps(config)
