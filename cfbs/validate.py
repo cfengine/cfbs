@@ -395,14 +395,16 @@ def _validate_module_object(mode, name, module, modules):
         required_fields.append("description")
     else:
         assert mode == "index"
-        required_fields.extend([
-            "description",
-            "tags",
-            "repo",
-            "by",
-            "version",
-            "commit",
-        ])
+        required_fields.extend(
+            [
+                "description",
+                "tags",
+                "repo",
+                "by",
+                "version",
+                "commit",
+            ]
+        )
 
     for required_field in required_fields:
         assert required_field in MODULE_KEYS
