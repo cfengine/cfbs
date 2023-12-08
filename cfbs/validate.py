@@ -451,7 +451,7 @@ def _validate_module_object(context, name, module, config):
     if "by" in module:
         validate_by(name, module)
     if "dependencies" in module:
-        validate_dependencies(name, module, modules, context)
+        validate_dependencies(name, module, config, context)
     if "version" in module:
         validate_version(name, module)
     if "commit" in module:
