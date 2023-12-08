@@ -72,6 +72,7 @@ def _validate_top_level_keys(config):
 
     if "git" in config and config["git"] not in (True, False):
         raise CFBSValidationError('The "git" field must be true or false')
+
     if "index" in config:
         index = config["index"]
         if type(index) not in (str, dict, OrderedDict):
@@ -93,6 +94,12 @@ def _validate_top_level_keys(config):
         if type(index) is str and index.startswith("https://") and " " in index:
             raise CFBSValidationError('The "index" URL must not contain spaces')
 
+    if "provides" in config:
+        if type(config["provides"]) not in (dict, OrderedDict):
+            raise CFBSValidationError(
+                'The "provides" field must be an object (dictionary)'
+            )
+
 
 def _validate_config(config):
     # First validate the config i.e. the user's cfbs.json
@@ -107,7 +114,9 @@ def _validate_config(config):
         for name, module in raw_data["index"].items():
             _validate_module_object("index", name, module, config)
 
-    # TODO: Add "provides" here
+    if "provides" in raw_data:
+        for name, module in raw_data["provides"].items():
+            _validate_module_object("provides", name, module, config)
 
 
 def validate_config(config):
