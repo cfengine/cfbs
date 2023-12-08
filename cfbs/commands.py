@@ -891,7 +891,7 @@ def _download_dependencies(
 @cfbs_command("download")
 def download_command(force, ignore_versions=False):
     config = CFBSConfig.get_instance()
-    r = validate_config(config, build=True)
+    r = validate_config(config)
     if r != 0:
         log.warning(
             "At least one error encountered while validating your cfbs.json file."
@@ -904,7 +904,7 @@ def download_command(force, ignore_versions=False):
 @cfbs_command("build")
 def build_command(ignore_versions=False) -> int:
     config = CFBSConfig.get_instance()
-    r = validate_config(config, build=True)
+    r = validate_config(config)
     if r != 0:
         log.warning(
             "At least one error encountered while validating your cfbs.json file."

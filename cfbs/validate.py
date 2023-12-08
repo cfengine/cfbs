@@ -94,21 +94,14 @@ def _validate_top_level_keys(config):
             raise CFBSValidationError('The "index" URL must not contain spaces')
 
 
-def _validate_config(config, build=False):
+def _validate_config(config):
     # First validate the config i.e. the user's cfbs.json
     config.warn_about_unknown_keys()
     _validate_top_level_keys(config)
     raw_data = config.raw_data
 
-    if build:
+    if config["type"] == "policy-set" or "build" in config:
         _validate_config_for_build_field(config)
-    else:
-        # If we're not expecting to build anything yet
-        # (running a build or download command),
-        # we will accept a missing build field or empty list.
-        # Other bad values should still error:
-        if "build" in config and config["build"] != []:
-            _validate_config_for_build_field(config)
 
     if "index" in raw_data and type(raw_data["index"]) in (dict, OrderedDict):
         for name, module in raw_data["index"].items():
@@ -117,9 +110,9 @@ def _validate_config(config, build=False):
     # TODO: Add "provides" here
 
 
-def validate_config(config, build=False):
+def validate_config(config):
     try:
-        _validate_config(config, build)
+        _validate_config(config)
         return 0
     except CFBSValidationError as e:
         print(e)
