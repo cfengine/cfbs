@@ -1,6 +1,6 @@
+import os
 from collections import OrderedDict
 from copy import deepcopy
-from pathlib import Path
 
 from cfbs.pretty import pretty
 from cfbs.validate import validate_config
@@ -40,22 +40,22 @@ INDEX_ALIAS_INVALID = {
 
 
 def test_valid_index_with_alias():
-    filename = Path("tmp-cfbs.json")
+    filename = "./tmp-cfbs.json"
     with open(filename, "w") as f:
         f.write(pretty(INDEX_ALIAS_VALID))
     config = CFBSConfig(filename)
     r = validate_config(config)
     del config
-    filename.unlink()
+    os.remove(filename)
     assert r == 0
 
 
 def test_valid_index_with_alias():
-    filename = Path("tmp-cfbs.json")
+    filename = "./tmp-cfbs.json"
     with open(filename, "w") as f:
         f.write(pretty(INDEX_ALIAS_INVALID))
     config = CFBSConfig(filename)
     r = validate_config(config)
     del config
-    filename.unlink()
+    os.remove(filename)
     assert r != 0
