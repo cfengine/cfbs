@@ -30,7 +30,7 @@ echo '{
       "by": "https://github.com/nickanderson",
       "version": "0.0.8",
       "commit": "06f0894b662befbba4e775884f21cfe8573c32d6",
-      "subdirectory": "./compliance-report-imports",
+      "subdirectory": "compliance-report-imports",
       "dependencies": ["autorun"],
       "steps": ["copy ./compliance-report-imports.cf services/autorun/"]
     },
@@ -41,7 +41,7 @@ echo '{
       "by": "https://github.com/nickanderson/",
       "version": "3.0.9",
       "commit": "9aaff7dd802cf879f40b992243e760f039e7636c",
-      "subdirectory": "./compliance-reports",
+      "subdirectory": "compliance-reports",
       "dependencies": ["compliance-report-imports", "lynis"],
       "steps": [
         "copy ./generated-compliance-report.json .no-distrib/compliance-report-definitions/lynis-compliance-report.json"
@@ -79,7 +79,7 @@ echo '{
       "by": "https://github.com/nickanderson",
       "version": "0.0.8",
       "commit": "06f0894b662befbba4e775884f21cfe8573c32d6",
-      "subdirectory": "./compliance-report-imports",
+      "subdirectory": "compliance-report-imports",
       "dependencies": ["autorun"],
       "steps": ["copy ./compliance-report-imports.cf services/autorun/"]
     }
@@ -103,7 +103,7 @@ echo '{
       "by": "https://github.com/nickanderson",
       "version": "0.0.8",
       "commit": "06f0894b662befbba4e775884f21cfe8573c32d6",
-      "subdirectory": "./compliance-report-imports",
+      "subdirectory": "compliance-report-imports",
       "steps": ["copy ./compliance-report-imports.cf services/autorun/"]
     }
   }
