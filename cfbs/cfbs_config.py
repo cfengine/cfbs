@@ -499,7 +499,7 @@ class CFBSConfig(CFBSJson):
         return modules
 
     def can_reach_dependency(self, name, search_in=("build", "provides", "index")):
-        return name in self._get_all_module_names()
+        return name in self._get_all_module_names(search_in)
 
     def find_module(self, name, search_in=("build", "provides", "index")):
         if "build" in search_in and "build" in self:

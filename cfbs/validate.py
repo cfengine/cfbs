@@ -147,7 +147,7 @@ def _validate_module_object(context, name, module, config):
             raise CFBSValidationError(name, '"alias" must be of type string')
         if not module["alias"]:
             raise CFBSValidationError(name, '"alias" must be non-empty')
-        if config.can_reach_dependency(module["alias"], search_in):
+        if not config.can_reach_dependency(module["alias"], search_in):
             raise CFBSValidationError(
                 name, '"alias" must reference another module in the index'
             )
