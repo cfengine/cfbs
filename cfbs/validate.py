@@ -308,7 +308,7 @@ def _validate_module_object(context, name, module, config):
 
         required_string_fields = ["type", "variable", "namespace", "bundle", "label"]
 
-        required_string_fields_subtype = ["key", "type", "label", "question"]
+        required_string_fields_subtype = ["type", "label", "question"]
 
         for input_element in module["input"]:
             if type(input_element) not in (dict, OrderedDict) or not input_element:
@@ -393,6 +393,19 @@ def _validate_module_object(context, name, module, config):
                                 name,
                                 'The "%s" field in module input "subtype" objects must be a non-empty / non-whitespace string'
                                 % field,
+                            )
+                    if len(subtype) > 1:
+                        # The "key" field is used to create the JSON objects for each
+                        # input in  a list of "things" which are not just strings,
+                        # i.e. consist of multiple values
+                        if (
+                            "key" not in part
+                            or type(part["key"]) is not str
+                            or part["key"].strip() == ""
+                        ):
+                            raise CFBSValidationError(
+                                name,
+                                'When using module input with type list, and subtype includes multiple values, "key" is required to distinguish them',
                             )
                     if part["type"] != "string":
                         raise CFBSValidationError(
