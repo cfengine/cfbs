@@ -42,7 +42,9 @@ grep 'bundle common inventory' out/masterfiles/promises.cf
 # These other commands should also work:
 cfbs status
 
-cfbs validate
+# NOTE: We expect cfbs build to work, but not cfbs validate since
+#       this older module entry has an empty string for "subdirectory".
+!( cfbs validate )
 
 # Once more, but let's do download and build as separate steps:
 rm -rf out/
@@ -54,3 +56,30 @@ cfbs build
 
 # Perform same checks again:
 grep 'bundle common inventory' out/masterfiles/promises.cf
+
+# Finally, let's see validation working if we fix the module:
+rm -rf out/
+rm -rf ~/.cfengine/cfbs
+
+echo '{
+  "name": "backwards-compatibility-test-1",
+  "type": "policy-set",
+  "description": "This project was set up to ensure projects created with CFEngine 3.21.0 / cfbs 3.2.7 still build as expected",
+  "build": [
+    {
+      "name": "masterfiles",
+      "version": "3.21.0",
+      "description": "Official CFEngine Masterfiles Policy Framework (MPF).",
+      "tags": ["supported", "base"],
+      "repo": "https://github.com/cfengine/masterfiles",
+      "by": "https://github.com/cfengine",
+      "commit": "379c69aa71ab3069b2ef1c0cca526192fa77b864",
+      "added_by": "cfbs add",
+      "steps": ["run ./prepare.sh -y", "copy ./ ./"]
+    }
+  ],
+  "git": true
+}
+' > cfbs.json
+
+cfbs validate
