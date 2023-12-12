@@ -77,7 +77,7 @@ Unless otherwise noted, all steps are run inside the module's folder (`out/steps
 #### `delete <paths ...>`
 - Delete multiple files or paths recursively.
 - Files are deleted from the step folder.
-- Typically used before copying files to the output policy set with the `copy` step. 
+- Typically used before copying files to the output policy set with the `copy` step.
 
 #### `directory <source> <destination>`
 - Copy any .cf policy files recursively and add their paths to `def.json`'s `inputs`.
@@ -87,7 +87,7 @@ Unless otherwise noted, all steps are run inside the module's folder (`out/steps
 
 #### `bundles <bundles ...>`
 - Ensure bundles are evaluated by adding them to the bundle sequence, using `def.json`.
-  - Note that this relies on using the default policy set from the CFEngine team, the Masterfiles Policy Framework, commonly added as the first module (`masterfiles`). 
+  - Note that this relies on using the default policy set from the CFEngine team, the Masterfiles Policy Framework, commonly added as the first module (`masterfiles`).
     Specifically, this build step adds the bundles to the variable `default:def.control_common_bundlesequence_end`, which the MPF looks for.
 - Only manipulates the bundle sequence, to ensure policy files are copied and parsed, use other build steps, for example `copy` and `policy_files`.
 
