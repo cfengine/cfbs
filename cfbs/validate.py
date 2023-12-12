@@ -271,7 +271,9 @@ def _validate_module_object(context, name, module, config):
             if not operation in AVAILABLE_BUILD_STEPS:
                 x = ", ".join(AVAILABLE_BUILD_STEPS)
                 raise CFBSValidationError(
-                    name, 'Unknown operation in "steps", must be one of: (%s)' % x
+                    name,
+                    'Unknown operation "%s" in "steps", must be one of: (%s)'
+                    % (operation, x),
                 )
             expected = AVAILABLE_BUILD_STEPS[operation]
             actual = len(args)
@@ -341,18 +343,20 @@ def _validate_module_object(context, name, module, config):
             if not re.fullmatch(r"[a-z_]+", input_element["variable"]):
                 raise CFBSValidationError(
                     name,
-                    '"%s" is not an acceptable variable name'
+                    '"%s" is not an acceptable variable name, must match regex "[a-z_]+"'
                     % input_element["variable"],
                 )
             if not re.fullmatch(r"[a-z_]+", input_element["namespace"]):
                 raise CFBSValidationError(
                     name,
-                    '"%s" is not an acceptable namespace' % input_element["namespace"],
+                    '"%s" is not an acceptable namespace, must match regex "[a-z_]+"'
+                    % input_element["namespace"],
                 )
             if not re.fullmatch(r"[a-z_]+", input_element["bundle"]):
                 raise CFBSValidationError(
                     name,
-                    '"%s" is not an acceptable bundle name' % input_element["bundle"],
+                    '"%s" is not an acceptable bundle name, must match regex "[a-z_]+"'
+                    % input_element["bundle"],
                 )
 
             if input_element["type"] == "list":
