@@ -68,11 +68,12 @@ Unless otherwise noted, all steps are run inside the module's folder (`out/steps
 #### `append <source> <destination>`
 - Append the source file to the end of destination file.
 
-#### `run <command>`
+#### `run <command ...>`
 - Run a shell command / script.
 - Usually used to prepare the module directory, delete files, etc. before a copy step.
 - Running scripts should be avoided if possible.
 - Script is run inside the module directory (the step folder).
+- Additional space separated arguments are passed as arguments.
 
 #### `delete <paths ...>`
 - Delete multiple files or paths recursively.
