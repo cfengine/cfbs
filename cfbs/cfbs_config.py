@@ -503,7 +503,7 @@ class CFBSConfig(CFBSJson):
 
     def find_module(self, name, search_in=("build", "provides", "index")):
         if "build" in search_in and "build" in self:
-            for module in (x for x in self["build"]):
+            for module in self["build"]:
                 if module["name"] == name:
                     return module
         if "provides" in search_in and "provides" in self and name in self["provides"]:
