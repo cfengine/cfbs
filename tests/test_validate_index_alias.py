@@ -50,7 +50,7 @@ def test_valid_index_with_alias():
     assert r == 0
 
 
-def test_valid_index_with_alias():
+def test_invalid_index_with_alias():
     filename = "./tmp-cfbs.json"
     with open(filename, "w") as f:
         f.write(pretty(INDEX_ALIAS_INVALID))
