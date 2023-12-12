@@ -291,6 +291,8 @@ class CFBSConfig(CFBSJson):
         for module in modules:
             name = module["name"]
             assert name not in (m["name"] for m in self["build"])
+            if "subdirectory" in module and module["subdirectory"] == "":
+                del module["subdirectory"]
             if self.index.custom_index != None:
                 module["index"] = self.index.custom_index
             self["build"].append(module)
