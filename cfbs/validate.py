@@ -400,7 +400,7 @@ def _validate_module_object(context, name, module, config):
                             )
                     if len(subtype) > 1:
                         # The "key" field is used to create the JSON objects for each
-                        # input in  a list of "things" which are not just strings,
+                        # input in a list of "things" which are not just strings,
                         # i.e. consist of multiple values
                         if (
                             "key" not in part
