@@ -5,7 +5,7 @@ mkdir -p ./tmp/
 cd ./tmp/
 rm -rf ./*
 
-# This test is identical to the previous test, except it has more modules.
+# This test is similar to the previous test, except it has more modules.
 
 echo '{
   "name": "backwards-compatibility-test-2",
@@ -93,7 +93,9 @@ grep '$(paths.systemctl) list-units --type=service --state=running' out/masterfi
 # These other commands should also work:
 cfbs status
 
-cfbs validate
+# NOTE: We expect cfbs build to work, but not cfbs validate since
+#       this older module entry has an empty string for "subdirectory".
+!( cfbs validate )
 
 # Once more, but let's do download and build as separate steps:
 rm -rf out/

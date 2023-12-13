@@ -70,6 +70,9 @@ class Index:
     def __getitem__(self, key):
         return self.data["index"][key]
 
+    def keys(self):
+        return self.data["index"].keys()
+
     def items(self):
         return self.data["index"].items()
 

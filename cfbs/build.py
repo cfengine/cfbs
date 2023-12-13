@@ -17,6 +17,18 @@ from cfbs.utils import (
 )
 from cfbs.pretty import pretty, pretty_file
 
+AVAILABLE_BUILD_STEPS = {
+    "copy": 2,
+    "run": "1+",
+    "delete": 2,
+    "json": 2,
+    "append": 2,
+    "directory": 2,
+    "input": 2,
+    "policy_files": "1+",
+    "bundles": "1+",
+}
+
 
 def init_out_folder():
     rm("out", missing_ok=True)
@@ -67,6 +79,7 @@ def _perform_build_step(module, step, max_length):
 
     prefix = "%03d %s :" % (counter, pad_right(module["name"], max_length))
 
+    assert operation in AVAILABLE_BUILD_STEPS  # Should already be validated
     if operation == "copy":
         src, dst = args
         if dst in [".", "./"]:

@@ -88,11 +88,7 @@ def _children_sort(child, name, sorting_rules):
             continue
         if key not in sorting_rules[name][1]:
             continue
-        print("Found list: " + key)
         rules = sorting_rules[name][1][key][1]
-        print(pretty(rules))
-        if key in sorting_rules:
-            print("sorting_rules found for " + key)
         for element in child[key]:
             if type(element) is OrderedDict:
                 _children_sort(element, key, rules)

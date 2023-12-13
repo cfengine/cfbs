@@ -36,7 +36,7 @@ from cfbs.build import (
 )
 from cfbs.cfbs_json import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
-from cfbs.validate import CFBSIndexException, validate_config
+from cfbs.validate import validate_config
 from cfbs.internal_file_management import (
     fetch_archive,
     get_download_path,
@@ -304,6 +304,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
 @cfbs_command("status")
 def status_command() -> int:
     config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
     print("Name:        %s" % config["name"])
     print("Description: %s" % config["description"])
     print("File:        %s" % cfbs_filename())
@@ -380,6 +381,7 @@ def add_command(
     checksum=None,
 ) -> int:
     config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
     r = config.add_command(to_add, added_by, checksum)
     config.save()
     return r
@@ -389,6 +391,7 @@ def add_command(
 @commit_after_command("Removed module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
 def remove_command(to_remove: list):
     config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
     modules = config["build"]
 
     def _get_module_by_name(name) -> dict:
@@ -474,6 +477,7 @@ def clean_command(config=None):
 def _clean_unused_modules(config=None):
     if not config:
         config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
     modules = config["build"]
 
     def _someone_needs_me(this) -> bool:
@@ -621,6 +625,7 @@ def update_input_data(module, input_data):
 @commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update):
     config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
     build = config["build"]
 
     # Update all modules in build if none specified
@@ -802,8 +807,7 @@ def update_command(to_update):
 @cfbs_command("validate")
 def validate_command():
     config = CFBSConfig.get_instance()
-    validate_config(config)
-    return 0
+    return validate_config(config)
 
 
 def _download_dependencies(
@@ -887,14 +891,26 @@ def _download_dependencies(
 @cfbs_command("download")
 def download_command(force, ignore_versions=False):
     config = CFBSConfig.get_instance()
-    validate_config(config, build=True)
+    r = validate_config(config)
+    if r != 0:
+        log.warning(
+            "At least one error encountered while validating your cfbs.json file."
+            + "\nPlease see the error messages above and apply fixes accordingly."
+            + "\nIf not fixed, these errors will cause your project to not build in future cfbs versions."
+        )
     _download_dependencies(config, redownload=force, ignore_versions=ignore_versions)
 
 
 @cfbs_command("build")
 def build_command(ignore_versions=False) -> int:
     config = CFBSConfig.get_instance()
-    validate_config(config, build=True)
+    r = validate_config(config)
+    if r != 0:
+        log.warning(
+            "At least one error encountered while validating your cfbs.json file."
+            + "\nPlease see the error messages above and apply fixes accordingly."
+            + "\nIf not fixed, these errors will cause your project to not build in future cfbs versions."
+        )
     init_out_folder()
     _download_dependencies(config, prefer_offline=True, ignore_versions=ignore_versions)
     perform_build_steps(config)
@@ -962,6 +978,7 @@ def info_command(modules):
     if not modules:
         user_error("info/show command requires one or more module names as arguments")
     config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
     index = config.index
 
     build = config.get("build", {})
@@ -1003,6 +1020,7 @@ def info_command(modules):
 @commit_after_command("Added input for module%s", [PLURAL_S])
 def input_command(args, input_from="cfbs input"):
     config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
     do_commit = False
     files_to_commit = []
     for module_name in args:
@@ -1038,6 +1056,7 @@ def input_command(args, input_from="cfbs input"):
 @commit_after_command("Set input for module %s", [FIRST_ARG])
 def set_input_command(name, infile):
     config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
     module = config.get_module_from_build(name)
     if module is None:
         log.error("Module '%s' not found" % name)
@@ -1119,6 +1138,7 @@ def set_input_command(name, infile):
 @cfbs_command("get-input")
 def get_input_command(name, outfile):
     config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
     module = config.get_module_from_build(name)
     if module is None:
         module = config.index.get_module_object(name)
