@@ -392,6 +392,10 @@ def add_command(
 def remove_command(to_remove: list):
     config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
+    if not "build" in config:
+        user_error(
+            'Cannot remove any modules because the "build" key is missing from cfbs.json'
+        )
     modules = config["build"]
 
     def _get_module_by_name(name) -> dict:
@@ -478,7 +482,12 @@ def _clean_unused_modules(config=None):
     if not config:
         config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
+    if "build" not in config:
+        log.warning('No "build" key with modules - nothing to clean')
+        return 0
     modules = config["build"]
+    if len(modules) == 0:
+        return 0
 
     def _someone_needs_me(this) -> bool:
         if "added_by" not in this or this["added_by"] == "cfbs add":
