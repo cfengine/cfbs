@@ -309,7 +309,7 @@ def status_command() -> int:
     print("Description: %s" % config["description"])
     print("File:        %s" % cfbs_filename())
 
-    modules = config["build"]
+    modules = config.get("build")
     if not modules:
         return 0
     print("\nModules:")
