@@ -102,6 +102,8 @@ class CFBSConfig(CFBSJson):
         if "dependencies" in module:
             for dep in module["dependencies"]:
                 self.add_with_dependencies(dep, remote_config, module["name"])
+        if "build" not in self._data:
+            self._data["build"] = []
         self._data["build"].append(module)
         if dependent:
             print("Added module: %s (Dependency of %s)" % (module["name"], dependent))
@@ -351,7 +353,7 @@ class CFBSConfig(CFBSJson):
         if not to_add:
             user_error("Must specify at least one module to add")
 
-        before = {m["name"] for m in self["build"]}
+        before = {m["name"] for m in self.get("build", [])}
 
         if to_add[0].endswith(SUPPORTED_ARCHIVES) or to_add[0].startswith(
             ("https://", "git://", "ssh://")
