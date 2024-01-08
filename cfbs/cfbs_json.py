@@ -95,7 +95,7 @@ class CFBSJson:
         modules = []
         if "index" in data and type(data["index"]) in (dict, OrderedDict):
             modules += data["index"].values()
-        if "provides" in data and type(data["index"]) in (dict, OrderedDict):
+        if "provides" in data and type(data["provides"]) in (dict, OrderedDict):
             modules += data["provides"].values()
         if "build" in data and type(data["build"]):
             modules += data["build"]
