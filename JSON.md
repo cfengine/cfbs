@@ -113,11 +113,86 @@ The 3 build steps above achieve 3 distinct things:
 After the build has been completed the policy set is available at `out/masterfiles` and `out/masterfiles.tgz`.
 It is ready to be deployed to a remote hub with `cf-remote deploy` or locally (if running commands on a hub) with `sudo cfbs install`.
 
-## Keys
+## The keys of a cfbs.json file
 
-`index`: URL, relative path, or inline dictionary.
-Used by `cfbs add` and `cfbs search`, when index key is present in `cfbs.json` in the current working directory.
-When adding a module by URL, which has a `cfbs.json` inside of it, the index in that file should be ignored.
+Below, there is a short explanation of each field you can find in a `cfbs.json` file.
+Some of the examples further down in this file might help understand how each one is used.
+All fields are required unless otherwise noted.
+Please use `cfbs validate` while editing `cfbs.json` files manually - we won't attempt to list absolutely all the validation rules here.
+
+### Top level keys
+
+At the top level of a `cfbs.json` file, these fields are available:
+
+* `name` (string): The human readable name of the project.
+  An example could be: `Northern.tech production policy`
+* `description` (string): Human readable description of what this project is for.
+  For example: `This project builds the policy set we deploy to all production hosts.`
+* `type` (string): What kind of project this is.
+  One of: `policy-set` (default), `index`, and `module`.
+  If you are setting up a project to build a policy set (to deploy on a hub), use `policy-set`.
+  For developing a new module (or multiple) to publish on [build.cfengine.com](https://build.cfengine.com), or to use in your other projects, use `module`.
+  To set up an alternate list of modules (instead of relying on [the default one on GitHub](https://github.com/cfengine/build-index/blob/master/cfbs.json)), use `index`.
+* `index` (string or dictionary): URL, relative path, or inline dictionary.
+  Used by `cfbs add` and `cfbs search`, to know where to look for modules.
+  Required and must be dictionary if the `type` is `index`, optional otherwise.
+  When it's a dictionary, the keys must be the unique module name which will be converted to the module's `name` field when added to the `build` array.
+* `git` (true or false): Whether `cfbs` should make git commits after editing `./cfbs.json` and related files.
+  Optional, defaults to false.
+* `provides` (dictionary of modules): Which modules this repo provides when someone tries to add it by URL (`cfbs add https://github.com/some/repo`).
+  Required for `cfbs add <URL>` to work, optional otherwise.
+  Most commonly used for projects with type `module`.
+  The keys must be the unique module name which will be converted to the module's `name` field when added to the `build` array.
+* `build` (list of modules): The modules to combine into a policy set when running `cfbs build`.
+  Required and must be non-empty for `policy-set` type and also for `cfbs build` command to work, optional otherwise.
+  (Even if you are developing a `module`, it is useful to be able to put modules in `build`, to build and deploy a policy set to test).
+
+### Module level keys
+
+The modules inside `build`, `provides`, and `index` use these fields:
+
+* `alias` (string): Used to rename a module in an index, or to provide a short name alternative.
+  Gets translated to the value (real module name) by `cfbs add`.
+  Only valid inside `index`.
+  Optional, must be the only field if used.
+* `name` (string): The unique name of the module (unique within project and within index).
+  For `provides` and `index` dictionaries, this name must be the key of each entry (not a field inside).
+  For the `build` array, it must be inside each module object (with `name` as the key).
+  Local modules (files and folders in same directory as `cfbs.json`), must start with `./`, and end with `/` if it's a directory.
+* `description` (string): Human readable description of what this module does.
+* `tags` (array of strings): Mostly used for information / finding modules on [build.cfengine.com](https://build.cfengine.com).
+  Some common examples include `supported`, `experimental`, `security`, `library`, `promise-type`.
+  Try to look at what tags are in use already and fit your module, instead of inventing new ones.
+* `repo` (string): Git repository URL where the module comes from.
+  Note that by default, `cfbs` downloads tarballs from `build.cfengine.com`, not directly from other git repos.
+  When your module is added to the index, we snapshot (download) your module and create this tarball.
+  Required for modules in an index, or modules added from an index, not accepted otherwise.
+* `url` (string): This field is added automatically when using `cfbs add <URL>` to directly add a module (not via index).
+  It is required for non-local, non-index modules, and not accepted otherwise.
+* `by` (string): Author information for display on [build.cfengine.com](https://build.cfengine.com), URL to GitHub profile.
+* `version` (string): Version number of module used in `cfbs add`, `cfbs update`, as well as for display on the [build.cfengine.com](https://build.cfengine.com) website.
+  Used in `index` and modules added from an index.
+  Must be updated together with `commit`.
+* `commit` (string): Commit hash used when we download and snapshot the version of a module.
+  Used in `index` and modules added from an index.
+  Must be updated together with `version`.
+* `subdirectory` (string): Used if the module is inside a subdirectory of a repo.
+  See for example [the `cfbs.json` of our modules repo](https://github.com/cfengine/modules/blob/master/cfbs.json).
+  Not used for local modules (policy files or folders) - the name is the path to the module in this case.
+  Optional.
+* `dependencies` (array of strings): List of modules (by name) required to make this module work correctly.
+  Dependencies are added automatically by `cfbs add` when attempting to add a module with dependencies.
+  For modules in `index`, must refer to other modules in `index`.
+  For modules in `provides`, must refer to other modules in `provides` or `index` (default one if not specified).
+  For modules in `build`, must refer to other modules in `build`.
+* `added_by` (string): Information about how the module was added to `build`.
+  Name of the module which added it as a dependency, or `"cfbs add"` if the user added the module itself.
+  Optional in `build` modules, not accepted in `provides` or `index`.
+* `steps` (array of strings): The operations performed (in order) to build the module.
+  See the section below on build steps.
+* `input` (array of objects): Used for modules which accept input, allowing users of the module to change it's behavior by entering values in the interactive CLI, via a JSON file, via MP API or GUI.
+  See the section below on [modules with input](#modules-with-input) for keys inside `input`, explanations of how this works and examples.
+  Optional.
 
 ### Step folders
 
