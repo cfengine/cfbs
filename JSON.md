@@ -7,18 +7,19 @@ The _policy set_ is what you deploy to your CFEngine hub / policy server, in `/v
 See the [README](https://github.com/cfengine/cfbs/blob/master/README.md) for general documentation on the `cfbs` tool and its commands.
 This file is specifically about the `cfbs.json` file format, it should serve as detailed and useful information for more advanced users who are making their own modules or contributing to CFEngine Build.
 
-There are 3 types of `cfbs.json` files:
+The type of a project is specified in a top-level `type` key in `cfbs.json`.
+There are 3 types of projects:
 
 * For building a policy set you create a project with type `policy-set`.
   This is the default when running `cfbs init`, and what most users encounter when first using the tool and CFEngine.
-  You then need to use the `build` key to specify which modules to use in `cfbs build`.
+  You then need to use the top-level `build` key to specify which modules to use in `cfbs build`.
 * The index of all available modules for `cfbs add <module-name>` has type `index`.
   The available modules must be in a dictionary in the `index` field.
   By default, [this index available GitHub](https://github.com/cfengine/build-index/blob/master/cfbs.json) is used.
 * When developing your own reusable modules to use in other projects, `module` type is used.
 
 When `cfbs` is using the default index and when we build the [build.cfengine.com](https://build.cfengine.com) website, we use a separate [`versions.json`](https://github.com/cfengine/build-index/blob/master/versions.json) file to keep track of all the versions of modules, their tarballs and checksums.
-When contributors edit the index ([like this](https://github.com/cfengine/build-index/pull/465/files)), an automated PR is generated to make the appropriate edit to `versions.json` ([like this](https://github.com/cfengine/build-index/pull/466/files)), (after downloading and uploading the module), so users don't have to `versions.json` manually.
+When contributors edit the index ([like this](https://github.com/cfengine/build-index/pull/465/files)), an automated PR is generated to make the appropriate edit to `versions.json` ([like this](https://github.com/cfengine/build-index/pull/466/files)), (after downloading and uploading the module), so users don't have to update `versions.json` manually.
 
 Note that while the 3 types above add some requirements to which fields you must use, the file format and `cfbs` tool is quite flexible.
 It is for example entirely possible, and encouraged, to use the `build` field and `cfbs build` command to build and test a policy set, while you are working on a module in a project with type `module`.
