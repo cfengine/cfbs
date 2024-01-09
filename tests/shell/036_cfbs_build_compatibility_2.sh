@@ -90,12 +90,12 @@ grep 'inventory_systemd_service_units_running' out/masterfiles/def.json
 grep 'bundle common inventory' out/masterfiles/promises.cf
 grep '$(paths.systemctl) list-units --type=service --state=running' out/masterfiles/services/inventory-systemd/main.cf
 
-# These other commands should also work:
-cfbs status
-
 # NOTE: We expect cfbs build to work, but not cfbs validate since
 #       this older module entry has an empty string for "subdirectory".
 !( cfbs validate )
+
+# Same for cfbs status since it runs validate:
+!( cfbs status )
 
 # Once more, but let's do download and build as separate steps:
 rm -rf out/
