@@ -496,14 +496,15 @@ def _validate_config_for_build_field(config, empty_build_list_ok=False):
         user_error(
             'The "build" field in ./cfbs.json must be a list (of modules involved in the build)'
         )
-    if not empty_build_list_ok:
-        if config["build"] == []:
-            user_error(
-                "The \"build\" field in ./cfbs.json is empty - add modules with 'cfbs add'"
-            )
+    if len(config["build"]) > 0:
+        # If there are modules in "build" validate them:
         for index, module in enumerate(config["build"]):
             name = module["name"] if "name" in module else index
             _validate_module_object("build", name, module, config)
+    elif not empty_build_list_ok:
+        user_error(
+            "The \"build\" field in ./cfbs.json is empty - add modules with 'cfbs add'"
+        )
 
 
 def main():
