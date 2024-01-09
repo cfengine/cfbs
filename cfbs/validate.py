@@ -101,14 +101,14 @@ def _validate_top_level_keys(config):
             )
 
 
-def _validate_config(config, require_build_actions=True):
+def _validate_config(config, empty_build_list_ok=False):
     # First validate the config i.e. the user's cfbs.json
     config.warn_about_unknown_keys()
     _validate_top_level_keys(config)
     raw_data = config.raw_data
 
     if config["type"] == "policy-set" or "build" in config:
-        _validate_config_for_build_field(config, require_build_actions)
+        _validate_config_for_build_field(config, empty_build_list_ok)
 
     if "index" in raw_data and type(raw_data["index"]) in (dict, OrderedDict):
         for name, module in raw_data["index"].items():
@@ -119,9 +119,9 @@ def _validate_config(config, require_build_actions=True):
             _validate_module_object("provides", name, module, config)
 
 
-def validate_config(config, require_build_actions=True):
+def validate_config(config, empty_build_list_ok=False):
     try:
-        _validate_config(config, require_build_actions)
+        _validate_config(config, empty_build_list_ok)
         return 0
     except CFBSValidationError as e:
         print(e)
@@ -485,7 +485,7 @@ def _validate_module_object(context, name, module, config):
         validate_module_input(name, module)
 
 
-def _validate_config_for_build_field(config, require_build_actions=True):
+def _validate_config_for_build_field(config, empty_build_list_ok=False):
     """Validate that neccessary fields are in the config for the build/download commands to work"""
     if not "build" in config:
         user_error(
@@ -496,7 +496,7 @@ def _validate_config_for_build_field(config, require_build_actions=True):
         user_error(
             'The "build" field in ./cfbs.json must be a list (of modules involved in the build)'
         )
-    if require_build_actions:
+    if not empty_build_list_ok:
         if config["build"] == []:
             user_error(
                 "The \"build\" field in ./cfbs.json is empty - add modules with 'cfbs add'"
