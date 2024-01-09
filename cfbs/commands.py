@@ -304,6 +304,8 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
 @cfbs_command("status")
 def status_command() -> int:
     config = CFBSConfig.get_instance()
+    if validate_config(config, require_build_actions=False) != 0:
+        return 1
     config.warn_about_unknown_keys()
     print("Name:        %s" % config["name"])
     print("Description: %s" % config["description"])
@@ -814,7 +816,7 @@ def update_command(to_update):
 
 
 @cfbs_command("validate")
-def validate_command():
+def validate_command() -> int:
     config = CFBSConfig.get_instance()
     return validate_config(config)
 
