@@ -304,6 +304,8 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
 @cfbs_command("status")
 def status_command() -> int:
     config = CFBSConfig.get_instance()
+    if validate_config(config) != 0:
+        return 1
     config.warn_about_unknown_keys()
     print("Name:        %s" % config["name"])
     print("Description: %s" % config["description"])
