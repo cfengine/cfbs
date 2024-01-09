@@ -814,7 +814,7 @@ def update_command(to_update):
 
 
 @cfbs_command("validate")
-def validate_command():
+def validate_command() -> int:
     config = CFBSConfig.get_instance()
     return validate_config(config)
 
