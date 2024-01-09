@@ -831,7 +831,7 @@ def _download_dependencies(
     counter = 1
     max_length = config.longest_module_name()
     downloads = os.path.join(cfbs_dir(), "downloads")
-    for module in config["build"]:
+    for module in config.get("build", []):
         name = module["name"]
         if name.startswith("./"):
             local_module_copy(module, counter, max_length)

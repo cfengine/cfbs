@@ -227,9 +227,12 @@ def _perform_build_step(module, step, max_length):
 
 
 def perform_build_steps(config) -> int:
+    if not config.get("build"):
+        user_error("No 'build' key found in the configuration")
+        return 1
     print("\nSteps:")
     module_name_length = config.longest_module_name()
-    for module in config["build"]:
+    for module in config.get("build", []):
         for step in module["steps"]:
             _perform_build_step(module, step, module_name_length)
     if os.path.isfile("out/masterfiles/def.json"):
