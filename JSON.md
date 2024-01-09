@@ -10,12 +10,6 @@ All these 3 share 1 standard format, commonly called `cfbs.json`.
 
 (There is also [`versions.json`](https://github.com/cfengine/cfbs-index/blob/master/versions.json), but this specification is not about that file).
 
-## Keys
-
-`index`: URL, relative path, or inline dictionary.
-Used by `cfbs add` and `cfbs search`, when index key is present in `cfbs.json` in the current working directory.
-When adding a module by URL, which has a `cfbs.json` inside of it, the index in that file should be ignored.
-
 ## The process of building modules from a project into a policy set
 
 This section gives you an introduction to how `cfbs build` works, while the complete details of all keys, operations, etc. are explained further in sections below.
@@ -118,6 +112,12 @@ The 3 build steps above achieve 3 distinct things:
 
 After the build has been completed the policy set is available at `out/masterfiles` and `out/masterfiles.tgz`.
 It is ready to be deployed to a remote hub with `cf-remote deploy` or locally (if running commands on a hub) with `sudo cfbs install`.
+
+## Keys
+
+`index`: URL, relative path, or inline dictionary.
+Used by `cfbs add` and `cfbs search`, when index key is present in `cfbs.json` in the current working directory.
+When adding a module by URL, which has a `cfbs.json` inside of it, the index in that file should be ignored.
 
 ### Step folders
 
