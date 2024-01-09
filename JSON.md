@@ -18,30 +18,106 @@ When adding a module by URL, which has a `cfbs.json` inside of it, the index in 
 
 ## The process of building modules from a project into a policy set
 
+This section gives you an introduction to how `cfbs build` works, while the complete details of all keys, operations, etc. are explained further in sections below.
+
 When you build a project with the `cfbs build` command, it loops through all modules in the project (`"build"` key), in order.
 Within each module it runs the individual build steps, specified in the `"steps"` key.
 
-As an example, here is a local policy file module with 3 common build steps:
+As an example, you might set up a basic project like this:
+
+```
+$ mkdir my_project
+$ cd my_project
+$ cfbs init --non-interactive
+Initialized empty Git repository in /Users/olehermanse/my_project/.git/
+Committing using git:
+
+[main (root-commit) a0e1365] Initialized a new CFEngine Build project
+ 1 file changed, 7 insertions(+)
+ create mode 100644 cfbs.json
+
+Initialized an empty project called 'Example project' in 'cfbs.json'
+Added module: masterfiles
+Committing using git:
+
+[main cee639a] Added module 'masterfiles'
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+$ echo "
+bundle agent my_bundle
+{
+  reports:
+    "Hello, world";
+}" > my_policy.cf
+$ cfbs --non-interactive add ./my_policy.cf
+Added module: ./my_policy.cf
+Committing using git:
+
+[main 9c1f7c8] Added module './my_policy.cf'
+ 2 files changed, 17 insertions(+)
+ create mode 100644 my_policy.cf
+$ cfbs pretty cfbs.json
+```
+
+This project has 2 modules, the default policy set (`masterfiles`) and one additional policy file we've written (`my_policy.cf`).
+
+We can now take a look at the project we made (`cfbs.json`):
 
 ```json
 {
-  "name": "./policy.cf",
-  "description": "Local policy file added using cfbs command line",
-  "tags": ["local"],
-  "added_by": "cfbs add",
-  "steps": [
-    "copy ./policy.cf services/cfbs/policy.cf",
-    "policy_files ./services/cfbs/policy.cf",
-    "bundles my_bundle"
+  "name": "Example project",
+  "description": "Example description",
+  "type": "policy-set",
+  "git": true,
+  "build": [
+    {
+      "name": "masterfiles",
+      "description": "Official CFEngine Masterfiles Policy Framework (MPF).",
+      "tags": ["supported", "base"],
+      "repo": "https://github.com/cfengine/masterfiles",
+      "by": "https://github.com/cfengine",
+      "version": "3.21.3",
+      "commit": "ca637d4e6148432a90b7db598a4137956c0e0282",
+      "added_by": "cfbs add",
+      "steps": [
+        "run EXPLICIT_VERSION=3.21.3 EXPLICIT_RELEASE=1 ./prepare.sh -y",
+        "copy ./ ./"
+      ]
+    },
+    {
+      "name": "./my_policy.cf",
+      "description": "Local policy file added using cfbs command line",
+      "tags": ["local"],
+      "added_by": "cfbs add",
+      "steps": [
+        "copy ./my_policy.cf services/cfbs/my_policy.cf",
+        "policy_files services/cfbs/my_policy.cf",
+        "bundles my_bundle"
+      ]
+    }
   ]
 }
 ```
 
-The 3 build steps above achieve 3 distinct things:
-1. The policy file `policy.cf` is included in the policy set. It will be deployed to `/var/cfengine/masterfiles/services/cfbs/policy.cf` on the hub.
-2. The path to `policy.cf` is added to `"inputs"` making cf-agent and other binaries aware of it and parse it.
-3. The bundle `my_bundle` within `policy.cf` is added to the bundle sequence, making `cf-agent` find the correct bundle to run (commonly called the entry point of a policy). In the end, this causes `cf-agent` to actually evaluate the promises within the bundle and enforce your desired state (potentially making changes to the system).
+If we now run `cfbs build` it will loop through all the modules inside the `"build"` field, downloading them if necessary, and then running the _build steps_ inside sequentially, in a temporary _step folder_.
 
+Taking a look at the second module (`./my_policy.cf`) we see 3 quite common build steps:
+
+```
+copy ./my_policy.cf services/cfbs/my_policy.cf
+policy_files services/cfbs/my_policy.cf
+bundles my_bundle
+```
+
+The 3 build steps above achieve 3 distinct things:
+1. The policy file `policy.cf` is included in the policy set (`out/masterfiles`).
+   It will be deployed to `/var/cfengine/masterfiles/services/cfbs/policy.cf` on the hub.
+2. The path to `policy.cf` is added to `"inputs"` making cf-agent and other binaries aware of it and parse it.
+3. The bundle `my_bundle` within `policy.cf` is added to the bundle sequence, making `cf-agent` find the correct bundle to run (commonly called the entry point of a policy).
+   In the end, this causes `cf-agent` to actually evaluate the promises within the bundle and enforce your desired state (potentially making changes to the system).
+
+After the build has been completed the policy set is available at `out/masterfiles` and `out/masterfiles.tgz`.
+It is ready to be deployed to a remote hub with `cf-remote deploy` or locally (if running commands on a hub) with `sudo cfbs install`.
 
 ### Step folders
 
