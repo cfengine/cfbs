@@ -15,7 +15,7 @@ There are 3 types of projects:
   You then need to use the top-level `build` key to specify which modules to use in `cfbs build`.
 * The index of all available modules for `cfbs add <module-name>` has type `index`.
   The available modules must be in a dictionary in the `index` field.
-  By default, [this index available GitHub](https://github.com/cfengine/build-index/blob/master/cfbs.json) is used.
+  By default, [this index available in GitHub](https://github.com/cfengine/build-index/blob/master/cfbs.json) is used.
 * When developing your own reusable modules to use in other projects, `module` type is used.
 
 When `cfbs` is using the default index and when we build the [build.cfengine.com](https://build.cfengine.com) website, we use a separate [`versions.json`](https://github.com/cfengine/build-index/blob/master/versions.json) file to keep track of all the versions of modules, their tarballs and checksums.
