@@ -10,13 +10,13 @@ This file is specifically about the `cfbs.json` file format, it should serve as 
 The type of a project is specified in a top-level `type` key in `cfbs.json`.
 There are 3 types of projects:
 
-* For building a policy set you create a project with type `policy-set`.
+* `policy-set`: For projects which build a policy set (which will be deployed to a hub).
   This is the default when running `cfbs init`, and what most users encounter when first using the tool and CFEngine.
-  You then need to use the top-level `build` key to specify which modules to use in `cfbs build`.
-* The index of all available modules for `cfbs add <module-name>` has type `index`.
+  You then need to use the `build` key to specify which modules to use in `cfbs build`.
+* `index`: For defining an index of all available modules for `cfbs add <module-name>`.
   The available modules must be in a dictionary in the `index` field.
   By default, [this index available in GitHub](https://github.com/cfengine/build-index/blob/master/cfbs.json) is used.
-* When developing your own reusable modules to use in other projects, `module` type is used.
+* `module`: For developing your own reusable modules to use in other projects.
 
 When `cfbs` is using the default index and when we build the [build.cfengine.com](https://build.cfengine.com) website, we use a separate [`versions.json`](https://github.com/cfengine/build-index/blob/master/versions.json) file to keep track of all the versions of modules, their tarballs and checksums.
 When contributors edit the index ([like this](https://github.com/cfengine/build-index/pull/465/files)), an automated PR is generated to make the appropriate edit to `versions.json` ([like this](https://github.com/cfengine/build-index/pull/466/files)), (after downloading and uploading the module), so users don't have to update `versions.json` manually.
@@ -143,10 +143,10 @@ At the top level of a `cfbs.json` file, these fields are available:
 * `description` (string): Human readable description of what this project is for.
   For example: `This project builds the policy set we deploy to all production hosts.`
 * `type` (string): What kind of project this is.
-  One of: `policy-set` (default), `index`, and `module`.
-  If you are setting up a project to build a policy set (to deploy on a hub), use `policy-set`.
-  For developing a new module (or multiple) to publish on [build.cfengine.com](https://build.cfengine.com), or to use in your other projects, use `module`.
-  To set up an alternate list of modules (instead of relying on [the default one on GitHub](https://github.com/cfengine/build-index/blob/master/cfbs.json)), use `index`.
+  One of:
+  * `policy-set` (default): For projects which build a policy set (to deploy on a hub).
+  * `module`: For developing a new module (or multiple) to publish on [build.cfengine.com](https://build.cfengine.com), or to use in your other projects.
+  * `index`: For setting up an alternate list of modules (instead of relying on [the default one on GitHub](https://github.com/cfengine/build-index/blob/master/cfbs.json)).
 * `index` (string or dictionary): URL, relative path, or inline dictionary.
   Used by `cfbs add` and `cfbs search`, to know where to look for modules.
   Required and must be dictionary if the `type` is `index`, optional otherwise.
