@@ -34,12 +34,13 @@ from cfbs.pretty import (
     pretty_check_file,
     pretty_file,
     CFBS_DEFAULT_SORTING_RULES,
+    TOP_LEVEL_KEYS,
+    MODULE_KEYS,
 )
 from cfbs.build import (
     init_out_folder,
     perform_build_steps,
 )
-from cfbs.cfbs_json import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import validate_config
 from cfbs.internal_file_management import (

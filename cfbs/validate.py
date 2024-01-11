@@ -5,7 +5,7 @@ import re
 from collections import OrderedDict
 
 from cfbs.utils import is_a_commit_hash, user_error
-from cfbs.cfbs_json import TOP_LEVEL_KEYS, MODULE_KEYS
+from cfbs.pretty import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig
 from cfbs.build import AVAILABLE_BUILD_STEPS
 
