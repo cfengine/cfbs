@@ -29,7 +29,12 @@ from cfbs.utils import (
 )
 
 from cfbs.args import get_args
-from cfbs.pretty import pretty, pretty_check_file, pretty_file
+from cfbs.pretty import (
+    pretty,
+    pretty_check_file,
+    pretty_file,
+    cfbs_default_sorting_rules,
+)
 from cfbs.build import (
     init_out_folder,
     perform_build_steps,
@@ -95,34 +100,7 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     if not filenames:
         user_error("Filenames missing for cfbs pretty command")
 
-    cfbs_sorting_rules = None
-    if not keep_order:
-        # These sorting rules achieve 3 things:
-        # 1. Top level keys are sorted according to a specified list
-        # 2. Module names in "index" and "provides" are sorted alphabetically
-        # 3. Fields inside module objects are sorted according to a specified list
-        #    for "index", "provides", and "build"
-
-        module_key_sorting = (
-            MODULE_KEYS,
-            None,
-        )
-        cfbs_sorting_rules = {
-            None: (
-                TOP_LEVEL_KEYS,
-                {
-                    "(index|provides)": (
-                        "alphabetic",  # Module names are sorted alphabetically
-                        {".*": module_key_sorting},
-                    ),
-                    "build": (  # An array, not an object
-                        None,  # Don't sort elements of array
-                        {".*": module_key_sorting},
-                    ),
-                },
-            ),
-        }
-
+    sorting_rules = cfbs_default_sorting_rules if keep_order else None
     num_files = 0
     for f in filenames:
         if not f or not f.endswith(".json"):
@@ -132,11 +110,11 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
             )
         try:
             if check:
-                if not pretty_check_file(f, cfbs_sorting_rules):
+                if not pretty_check_file(f, sorting_rules):
                     num_files += 1
                     print("Would reformat %s" % f)
             else:
-                pretty_file(f, cfbs_sorting_rules)
+                pretty_file(f, sorting_rules)
         except FileNotFoundError:
             user_error("File '%s' not found" % f)
         except json.decoder.JSONDecodeError as ex:

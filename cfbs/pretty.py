@@ -25,10 +25,17 @@ MODULE_KEYS = (
 )
 
 
+# These sorting rules achieve 3 things:
+# 1. Top level keys are sorted according to a specified list
+# 2. Module names in "index" and "provides" are sorted alphabetically
+# 3. Fields inside module objects are sorted according to a specified list
+#    for "index", "provides", and "build"
+
 module_key_sorting = (
     MODULE_KEYS,
     None,
 )
+
 cfbs_default_sorting_rules = {
     None: (
         TOP_LEVEL_KEYS,
