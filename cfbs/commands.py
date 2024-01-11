@@ -33,7 +33,7 @@ from cfbs.pretty import (
     pretty,
     pretty_check_file,
     pretty_file,
-    cfbs_default_sorting_rules,
+    CFBS_DEFAULT_SORTING_RULES,
 )
 from cfbs.build import (
     init_out_folder,
@@ -100,7 +100,7 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     if not filenames:
         user_error("Filenames missing for cfbs pretty command")
 
-    sorting_rules = cfbs_default_sorting_rules if keep_order else None
+    sorting_rules = CFBS_DEFAULT_SORTING_RULES if keep_order else None
     num_files = 0
     for f in filenames:
         if not f or not f.endswith(".json"):

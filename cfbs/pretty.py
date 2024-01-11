@@ -31,22 +31,22 @@ MODULE_KEYS = (
 # 3. Fields inside module objects are sorted according to a specified list
 #    for "index", "provides", and "build"
 
-module_key_sorting = (
+_module_key_sorting = (
     MODULE_KEYS,
     None,
 )
 
-cfbs_default_sorting_rules = {
+CFBS_DEFAULT_SORTING_RULES = {
     None: (
         TOP_LEVEL_KEYS,
         {
             "(index|provides)": (
                 "alphabetic",  # Module names are sorted alphabetically
-                {".*": module_key_sorting},
+                {".*": _module_key_sorting},
             ),
             "build": (  # An array, not an object
                 None,  # Don't sort elements of array
-                {".*": module_key_sorting},
+                {".*": _module_key_sorting},
             ),
         },
     ),
