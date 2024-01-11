@@ -3,29 +3,8 @@ from copy import deepcopy
 import logging as log
 
 from cfbs.index import Index
+from cfbs.pretty import pretty, TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.utils import read_json, user_error
-from cfbs.pretty import pretty
-
-# Globals for the keys in cfbs.json and their order
-# Used for validation and prettifying / sorting.
-TOP_LEVEL_KEYS = ("name", "description", "type", "index", "git", "provides", "build")
-
-MODULE_KEYS = (
-    "alias",
-    "name",
-    "description",
-    "tags",
-    "repo",
-    "url",
-    "by",
-    "version",
-    "commit",
-    "subdirectory",
-    "dependencies",
-    "added_by",
-    "steps",
-    "input",
-)
 
 
 def _construct_provided_module(name, data, url, commit):
