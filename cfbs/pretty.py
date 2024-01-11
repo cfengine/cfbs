@@ -3,6 +3,48 @@ import re
 from copy import copy
 from collections import OrderedDict
 
+# Globals for the keys in cfbs.json and their order
+# Used for validation and prettifying / sorting.
+TOP_LEVEL_KEYS = ("name", "description", "type", "index", "git", "provides", "build")
+
+MODULE_KEYS = (
+    "alias",
+    "name",
+    "description",
+    "tags",
+    "repo",
+    "url",
+    "by",
+    "version",
+    "commit",
+    "subdirectory",
+    "dependencies",
+    "added_by",
+    "steps",
+    "input",
+)
+
+
+module_key_sorting = (
+    MODULE_KEYS,
+    None,
+)
+cfbs_default_sorting_rules = {
+    None: (
+        TOP_LEVEL_KEYS,
+        {
+            "(index|provides)": (
+                "alphabetic",  # Module names are sorted alphabetically
+                {".*": module_key_sorting},
+            ),
+            "build": (  # An array, not an object
+                None,  # Don't sort elements of array
+                {".*": module_key_sorting},
+            ),
+        },
+    ),
+}
+
 
 def _children_sort(child, name, sorting_rules):
     """Recursively sort child objects in a JSON object.

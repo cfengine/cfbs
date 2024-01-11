@@ -17,7 +17,7 @@ from cfbs.internal_file_management import (
     fetch_archive,
     SUPPORTED_ARCHIVES,
 )
-from cfbs.pretty import pretty
+from cfbs.pretty import pretty, cfbs_default_sorting_rules
 from cfbs.cfbs_json import CFBSJson
 from cfbs.module import Module
 from cfbs.prompts import prompt_user, YES_NO_CHOICES
@@ -76,7 +76,7 @@ class CFBSConfig(CFBSJson):
         self.non_interactive = non_interactive
 
     def save(self):
-        data = pretty(self._data) + "\n"
+        data = pretty(self._data, cfbs_default_sorting_rules) + "\n"
         with open(self.path, "w") as f:
             f.write(data)
 
