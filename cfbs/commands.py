@@ -141,12 +141,14 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
         default="Example description",
     )
 
-    config = {
-        "name": name,
-        "type": "policy-set",  # TODO: Prompt whether user wants to make a module
-        "description": description,
-        "build": [],
-    }
+    config = OrderedDict(
+        {
+            "name": name,
+            "type": "policy-set",  # TODO: Prompt whether user wants to make a module
+            "description": description,
+            "build": [],
+        }
+    )
     if index:
         config["index"] = index
 
@@ -207,7 +209,10 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
 
     config["git"] = do_git
 
-    write_json(cfbs_filename(), config)
+    data = pretty(config, CFBS_DEFAULT_SORTING_RULES) + "\n"
+    print(data)
+    with open(cfbs_filename(), "w") as f:
+        f.write(data)
     assert is_cfbs_repo()
 
     if do_git:

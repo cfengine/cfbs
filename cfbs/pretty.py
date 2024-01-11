@@ -53,7 +53,7 @@ CFBS_DEFAULT_SORTING_RULES = {
 }
 
 
-def _children_sort(child, name, sorting_rules):
+def _children_sort(child: OrderedDict, name, sorting_rules):
     """Recursively sort child objects in a JSON object.
 
     :param child: child object to start with
@@ -127,8 +127,7 @@ def _children_sort(child, name, sorting_rules):
        Only JSON objects (dictionaries) are sorted by this function, arrays are ignored.
 
     """
-    if type(child) is not OrderedDict:
-        return
+    assert type(child) is OrderedDict
 
     for key in child:
         if type(child[key]) not in (list, tuple):
