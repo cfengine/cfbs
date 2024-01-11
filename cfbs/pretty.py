@@ -25,28 +25,35 @@ MODULE_KEYS = (
 )
 
 
-module_key_sorting = (
+# These sorting rules achieve 3 things:
+# 1. Top level keys are sorted according to a specified list
+# 2. Module names in "index" and "provides" are sorted alphabetically
+# 3. Fields inside module objects are sorted according to a specified list
+#    for "index", "provides", and "build"
+
+_module_key_sorting = (
     MODULE_KEYS,
     None,
 )
-cfbs_default_sorting_rules = {
+
+CFBS_DEFAULT_SORTING_RULES = {
     None: (
         TOP_LEVEL_KEYS,
         {
             "(index|provides)": (
                 "alphabetic",  # Module names are sorted alphabetically
-                {".*": module_key_sorting},
+                {".*": _module_key_sorting},
             ),
             "build": (  # An array, not an object
                 None,  # Don't sort elements of array
-                {".*": module_key_sorting},
+                {".*": _module_key_sorting},
             ),
         },
     ),
 }
 
 
-def _children_sort(child, name, sorting_rules):
+def _children_sort(child: OrderedDict, name, sorting_rules):
     """Recursively sort child objects in a JSON object.
 
     :param child: child object to start with
@@ -120,8 +127,7 @@ def _children_sort(child, name, sorting_rules):
        Only JSON objects (dictionaries) are sorted by this function, arrays are ignored.
 
     """
-    if type(child) is not OrderedDict:
-        return
+    assert type(child) is OrderedDict
 
     for key in child:
         if type(child[key]) not in (list, tuple):

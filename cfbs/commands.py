@@ -29,12 +29,18 @@ from cfbs.utils import (
 )
 
 from cfbs.args import get_args
-from cfbs.pretty import pretty, pretty_check_file, pretty_file
+from cfbs.pretty import (
+    pretty,
+    pretty_check_file,
+    pretty_file,
+    CFBS_DEFAULT_SORTING_RULES,
+    TOP_LEVEL_KEYS,
+    MODULE_KEYS,
+)
 from cfbs.build import (
     init_out_folder,
     perform_build_steps,
 )
-from cfbs.cfbs_json import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import validate_config
 from cfbs.internal_file_management import (
@@ -95,34 +101,7 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     if not filenames:
         user_error("Filenames missing for cfbs pretty command")
 
-    cfbs_sorting_rules = None
-    if not keep_order:
-        # These sorting rules achieve 3 things:
-        # 1. Top level keys are sorted according to a specified list
-        # 2. Module names in "index" and "provides" are sorted alphabetically
-        # 3. Fields inside module objects are sorted according to a specified list
-        #    for "index", "provides", and "build"
-
-        module_key_sorting = (
-            MODULE_KEYS,
-            None,
-        )
-        cfbs_sorting_rules = {
-            None: (
-                TOP_LEVEL_KEYS,
-                {
-                    "(index|provides)": (
-                        "alphabetic",  # Module names are sorted alphabetically
-                        {".*": module_key_sorting},
-                    ),
-                    "build": (  # An array, not an object
-                        None,  # Don't sort elements of array
-                        {".*": module_key_sorting},
-                    ),
-                },
-            ),
-        }
-
+    sorting_rules = CFBS_DEFAULT_SORTING_RULES if keep_order else None
     num_files = 0
     for f in filenames:
         if not f or not f.endswith(".json"):
@@ -132,11 +111,11 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
             )
         try:
             if check:
-                if not pretty_check_file(f, cfbs_sorting_rules):
+                if not pretty_check_file(f, sorting_rules):
                     num_files += 1
                     print("Would reformat %s" % f)
             else:
-                pretty_file(f, cfbs_sorting_rules)
+                pretty_file(f, sorting_rules)
         except FileNotFoundError:
             user_error("File '%s' not found" % f)
         except json.decoder.JSONDecodeError as ex:
@@ -163,12 +142,14 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
         default="Example description",
     )
 
-    config = {
-        "name": name,
-        "type": "policy-set",  # TODO: Prompt whether user wants to make a module
-        "description": description,
-        "build": [],
-    }
+    config = OrderedDict(
+        {
+            "name": name,
+            "type": "policy-set",  # TODO: Prompt whether user wants to make a module
+            "description": description,
+            "build": [],
+        }
+    )
     if index:
         config["index"] = index
 
@@ -229,7 +210,10 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
 
     config["git"] = do_git
 
-    write_json(cfbs_filename(), config)
+    data = pretty(config, CFBS_DEFAULT_SORTING_RULES) + "\n"
+    print(data)
+    with open(cfbs_filename(), "w") as f:
+        f.write(data)
     assert is_cfbs_repo()
 
     if do_git:
