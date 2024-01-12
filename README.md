@@ -289,6 +289,7 @@ These commands are intended to be run as part of build systems / deployment pipe
   Expected usage is to run `cfbs get-input` to get the JSON, and then fill out the response part and run `cfbs set-input`.
 * `cfbs validate`: Used to validate the [index JSON file](https://github.com/cfengine/build-index/blob/master/cfbs.json).
   May be expanded to validate other files and formats in the future.
+  **Note:** If you use `cfbs validate` as part of your automation, scripts, and build systems, be aware that we might add more strict validation rules in the future, so be prepared to sometimes have it fail after upgrading the version of cfbs.
 
 They don't have interactive prompts, you can expect fewer changes to them, and backwards compatibility is much more important than with the interactive commands above.
 

@@ -263,6 +263,25 @@ Unless otherwise noted, all steps are run inside the module's folder (`out/steps
   * Source is relative to module directory and target is relative to `out/masterfiles`.
     * In most cases, the build step should be: `input ./input.json def.json`
 
+### A note on reproducibility and backwards compatibility
+
+As mentioned in [the README](./README.md), our main focus when it comes to reproducibility and backwards compatibility of `cfbs` is the `cfbs build` command.
+(This also extends to `cfbs download` since that is the first part of `cfbs build`).
+Anyone who has a working CFEngine Build project, should expect it to keep working (keep building) after upgrading their hub or their version of cfbs.
+Ideally, the resulting policy set tarball should be bit-by-bit identical (reproducible), including metadata, so that checksums are easy to compare.
+We are not there yet, see this ticket for more progress in this area:
+
+https://northerntech.atlassian.net/browse/CFE-4102
+
+Conversely, for other commands, we might choose to make changes where we think it's a good idea (for example for the user experience, performance or security of the tool).
+Some examples of where you might experience changes are:
+
+* The commands which edit `cfbs.json`, or other files, might produce different JSON files in future versions.
+  (`cfbs init`, `cfbs add`, etc.).
+* We might add more strict validation, so `cfbs validate` and `cfbs status` could start giving warnings or errors after upgrading to a new version.
+* The interactive prompts might be drastically changed to help the user experience and give more advanced options.
+  Don't rely on the exact prompts, order of prompts, or output of `cfbs init`, `cfbs add`, etc.
+
 ## Examples
 
 ### New project
