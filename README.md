@@ -33,7 +33,7 @@ pip install cf-remote
 If you want to install an unreleased version of `cfbs`, such as the master branch, just run this inside [the git repo](https://github.com/cfengine/cfbs):
 
 ```
-$ cfbs install .
+pip install .
 ```
 
 ### Dependencies
