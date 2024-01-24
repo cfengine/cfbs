@@ -346,10 +346,10 @@ def _validate_module_object(context, name, module, config):
                     '"%s" is not an acceptable variable name, must match regex "[a-z_]+"'
                     % input_element["variable"],
                 )
-            if not re.fullmatch(r"[a-z_]+", input_element["namespace"]):
+            if not re.fullmatch(r"[a-z_][a-z0-9_]+", input_element["namespace"]):
                 raise CFBSValidationError(
                     name,
-                    '"%s" is not an acceptable namespace, must match regex "[a-z_]+"'
+                    '"%s" is not an acceptable namespace, must match regex "[a-z_][a-z0-9_]+"'
                     % input_element["namespace"],
                 )
             if not re.fullmatch(r"[a-z_]+", input_element["bundle"]):
