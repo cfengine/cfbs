@@ -6,7 +6,13 @@ do prompts, etc.
 
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
-from cfbs.git import git_commit, git_discard_changes_in_file, CFBSGitError, is_git_repo
+from cfbs.git import (
+    git_commit,
+    git_discard_changes_in_file,
+    CFBSGitError,
+    is_git_repo,
+    git_check_tracked_changes,
+)
 from cfbs.args import get_args
 from cfbs.result import Result
 import logging as log
@@ -85,12 +91,16 @@ def with_git_commit(
                     msg = commit_msg % tuple(positional_args)
                 else:
                     msg = commit_msg
-
+            config = CFBSConfig.get_instance()
+            do_git = get_args().git
+            should_commit = (
+                should_commit
+                and config.get("git", False)
+                and git_check_tracked_changes(files)
+            )
             if not should_commit:
                 return ret
 
-            config = CFBSConfig.get_instance()
-            do_git = get_args().git
             if do_git == "yes":
                 if not is_git_repo():
                     log.error(
