@@ -177,3 +177,23 @@ def git_discard_changes_in_file(file_name):
         raise CFBSGitError(
             "Failed to discard changes in file '%s'" % file_name
         ) from cpe
+
+
+def git_check_tracked_changes(scope=["all"]):
+    should_commit = False
+    try:
+        result = run(["git", "status", "-s", "-u"], check=True, stdout=PIPE)
+        if "all" in scope:
+            if len(result.stdout) > 0:
+                should_commit = True
+        else:
+            lines = result.stdout.decode("utf-8").split("\n")
+            changes = [line.strip().split(" ")[1] for line in lines if line]
+            should_commit = any(i in changes for i in scope)
+        if not should_commit:
+            print("No changes to commit")
+        return should_commit
+    except CalledProcessError as cpe:
+        raise CFBSGitError(
+            "Failed to run 'git status -s -u' to check for changes."
+        ) from cpe
