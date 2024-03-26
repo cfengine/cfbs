@@ -211,7 +211,6 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     config["git"] = do_git
 
     data = pretty(config, CFBS_DEFAULT_SORTING_RULES) + "\n"
-    print(data)
     with open(cfbs_filename(), "w") as f:
         f.write(data)
     assert is_cfbs_repo()
