@@ -219,9 +219,11 @@ def pretty(o, sorting_rules=None):
     if sorting_rules is not None:
         _children_sort(o, None, sorting_rules)
 
-    def _should_wrap(parent):
+    def _should_wrap(parent, indent):
         assert isinstance(parent, (tuple, list, dict))
-
+        # We should wrap the top level collection
+        if indent == 0:
+            return True
         if isinstance(parent, dict):
             parent = parent.values()
 
@@ -235,8 +237,7 @@ def pretty(o, sorting_rules=None):
     def _encode_list(lst, indent, cursor):
         if not lst:
             return "[]"
-
-        if not _should_wrap(lst):
+        if not _should_wrap(lst, indent):
             buf = json.dumps(lst)
             assert "\n" not in buf
             if indent + cursor + len(buf) <= MAX_LEN:
@@ -259,8 +260,7 @@ def pretty(o, sorting_rules=None):
     def _encode_dict(dct, indent, cursor):
         if not dct:
             return "{}"
-
-        if not _should_wrap(dct):
+        if not _should_wrap(dct, indent):
             buf = json.dumps(dct)
             buf = "{ " + buf[1 : len(buf) - 1] + " }"
             assert "\n" not in buf

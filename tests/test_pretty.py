@@ -13,22 +13,39 @@ def test_pretty():
     assert pretty("Hello World!") == '"Hello World!"'
 
     # Test collections
-    assert pretty([]) == "[]"
+    assert pretty([]) == ("[]")
     assert pretty(()) == "[]"
     assert pretty({}) == "{}"
 
     test = OrderedDict()
     test["a"] = []
     test["b"] = ()
-    expected = '{ "a": [], "b": [] }'
+    expected = """{
+  "a": [],
+  "b": []
+}"""
     assert pretty(test) == expected
 
     test = [None, True, False, 1, 1.2, "Hello!"]
-    expected = '[null, true, false, 1, 1.2, "Hello!"]'
+    expected = """[
+  null,
+  true,
+  false,
+  1,
+  1.2,
+  "Hello!"
+]"""
     assert pretty(test) == expected
 
     test = (None, True, False, 1, 1.2, "Hello!")
-    expected = '[null, true, false, 1, 1.2, "Hello!"]'
+    expected = """[
+  null,
+  true,
+  false,
+  1,
+  1.2,
+  "Hello!"
+]"""
     assert pretty(test) == expected
 
     test = OrderedDict()
@@ -38,7 +55,14 @@ def test_pretty():
     test["d"] = 1
     test["e"] = 1.2
     test["f"] = "Hello!"
-    expected = '{ "a": null, "b": true, "c": false, "d": 1, "e": 1.2, "f": "Hello!" }'
+    expected = """{
+  "a": null,
+  "b": true,
+  "c": false,
+  "d": 1,
+  "e": 1.2,
+  "f": "Hello!"
+}"""
     assert pretty(test) == expected
 
     # Test that strings are escaped correctly:
@@ -74,46 +98,43 @@ def test_pretty_string():
     assert pretty_string("{}") == "{}"
 
     test = '[null, true, false, 1, 1.2, "Hello!"]'
-    expected = '[null, true, false, 1, 1.2, "Hello!"]'
+    expected = """[
+  null,
+  true,
+  false,
+  1,
+  1.2,
+  "Hello!"
+]"""
     assert pretty_string(test) == expected
 
     test = '{ "a": null, "b": true, "c": false, "d": 1, "e": 1.2, "f": "Hello!" }'
-    expected = '{ "a": null, "b": true, "c": false, "d": 1, "e": 1.2, "f": "Hello!" }'
+    expected = """{
+  "a": null,
+  "b": true,
+  "c": false,
+  "d": 1,
+  "e": 1.2,
+  "f": "Hello!"
+}"""
+
     assert pretty_string(test) == expected
 
-    # Test wrapping on dicts based on length
-    test = '{ "This": "line", "is": "less", "than": 80, "characters": "don\'t wrap me..." }'
-    expected = '{ "This": "line", "is": "less", "than": 80, "characters": "don\'t wrap me..." }'
-    assert pretty_string(test) == expected
-
-    test = '{ "This": "line", "is": "equal", "to": 80, "characters": "dont\'t wrap me...." }'
-    expected = '{ "This": "line", "is": "equal", "to": 80, "characters": "dont\'t wrap me...." }'
-    assert pretty_string(test) == expected
-
-    test = '{ "This": "line", "is": "greater", "than": 80, "characters": "wrap me ........" }'
+    test = '{ "This": "line", "is": "equal", "to": 80, "characters": "wrap me anyway" }'
     expected = """{
   "This": "line",
-  "is": "greater",
-  "than": 80,
-  "characters": "wrap me ........"
+  "is": "equal",
+  "to": 80,
+  "characters": "wrap me anyway"
 }"""
     assert pretty_string(test) == expected
 
-    # Test wrapping on lists based on length
-    test = '["This", "line", "is", "less", "than", 80, "characters", "don\'t wrap me", "."]'
-    expected = '["This", "line", "is", "less", "than", 80, "characters", "don\'t wrap me", "."]'
-    assert pretty_string(test) == expected
-
-    test = '["This", "line", "is", "less", "than", 80, "characters", "don\'t wrap me", ".."]'
-    expected = '["This", "line", "is", "less", "than", 80, "characters", "don\'t wrap me", ".."]'
-    assert pretty_string(test) == expected
-
-    test = '["This", "line", "is", "less", "than", 80, "characters", "wrap me", ".........."]'
+    test = '["This", "line", "is", "more", "than", 80, "characters", "wrap me", ".........."]'
     expected = """[
   "This",
   "line",
   "is",
-  "less",
+  "more",
   "than",
   80,
   "characters",
@@ -194,9 +215,9 @@ def test_pretty_check_string():
   "age": 27
 }"""
         )
-        == False
+        == True
     )
-    assert pretty_check_string('{ "name": "lars", "age": 27 }') == True
+    assert pretty_check_string('{ "name": "lars", "age": 27 }') == False
 
 
 def test_pretty_sorting_simple_top_level():
@@ -209,11 +230,28 @@ def test_pretty_sorting_simple_top_level():
         ),
     }
     assert pretty_string("""{}""", lex_sorting) == """{}"""
-    assert pretty_string("""{"a":1}""", lex_sorting) == """{ "a": 1 }"""
-    assert pretty_string("""{"b":2,"a":1}""", lex_sorting) == """{ "a": 1, "b": 2 }"""
+    assert (
+        pretty_string("""{"a":1}""", lex_sorting)
+        == """{
+  "a": 1
+}"""
+    )
+
+    assert (
+        pretty_string("""{"b":2,"a":1}""", lex_sorting)
+        == """{
+  "a": 1,
+  "b": 2
+}"""
+    )
+
     assert (
         pretty_string("""{"b":2,"a":1,"c":3}""", lex_sorting)
-        == """{ "a": 1, "b": 2, "c": 3 }"""
+        == """{
+  "a": 1,
+  "b": 2,
+  "c": 3
+}"""
     )
 
     length_sorting = {
@@ -224,14 +262,28 @@ def test_pretty_sorting_simple_top_level():
     }
 
     assert pretty_string("""{}""", length_sorting) == """{}"""
-    assert pretty_string("""{"aa":1}""", length_sorting) == """{ "aa": 1 }"""
+    assert (
+        pretty_string("""{"aa":1}""", length_sorting)
+        == """{
+  "aa": 1
+}"""
+    )
+
     assert (
         pretty_string("""{"bbb":2,"aa":1}""", length_sorting)
-        == """{ "aa": 1, "bbb": 2 }"""
+        == """{
+  "aa": 1,
+  "bbb": 2
+}"""
     )
+
     assert (
         pretty_string("""{"bbb":2,"aa":1,"c":3}""", length_sorting)
-        == """{ "c": 3, "aa": 1, "bbb": 2 }"""
+        == """{
+  "c": 3,
+  "aa": 1,
+  "bbb": 2
+}"""
     )
 
     integer_sorting = {
@@ -242,17 +294,38 @@ def test_pretty_sorting_simple_top_level():
     }
 
     assert pretty_string("""{}""", integer_sorting) == """{}"""
-    assert pretty_string("""{"a":1}""", integer_sorting) == """{ "a": 1 }"""
     assert (
-        pretty_string("""{"b":2,"a":1}""", integer_sorting) == """{ "a": 1, "b": 2 }"""
+        pretty_string("""{"a":1}""", integer_sorting)
+        == """{
+  "a": 1
+}"""
     )
+
+    assert (
+        pretty_string("""{"b":2,"a":1}""", integer_sorting)
+        == """{
+  "a": 1,
+  "b": 2
+}"""
+    )
+
     assert (
         pretty_string("""{"b":2,"a":1,"c":3}""", integer_sorting)
-        == """{ "a": 1, "b": 2, "c": 3 }"""
+        == """{
+  "a": 1,
+  "b": 2,
+  "c": 3
+}"""
     )
+
     assert (
         pretty_string("""{"b":2,"a":1,"c":3,"z":-1}""", integer_sorting)
-        == """{ "z": -1, "a": 1, "b": 2, "c": 3 }"""
+        == """{
+  "z": -1,
+  "a": 1,
+  "b": 2,
+  "c": 3
+}"""
     )
 
     specific_sorting = {
@@ -263,17 +336,38 @@ def test_pretty_sorting_simple_top_level():
     }
 
     assert pretty_string("""{}""", specific_sorting) == """{}"""
-    assert pretty_string("""{"a":1}""", specific_sorting) == """{ "a": 1 }"""
+
     assert (
-        pretty_string("""{"b":2,"a":1}""", specific_sorting) == """{ "b": 2, "a": 1 }"""
+        pretty_string("""{"a":1}""", specific_sorting)
+        == """{
+  "a": 1
+}"""
     )
+
+    assert (
+        pretty_string("""{"b":2,"a":1}""", specific_sorting)
+        == """{
+  "b": 2,
+  "a": 1
+}"""
+    )
+
     assert (
         pretty_string("""{"b":2,"a":1,"c":3}""", specific_sorting)
-        == """{ "b": 2, "a": 1, "c": 3 }"""
+        == """{
+  "b": 2,
+  "a": 1,
+  "c": 3
+}"""
     )
     assert (
         pretty_string("""{"b":2,"a":1,"c":3,"z":-1}""", specific_sorting)
-        == """{ "z": -1, "b": 2, "a": 1, "c": 3 }"""
+        == """{
+  "z": -1,
+  "b": 2,
+  "a": 1,
+  "c": 3
+}"""
     )
 
 
