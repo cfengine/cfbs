@@ -8,6 +8,7 @@ import copy
 import logging as log
 import json
 import sys
+import functools
 from collections import OrderedDict
 from cfbs.args import get_args
 
@@ -383,6 +384,21 @@ def remove_command(to_remove: list):
         )
     modules = config["build"]
 
+    def _get_dependents(dependency) -> list:
+        if len(modules) < 2:
+            return []
+
+        def reduce_dependencies(a, b):
+            result_b = [b["name"]] if dependency in b.get("dependencies", []) else []
+            if type(a) is list:
+                return a + result_b
+            else:
+                return (
+                    [a["name"]] if dependency in a.get("dependencies", []) else []
+                ) + result_b
+
+        return functools.reduce(reduce_dependencies, modules)
+
     def _get_module_by_name(name) -> dict:
         if not name.startswith("./") and name.endswith(".cf") and os.path.exists(name):
             name = "./" + name
@@ -391,6 +407,21 @@ def remove_command(to_remove: list):
             if module["name"] == name:
                 return module
         return None
+
+    def _remove_module_user_prompt(module):
+        dependents = _get_dependents(module["name"])
+        return prompt_user(
+            config.non_interactive,
+            "Do you wish to remove '%s'?" % module["name"]
+            + (
+                " (The module is a dependency of the following module%s: %s)"
+                % ("s" if len(dependents) > 1 else "", ", ".join(dependents))
+                if dependents
+                else ""
+            ),
+            choices=YES_NO_CHOICES,
+            default="yes",
+        )
 
     def _get_modules_by_url(name) -> list:
         r = []
@@ -408,12 +439,7 @@ def remove_command(to_remove: list):
             if not matches:
                 user_error("Could not find module with URL '%s'" % name)
             for module in matches:
-                answer = prompt_user(
-                    config.non_interactive,
-                    "Do you wish to remove '%s'?" % module["name"],
-                    choices=YES_NO_CHOICES,
-                    default="yes",
-                )
+                answer = _remove_module_user_prompt(module)
                 if answer.lower() in ("yes", "y"):
                     print("Removing module '%s'" % module["name"])
                     modules.remove(module)
@@ -422,10 +448,12 @@ def remove_command(to_remove: list):
         else:
             module = _get_module_by_name(name)
             if module:
-                print("Removing module '%s'" % name)
-                modules.remove(module)
-                msg += "\n - Removed module '%s'" % module["name"]
-                num_removed += 1
+                answer = _remove_module_user_prompt(module)
+                if answer.lower() in ("yes", "y"):
+                    print("Removing module '%s'" % name)
+                    modules.remove(module)
+                    msg += "\n - Removed module '%s'" % module["name"]
+                    num_removed += 1
             else:
                 print("Module '%s' not found" % name)
         input_path = os.path.join(".", name, "input.json")
