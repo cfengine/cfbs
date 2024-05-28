@@ -240,7 +240,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     CFBSConfig.reload()
 
     branch = None
-    to_add = ""
+    to_add = []
     if masterfiles is None:
         if prompt_user(
             non_interactive,
@@ -248,16 +248,18 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
             choices=YES_NO_CHOICES,
             default="yes",
         ) in ("yes", "y"):
-            to_add = "masterfiles"
+            to_add = ["masterfiles"]
         else:
-            to_add = prompt_user(
-                non_interactive,
-                "Specify policy set to use instead (empty to skip)",
-                default="",
-            )
+            to_add = [
+                prompt_user(
+                    non_interactive,
+                    "Specify policy set to use instead (empty to skip)",
+                    default="",
+                )
+            ]
     elif re.match(r"[0-9]+(\.[0-9]+){2}(\-[0-9]+)?", masterfiles):
         log.debug("--masterfiles=%s appears to be a version number" % masterfiles)
-        to_add = "masterfiles@%s" % masterfiles
+        to_add = ["masterfiles@%s" % masterfiles]
     elif masterfiles != "no":
         """This appears to be a branch. Thus we'll add masterfiles normally
         and try to do the necessary modifications needed afterwards. I.e.
@@ -266,7 +268,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
 
         log.debug("--masterfiles=%s appears to be a branch" % masterfiles)
         branch = masterfiles
-        to_add = "masterfiles"
+        to_add = ["masterfiles"]
 
     if branch is not None:
         remote = "https://github.com/cfengine/masterfiles"
@@ -276,9 +278,9 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
                 "Failed to find branch or tag %s at remote %s" % (branch, remote)
             )
         log.debug("Current commit for masterfiles branch %s is %s" % (branch, commit))
-        to_add = "%s@%s" % (remote, commit)
+        to_add = ["%s@%s" % (remote, commit), "masterfiles"]
     if to_add:
-        ret = add_command([to_add], added_by="cfbs init")
+        ret = add_command(to_add, added_by="cfbs init")
         if ret != 0:
             return ret
 
