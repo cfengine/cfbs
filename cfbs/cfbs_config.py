@@ -139,7 +139,7 @@ class CFBSConfig(CFBSJson):
                 print("  - " + m["name"])
             if not any(modules):
                 user_error("no modules available, nothing to do")
-            if not self.non_interactive:
+            if len(modules) > 1 and not self.non_interactive:
                 answer = prompt_user(
                     non_interactive=self.non_interactive,
                     prompt="Do you want to add all %d of them?" % (len(modules)),
