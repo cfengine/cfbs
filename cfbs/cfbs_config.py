@@ -136,7 +136,9 @@ class CFBSConfig(CFBSJson):
             modules = list(provides.values())
             print("Found %d modules in '%s':" % (len(modules), url))
             for m in modules:
-                print("  - " + m["name"])
+                deps = m.get("dependencies", [])
+                deps = "" if not deps else " (Depends on: " + ", ".join(deps) + ")"
+                print("  - " + m["name"] + deps)
             if not any(modules):
                 user_error("no modules available, nothing to do")
             if len(modules) > 1 and not self.non_interactive:
