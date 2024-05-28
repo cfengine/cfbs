@@ -131,6 +131,7 @@ class CFBSConfig(CFBSJson):
         remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
 
         provides = remote_config.get_provides()
+        add_all = True
         # URL specified in to_add, but no specific modules => let's add all (with a prompt)
         if len(to_add) == 0:
             modules = list(provides.values())
@@ -149,14 +150,24 @@ class CFBSConfig(CFBSJson):
                     default="yes",
                 )
                 if answer.lower() not in ("y", "yes"):
-                    return
+                    add_all = False
         else:
             missing = [k for k in to_add if k not in provides]
             if missing:
                 user_error("Missing modules: " + ", ".join(missing))
             modules = [provides[k] for k in to_add]
 
-        for module in modules:
+        for i, module in enumerate(modules, start=1):
+            if not add_all:
+                answer = prompt_user(
+                    non_interactive=self.non_interactive,
+                    prompt="(%d/%d) Do you want to add '%s'?"
+                    % (i, len(modules), module["name"]),
+                    choices=YES_NO_CHOICES,
+                    default="yes",
+                )
+                if answer.lower() not in ("y", "yes"):
+                    continue
             self.add_with_dependencies(module, remote_config)
 
     @staticmethod
