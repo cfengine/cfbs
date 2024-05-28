@@ -144,7 +144,7 @@ class CFBSConfig(CFBSJson):
                     non_interactive=self.non_interactive,
                     prompt="Do you want to add all %d of them?" % (len(modules)),
                     choices=YES_NO_CHOICES,
-                    default="no",
+                    default="yes",
                 )
                 if answer.lower() not in ("y", "yes"):
                     return
