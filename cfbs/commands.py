@@ -278,7 +278,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
         log.debug("Current commit for masterfiles branch %s is %s" % (branch, commit))
         to_add = "%s@%s" % (remote, commit)
     if to_add:
-        ret = add_command([to_add])
+        ret = add_command([to_add], added_by="cfbs init")
         if ret != 0:
             return ret
 
