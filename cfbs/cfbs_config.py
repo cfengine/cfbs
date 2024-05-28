@@ -134,13 +134,13 @@ class CFBSConfig(CFBSJson):
         # URL specified in to_add, but no specific modules => let's add all (with a prompt)
         if len(to_add) == 0:
             modules = list(provides.values())
+            if not any(modules):
+                user_error("no modules available, nothing to do")
             print("Found %d modules in '%s':" % (len(modules), url))
             for m in modules:
                 deps = m.get("dependencies", [])
                 deps = "" if not deps else " (Depends on: " + ", ".join(deps) + ")"
                 print("  - " + m["name"] + deps)
-            if not any(modules):
-                user_error("no modules available, nothing to do")
             if len(modules) > 1 and not self.non_interactive:
                 answer = prompt_user(
                     non_interactive=self.non_interactive,
