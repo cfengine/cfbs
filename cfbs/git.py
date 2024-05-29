@@ -9,6 +9,7 @@ See git_magic.py for more git related code.
 """
 
 import os
+import itertools
 import tempfile
 from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProcessError
 
@@ -189,7 +190,12 @@ def git_check_tracked_changes(scope=["all"]):
         else:
             lines = result.stdout.decode("utf-8").split("\n")
             changes = [line.strip().split(" ")[1] for line in lines if line]
-            should_commit = any(i in changes for i in scope)
+            should_commit = any(
+                map(
+                    lambda x: os.path.samefile(*x),
+                    list(itertools.product(changes, scope)),
+                )
+            )
         if not should_commit:
             print("No changes to commit")
         return should_commit
