@@ -131,30 +131,43 @@ class CFBSConfig(CFBSJson):
         remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
 
         provides = remote_config.get_provides()
+        add_all = True
         # URL specified in to_add, but no specific modules => let's add all (with a prompt)
         if len(to_add) == 0:
             modules = list(provides.values())
-            print("Found %d modules in '%s':" % (len(modules), url))
-            for m in modules:
-                print("  - " + m["name"])
             if not any(modules):
                 user_error("no modules available, nothing to do")
-            if not self.non_interactive:
+            print("Found %d modules in '%s':" % (len(modules), url))
+            for m in modules:
+                deps = m.get("dependencies", [])
+                deps = "" if not deps else " (Depends on: " + ", ".join(deps) + ")"
+                print("  - " + m["name"] + deps)
+            if len(modules) > 1 and not self.non_interactive:
                 answer = prompt_user(
                     non_interactive=self.non_interactive,
                     prompt="Do you want to add all %d of them?" % (len(modules)),
                     choices=YES_NO_CHOICES,
-                    default="no",
+                    default="yes",
                 )
                 if answer.lower() not in ("y", "yes"):
-                    return
+                    add_all = False
         else:
             missing = [k for k in to_add if k not in provides]
             if missing:
                 user_error("Missing modules: " + ", ".join(missing))
             modules = [provides[k] for k in to_add]
 
-        for module in modules:
+        for i, module in enumerate(modules, start=1):
+            if not add_all:
+                answer = prompt_user(
+                    non_interactive=self.non_interactive,
+                    prompt="(%d/%d) Do you want to add '%s'?"
+                    % (i, len(modules), module["name"]),
+                    choices=YES_NO_CHOICES,
+                    default="yes",
+                )
+                if answer.lower() not in ("y", "yes"):
+                    continue
             self.add_with_dependencies(module, remote_config)
 
     @staticmethod
