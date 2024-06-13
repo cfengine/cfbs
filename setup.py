@@ -22,6 +22,8 @@ assert os.path.isfile("cfbs/version.py")
 with open("cfbs/VERSION", "w", encoding="utf-8") as fh:
     fh.write("%s\n" % cfbs_version)
 
+assert os.path.isfile("cfbs/cfbs.1")
+
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
@@ -35,7 +37,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/cfengine/cfbs",
     packages=setuptools.find_packages(exclude=["tests*"]),
-    package_data={"cfbs": ["VERSION"]},
+    package_data={"cfbs": ["VERSION", "cfbs.1"]},
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",

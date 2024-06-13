@@ -10,7 +10,7 @@ from cfbs.version import string as version
 from cfbs.utils import user_error, is_cfbs_repo, ProgrammerError
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
-from cfbs.args import get_args, print_help
+from cfbs.args import get_args, print_help, get_manual
 
 
 def init_logging(level):
@@ -36,7 +36,9 @@ def init_logging(level):
 def main() -> int:
     args = get_args()
     init_logging(args.loglevel)
-
+    if args.manual:
+        print(get_manual())
+        return 0
     if args.version:
         print("cfbs %s" % version())
         return 0
