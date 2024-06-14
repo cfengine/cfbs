@@ -1,0 +1,97 @@
+.TH CFBS "1" "2024\-06\-07" "cfbs" "CFEngine Build System manual"
+.SH NAME
+cfbs \- combines multiple modules into 1 policy set to deploy on your infrastructure. Modules can be custom promise types, JSON files which enable certain functionality, or reusable CFEngine policy. The modules you use can be written by the CFEngine team, others in the community, your colleagues, or yourself.
+.SH SYNOPSIS
+.B cfbs
+[-h] [--loglevel LOGLEVEL] [-M] [--version] [--force] [--non-interactive] [--index INDEX] [--check] [--checksum CHECKSUM] [--keep-order] [--git {yes,no}] [--git-user-name GIT_USER_NAME] [--git-user-email GIT_USER_EMAIL] [--git-commit-message GIT_COMMIT_MESSAGE] [--ignore-versions-json] [--masterfiles MASTERFILES] [cmd] [args ...]
+.SH DESCRIPTION
+CFEngine Build System.
+
+.TP
+\fBcmd\fR
+The command to perform (pretty, init, status, search, add, remove, clean, update, validate, download, build, install, help, info, show, input, set\-input, get\-input)
+
+.TP
+\fBargs\fR
+Command arguments
+
+.SH OPTIONS
+.TP
+\fB\-\-loglevel\fR \fI\,LOGLEVEL\/\fR, \fB\-l\fR \fI\,LOGLEVEL\/\fR
+Set log level for more/less detailed output
+
+.TP
+\fB\-M\fR, \fB\-\-manual\fR
+Print manual page
+
+.TP
+\fB\-\-version\fR, \fB\-V\fR
+Print version number
+
+.TP
+\fB\-\-force\fR
+Force rebuild / redownload
+
+.TP
+\fB\-\-non\-interactive\fR
+Don't prompt, use defaults (only for testing)
+
+.TP
+\fB\-\-index\fR \fI\,INDEX\/\fR
+Specify alternate index
+
+.TP
+\fB\-\-check\fR
+Check if file(s) would be reformatted
+
+.TP
+\fB\-\-checksum\fR \fI\,CHECKSUM\/\fR
+Expected checksum of the downloaded file
+
+.TP
+\fB\-\-keep\-order\fR
+Keep order of items in the JSON in 'cfbs pretty'
+
+.TP
+\fB\-\-git\fR \fI\,{yes,no}\/\fR
+Override git option in cfbs.json
+
+.TP
+\fB\-\-git\-user\-name\fR \fI\,GIT_USER_NAME\/\fR
+Specify git user name
+
+.TP
+\fB\-\-git\-user\-email\fR \fI\,GIT_USER_EMAIL\/\fR
+Specify git user email
+
+.TP
+\fB\-\-git\-commit\-message\fR \fI\,GIT_COMMIT_MESSAGE\/\fR
+Specify git commit message
+
+.TP
+\fB\-\-ignore\-versions\-json\fR
+Ignore versions.json. Necessary in case of a custom index or testing changes to the default index.
+
+.TP
+\fB\-\-masterfiles\fR \fI\,MASTERFILES\/\fR
+Add masterfiles on cfbs init choose between
+
+.br
+Binary packages may be downloaded from https://cfengine.com/download/.
+.br
+The source code is available at https://github.com/cfengine/
+.SH BUGS
+Please see the public bug-tracker at https://northerntech.atlassian.net/projects/CFE/.
+.br
+GitHub pull-requests may be submitted to https://github.com/cfengine/cfbs.
+.SH "SEE ALSO"
+.BR cf-promises (8),
+.BR cf-agent (8),
+.BR cf-serverd (8),
+.BR cf-execd (8),
+.BR cf-monitord (8),
+.BR cf-runagent (8),
+.BR cf-key (8)
+.SH AUTHOR
+    Northern.tech AS
+        
