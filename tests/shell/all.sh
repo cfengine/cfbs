@@ -41,5 +41,6 @@ bash tests/shell/034_git_user_name_git_user_email.sh
 bash tests/shell/035_cfbs_build_compatibility_1.sh
 bash tests/shell/036_cfbs_build_compatibility_2.sh
 bash tests/shell/037_cfbs_validate.sh
+bash tests/shell/038_global_dir.sh
 
 echo "All cfbs shell tests completed successfully!"

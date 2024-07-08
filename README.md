@@ -293,6 +293,27 @@ These commands are intended to be run as part of build systems / deployment pipe
 
 They don't have interactive prompts, you can expect fewer changes to them, and backwards compatibility is much more important than with the interactive commands above.
 
+## Environment variables
+
+`cfbs` respects the following environment variables:
+
+- `CFBS_GLOBAL_DIR`: Directory where `cfbs` stores global information, such as its cache of downloaded modules.
+  - **Default:** `~/.cfengine/cfbs/`.
+  - **Usage:** `CFBS_GLOBAL_DIR=/tmp/cfbs cfbs build`.
+  - **Note:** `cfbs` still uses the current working directory for finding and building a project (`./cfbs.json`, `./out/`, etc.).
+
+Additionally, `cfbs` runs some commands in a shell, utilizing a few programs / shell built-ins, which may be affected by environment variables:
+
+- `git`
+- `tar`
+- `unzip`
+- `rsync`
+- `mv`
+- `cat`
+- `cd`
+- `rm`
+- Commands / scripts specified in the `run` build step.
+
 ## The cfbs.json format
 
 More advanced users and module authors may need to understand, write, or edit `cfbs.json` files.

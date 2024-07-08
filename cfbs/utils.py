@@ -198,7 +198,17 @@ def cfengine_dir(subdir=None):
 
 
 def cfbs_dir(append=None) -> str:
-    return os.path.join(cfengine_dir("cfbs"), append if append else "")
+    directory = os.getenv("CFBS_GLOBAL_DIR")
+    if directory:
+        # Env var was set, make it absolute,
+        # same as in cfengine_dir() / path_append() above.
+        directory = os.path.abspath(os.path.expanduser(directory))
+    else:
+        # Env var not set, use default.
+        directory = cfengine_dir("cfbs")  # Already absolute
+    if not append:
+        return directory
+    return os.path.join(directory, append)
 
 
 class FetchError(Exception):
