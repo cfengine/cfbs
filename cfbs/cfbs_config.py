@@ -81,7 +81,7 @@ class CFBSConfig(CFBSJson):
             f.write(data)
 
     def longest_module_key_length(self, key) -> int:
-        return max((len(m[key]) for m in self["build"])) if self.get("build") else 0
+        return max((len(m.get(key, "")) for m in self["build"])) if self.get("build") else 0
 
     def add_with_dependencies(self, module, remote_config=None, dependent=None):
         if type(module) is list:
