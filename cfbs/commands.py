@@ -302,7 +302,7 @@ def status_command() -> int:
     if not modules:
         return 0
     print("\nModules:")
-    max_length = config.longest_module_name()
+    max_length = config.longest_module_key_length("name")
     counter = 1
     for m in modules:
         if m["name"].startswith("./"):
@@ -843,7 +843,7 @@ def _download_dependencies(
     #       2. Code for copying things into ./out
     print("\nModules:")
     counter = 1
-    max_length = config.longest_module_name()
+    max_length = config.longest_module_key_length("name")
     downloads = os.path.join(cfbs_dir(), "downloads")
     for module in config.get("build", []):
         name = module["name"]

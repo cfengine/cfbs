@@ -80,8 +80,8 @@ class CFBSConfig(CFBSJson):
         with open(self.path, "w") as f:
             f.write(data)
 
-    def longest_module_name(self) -> int:
-        return max((len(m["name"]) for m in self["build"])) if self.get("build") else 0
+    def longest_module_key_length(self, key) -> int:
+        return max((len(m[key]) for m in self["build"])) if self.get("build") else 0
 
     def add_with_dependencies(self, module, remote_config=None, dependent=None):
         if type(module) is list:
