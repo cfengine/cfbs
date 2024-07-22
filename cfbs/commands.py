@@ -302,18 +302,28 @@ def status_command() -> int:
     if not modules:
         return 0
     print("\nModules:")
-    max_length = config.longest_module_key_length("name")
+    max_name_length = config.longest_module_key_length("name")
+    max_version_length = config.longest_module_key_length("version")
     counter = 1
     for m in modules:
         if m["name"].startswith("./"):
             status = "Copied"
-            commit = pad_right("local", 40)
+            version = "local"
+            commit = pad_right("", 40)
         else:
             path = get_download_path(m)
             status = "Downloaded" if os.path.exists(path) else "Not downloaded"
+            version = m.get("version", "")
             commit = m["commit"]
-        name = pad_right(m["name"], max_length)
-        print("%03d %s @ %s (%s)" % (counter, name, commit, status))
+        name = pad_right(m["name"], max_name_length)
+        version = pad_right(version, max_version_length)
+        version_with_commit = version + " "
+        if m["name"].startswith("./"):
+            version_with_commit += " "
+        else:
+            version_with_commit += "/"
+        version_with_commit += " " + commit
+        print("%03d %s @ %s (%s)" % (counter, name, version_with_commit, status))
         counter += 1
 
     return 0
