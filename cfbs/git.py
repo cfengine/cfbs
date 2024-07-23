@@ -18,6 +18,13 @@ class CFBSGitError(Exception):
     pass
 
 
+def check_git_exists():
+    try:
+        check_call(["git", "--version"], stdout=DEVNULL)
+    except CalledProcessError as cpe:
+        raise CFBSGitError("'git' was not found") from cpe
+
+
 def ls_remote(remote, branch):
     """Returns the hash of the commit that the current HEAD of a given branch
     on a given remote is pointing to.
