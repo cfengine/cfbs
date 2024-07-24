@@ -4,7 +4,7 @@ import sys
 import re
 from collections import OrderedDict
 
-from cfbs.utils import is_a_commit_hash, user_error
+from cfbs.utils import is_a_commit_hash, split_command, user_error
 from cfbs.pretty import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig
 from cfbs.build import AVAILABLE_BUILD_STEPS
@@ -266,8 +266,7 @@ def _validate_module_object(context, name, module, config):
                 raise CFBSValidationError(
                     name, '"steps" must be a list of non-empty / non-whitespace strings'
                 )
-            step_array = step.split(" ")
-            operation, args = step_array[0], step_array[1:]
+            operation, args = split_command(step)
             if not operation in AVAILABLE_BUILD_STEPS:
                 x = ", ".join(AVAILABLE_BUILD_STEPS)
                 raise CFBSValidationError(

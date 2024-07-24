@@ -10,6 +10,7 @@ from cfbs.utils import (
     read_json,
     rm,
     sh,
+    split_command,
     strip_left,
     touch,
     user_error,
@@ -71,8 +72,7 @@ def _generate_augment(module_name, input_data):
 
 
 def _perform_build_step(module, step, max_length):
-    step = step.split(" ")
-    operation, args = step[0], step[1:]
+    operation, args = split_command(step)
     source = module["_directory"]
     counter = module["_counter"]
     destination = "out/masterfiles"

@@ -86,6 +86,12 @@ def pad_right(s, n) -> int:
     return s if len(s) >= n else s + " " * (n - len(s))
 
 
+def split_command(command) -> tuple[str, list[str]]:
+    terms = command.split(" ")
+    operation, args = terms[0], terms[1:]
+    return operation, args
+
+
 def user_error(msg: str):
     sys.exit("Error: " + msg)
 
