@@ -92,6 +92,23 @@ def split_command(command) -> tuple[str, list[str]]:
     return operation, args
 
 
+def is_valid_arg_count(args, expected):
+    actual = len(args)
+
+    if type(expected) is int:
+        if actual != expected:
+            return False
+
+    else:
+        # Only other option is a string of 1+, 2+ or similar:
+        assert type(expected) is str and expected.endswith("+")
+        expected = int(expected[0:-1])
+        if actual < expected:
+            return False
+
+    return True
+
+
 def user_error(msg: str):
     sys.exit("Error: " + msg)
 

@@ -4,7 +4,7 @@ import sys
 import re
 from collections import OrderedDict
 
-from cfbs.utils import is_a_commit_hash, split_command, user_error
+from cfbs.utils import is_valid_arg_count, is_a_commit_hash, split_command, user_error
 from cfbs.pretty import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig
 from cfbs.build import AVAILABLE_BUILD_STEPS
@@ -276,18 +276,15 @@ def _validate_module_object(context, name, module, config):
                 )
             expected = AVAILABLE_BUILD_STEPS[operation]
             actual = len(args)
-            if type(expected) is int:
-                if expected != actual:
+            if not is_valid_arg_count(args, expected):
+                if type(expected) is int:
                     raise CFBSValidationError(
                         name,
                         "The %s build step expects %d arguments, %d were given"
                         % (operation, expected, actual),
                     )
-            else:
-                # Only other option is a string of 1+, 2+ or similar:
-                assert type(expected) is str and expected.endswith("+")
-                expected = int(expected[0:-1])
-                if actual < expected:
+                else:
+                    expected = int(expected[0:-1])
                     raise CFBSValidationError(
                         name,
                         "The %s build step expects %d or more arguments, %d were given"
