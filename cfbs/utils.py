@@ -6,6 +6,7 @@ import copy
 import subprocess
 import hashlib
 import logging as log
+from typing import List, Tuple
 import urllib
 import urllib.request  # needed on some platforms
 from collections import OrderedDict
@@ -86,7 +87,7 @@ def pad_right(s, n) -> int:
     return s if len(s) >= n else s + " " * (n - len(s))
 
 
-def split_command(command) -> tuple[str, list[str]]:
+def split_command(command) -> Tuple[str, List[str]]:
     terms = command.split(" ")
     operation, args = terms[0], terms[1:]
     return operation, args
