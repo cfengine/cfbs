@@ -18,11 +18,12 @@ class CFBSGitError(Exception):
     pass
 
 
-def check_git_exists():
+def git_exists():
     try:
         check_call(["git", "--version"], stdout=DEVNULL)
-    except CalledProcessError as cpe:
-        raise CFBSGitError("'git' was not found") from cpe
+        return True
+    except FileNotFoundError:
+        return False
 
 
 def ls_remote(remote, branch):

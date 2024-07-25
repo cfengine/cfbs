@@ -53,7 +53,7 @@ from cfbs.internal_file_management import (
 )
 from cfbs.index import _VERSION_INDEX, Index
 from cfbs.git import (
-    check_git_exists,
+    git_exists,
     is_git_repo,
     git_commit,
     git_get_config,
@@ -179,9 +179,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
         do_git = True if do_git == "yes" else False
 
     if do_git is True:
-        try:
-            check_git_exists()
-        except FileNotFoundError as e:
+        if not git_exists():
             print("Command 'git' was not found")
             return 1
 
