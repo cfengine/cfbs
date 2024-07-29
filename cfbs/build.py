@@ -4,12 +4,14 @@ from cfbs.utils import (
     canonify,
     cp,
     find,
+    is_valid_arg_count,
     merge_json,
     mkdir,
     pad_right,
     read_json,
     rm,
     sh,
+    split_command,
     strip_left,
     touch,
     user_error,
@@ -71,8 +73,7 @@ def _generate_augment(module_name, input_data):
 
 
 def _perform_build_step(module, step, max_length):
-    step = step.split(" ")
-    operation, args = step[0], step[1:]
+    operation, args = split_command(step)
     source = module["_directory"]
     counter = module["_counter"]
     destination = "out/masterfiles"
@@ -222,14 +223,41 @@ def _perform_build_step(module, step, max_length):
         merged = merge_json(original, augment) if original else augment
         log.debug("Merged def.json: %s", pretty(merged))
         write_json(path, merged)
-    else:
-        user_error("Unknown build step operation: %s" % operation)
 
 
 def perform_build_steps(config) -> int:
     if not config.get("build"):
         user_error("No 'build' key found in the configuration")
-        return 1
+
+    # mini-validation
+    for module in config.get("build", []):
+        for step in module["steps"]:
+            operation, args = split_command(step)
+
+            if step.split() != [operation] + args:
+                user_error(
+                    "Incorrect whitespace in the `%s` build step - singular spaces are required"
+                    % step
+                )
+
+            if operation not in AVAILABLE_BUILD_STEPS:
+                user_error("Unknown build step operation: %s" % operation)
+
+            expected = AVAILABLE_BUILD_STEPS[operation]
+            actual = len(args)
+            if not is_valid_arg_count(args, expected):
+                if type(expected) is int:
+                    user_error(
+                        "The `%s` build step expects %d arguments, %d were given"
+                        % (step, expected, actual)
+                    )
+                else:
+                    expected = int(expected[0:-1])
+                    user_error(
+                        "The `%s` build step expects %d or more arguments, %d were given"
+                        % (step, expected, actual)
+                    )
+
     print("\nSteps:")
     module_name_length = config.longest_module_key_length("name")
     for module in config.get("build", []):

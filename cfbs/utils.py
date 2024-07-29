@@ -6,6 +6,7 @@ import copy
 import subprocess
 import hashlib
 import logging as log
+from typing import List, Tuple
 import urllib
 import urllib.request  # needed on some platforms
 from collections import OrderedDict
@@ -84,6 +85,29 @@ def pad_left(s, n) -> int:
 
 def pad_right(s, n) -> int:
     return s if len(s) >= n else s + " " * (n - len(s))
+
+
+def split_command(command) -> Tuple[str, List[str]]:
+    terms = command.split(" ")
+    operation, args = terms[0], terms[1:]
+    return operation, args
+
+
+def is_valid_arg_count(args, expected):
+    actual = len(args)
+
+    if type(expected) is int:
+        if actual != expected:
+            return False
+
+    else:
+        # Only other option is a string of 1+, 2+ or similar:
+        assert type(expected) is str and expected.endswith("+")
+        expected = int(expected[0:-1])
+        if actual < expected:
+            return False
+
+    return True
 
 
 def user_error(msg: str):
