@@ -18,6 +18,14 @@ class CFBSGitError(Exception):
     pass
 
 
+def git_exists():
+    try:
+        check_call(["git", "--version"], stdout=DEVNULL)
+        return True
+    except FileNotFoundError:
+        return False
+
+
 def ls_remote(remote, branch):
     """Returns the hash of the commit that the current HEAD of a given branch
     on a given remote is pointing to.
