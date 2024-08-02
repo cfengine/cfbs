@@ -290,13 +290,18 @@ class CFBSConfig(CFBSJson):
             pattern = "%s/**/*.cf" % name
             policy_files = glob.glob(pattern, recursive=True)
 
+        modules_available = [m.get("name", "") for m in self.get("build", [])]
+        is_autorun_enabled = any(
+            m in modules_available for m in ["autorun", "./def.json"]
+        )  # only a heuristic
+
         for file in policy_files:
             if _has_autorun_tag(file):
-                log.warning(
-                    "Found bundle tagged with autorun in local policy file '%s': "
-                    % file
-                    + "Note that the autorun tag is ignored when adding local policy files or subdirectories."
-                )
+                if not is_autorun_enabled:
+                    log.warning(
+                        "Found autorun tag in '%s', " % file
+                        + "but it looks like the autorun feature is not enabled, consider enabling it via 'cfbs add autorun' or a custom './def.json' file."
+                    )
                 # TODO: Support adding local modules with autorun tag
 
         self._add_policy_files_build_step(module)
