@@ -93,6 +93,52 @@ def test_deduplicate_def_json():
     deduplicated = deduplicate_def_json(case)
     assert deduplicated == expected
 
+    case = {
+        "classes": {
+            "my-class": [
+                "^(?!MISSING).*",
+                "cfengine::",
+                "^(?!MISSING).*",
+                "cfengine::",
+            ],
+        },
+        "vars": {"augments_inputs": ["dont-dedupe-for-now", "dont-dedupe-for-now"]},
+    }
+    expected = {
+        "classes": {
+            "my-class": [
+                "^(?!MISSING).*",
+                "cfengine::",
+            ],
+        },
+        "vars": {"augments_inputs": ["dont-dedupe-for-now", "dont-dedupe-for-now"]},
+    }
+
+    deduplicated = deduplicate_def_json(case)
+    assert deduplicated == expected
+
+    case = {
+        "classes": {
+            "my-class": {
+                "class_expressions": ["cfengine|linux::", "cfengine|linux::"],
+                "comment": "Optional class description of class",
+                "tags": ["tags", "tags"],
+            },
+        },
+    }
+    expected = {
+        "classes": {
+            "my-class": {
+                "class_expressions": ["cfengine|linux::"],
+                "comment": "Optional class description of class",
+                "tags": ["tags"],
+            },
+        },
+    }
+
+    deduplicated = deduplicate_def_json(case)
+    assert deduplicated == expected
+
 
 def test_loads_bundlenames_single_bundle():
     policy = """bundle agent bogus

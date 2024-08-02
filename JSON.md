@@ -222,7 +222,7 @@ These are copies of the module directories, where it's more "safe" to do things 
 ## All available build steps
 
 The build steps below manipulate the temporary files in the steps directories and write results to the output policy set, in `out/masterfiles`.
-Unless otherwise noted, all steps are run inside the module's folder (`out/steps/...`) with sources / file paths relative to that folder, and targets / destinations mentioned below are relative to the output policy set (`out/masterfiles`, which in the end will be deployed as `/var/cfengine/masterfiles`)
+Unless otherwise noted, all steps are run inside the module's folder (`out/steps/...`) with sources / file paths relative to that folder, and targets / destinations mentioned below are relative to the output policy set (`out/masterfiles`, which in the end will be deployed as `/var/cfengine/masterfiles`).
 
 * `copy <source> <destination>`
   * Copy a single file or a directory recursively.
@@ -262,6 +262,8 @@ Unless otherwise noted, all steps are run inside the module's folder (`out/steps
   * Converts the input data for a module into the augments format and merges it with the target augments file.
   * Source is relative to module directory and target is relative to `out/masterfiles`.
     * In most cases, the build step should be: `input ./input.json def.json`
+
+If `def.json` is modified during a build step, the values of some of its keys are deduplicated. These keys are: `"inputs"`, `"augments"`, the `"tags"` key of each variable in the `"variables"` key, the `"class_expressions"` and `"tags"` keys of each class in the `"classes"` key if the class is a dictionary, and the class's own key if the class is a list.
 
 ### A note on reproducibility and backwards compatibility
 

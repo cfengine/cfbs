@@ -192,6 +192,19 @@ def deduplicate_def_json(d):
         if "tags" in variable:
             variable["tags"] = deduplicate_list(variable["tags"])
 
+    for class_name, class_v in d.get("classes", {}).items():
+        if type(class_v) is dict:
+            if "class_expressions" in class_v:
+                class_v["class_expressions"] = deduplicate_list(
+                    class_v["class_expressions"]
+                )
+            if "tags" in class_v:
+                class_v["tags"] = deduplicate_list(class_v["tags"])
+        elif type(class_v) is list:
+            d["classes"][class_name] = deduplicate_list(class_v)
+
+    # TODO: "vars" can have "augments_inputs", perhaps it could be deduplicated too
+
     return d
 
 
