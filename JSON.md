@@ -263,7 +263,13 @@ Unless otherwise noted, all steps are run inside the module's folder (`out/steps
   * Source is relative to module directory and target is relative to `out/masterfiles`.
     * In most cases, the build step should be: `input ./input.json def.json`
 
-If `def.json` is modified during a build step, the values of some of its keys are deduplicated. These keys are: `"inputs"`, `"augments"`, the `"tags"` key of each variable in the `"variables"` key, the `"class_expressions"` and `"tags"` keys of each class in the `"classes"` key if the class is a dictionary, and the class's own key if the class is a list.
+When `def.json` is modified during a `json`, `input`, `directory`, `bundles`, or `policy_files` build step, the values of some lists of strings are deduplicated, when this does not make any difference in behavior.
+These cases are:
+
+1. Policy files and augments files in the `"inputs"` and `"augments"` top level keys.
+2. `"tags"` inside variables in `"variables"` and classes in `"classes"`.
+3. Class expressions for each class in `"classes"`.
+   These are in the subkey `"class_expressions"` when the class is defined using an object, and if the class is defined using just a list, that list is the list of class expressions implicitly.
 
 ### A note on reproducibility and backwards compatibility
 
