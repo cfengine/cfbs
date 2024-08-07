@@ -1,4 +1,4 @@
-from cfbs.utils import canonify, merge_json, loads_bundlenames
+from cfbs.utils import canonify, deduplicate_def_json, merge_json, loads_bundlenames
 
 
 def test_canonify():
@@ -53,6 +53,91 @@ def test_merge_json():
         "vars": {"control_common_bundlesequence_end": ["bogus"]},
     }
     assert merged == expected
+
+
+def test_deduplicate_def_json():
+    case = {
+        "inputs": [
+            "services/cfbs/inventory/company.cf",
+            "services/cfbs/inventory/company.cf",
+            "services/cfbs/inventory/company.cf",
+        ]
+    }
+    expected = {"inputs": ["services/cfbs/inventory/company.cf"]}
+
+    deduplicated = deduplicate_def_json(case)
+    assert deduplicated == expected
+
+    case = {
+        "augments": [
+            "/var/cfengine/augments/company.json",
+            "/var/cfengine/augments/company.json",
+        ],
+        "variables": {
+            "MyNamespace:my_bundle.Variable": {
+                "value": {"tags": ["dont-dedupe", "dont-dedupe"]},
+                "tags": ["inventory", "attribute_name=My Inventory", "inventory"],
+            }
+        },
+    }
+    expected = {
+        "augments": ["/var/cfengine/augments/company.json"],
+        "variables": {
+            "MyNamespace:my_bundle.Variable": {
+                "value": {"tags": ["dont-dedupe", "dont-dedupe"]},
+                "tags": ["inventory", "attribute_name=My Inventory"],
+            }
+        },
+    }
+
+    deduplicated = deduplicate_def_json(case)
+    assert deduplicated == expected
+
+    case = {
+        "classes": {
+            "my-class": [
+                "^(?!MISSING).*",
+                "cfengine::",
+                "^(?!MISSING).*",
+                "cfengine::",
+            ],
+        },
+        "vars": {"augments_inputs": ["dont-dedupe-for-now", "dont-dedupe-for-now"]},
+    }
+    expected = {
+        "classes": {
+            "my-class": [
+                "^(?!MISSING).*",
+                "cfengine::",
+            ],
+        },
+        "vars": {"augments_inputs": ["dont-dedupe-for-now", "dont-dedupe-for-now"]},
+    }
+
+    deduplicated = deduplicate_def_json(case)
+    assert deduplicated == expected
+
+    case = {
+        "classes": {
+            "my-class": {
+                "class_expressions": ["cfengine|linux::", "cfengine|linux::"],
+                "comment": "Optional class description of class",
+                "tags": ["tags", "tags"],
+            },
+        },
+    }
+    expected = {
+        "classes": {
+            "my-class": {
+                "class_expressions": ["cfengine|linux::"],
+                "comment": "Optional class description of class",
+                "tags": ["tags"],
+            },
+        },
+    }
+
+    deduplicated = deduplicate_def_json(case)
+    assert deduplicated == expected
 
 
 def test_loads_bundlenames_single_bundle():
