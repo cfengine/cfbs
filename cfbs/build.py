@@ -20,7 +20,7 @@ from cfbs.pretty import pretty, pretty_file
 AVAILABLE_BUILD_STEPS = {
     "copy": 2,
     "run": "1+",
-    "delete": 2,
+    "delete": "1+",
     "json": 2,
     "append": 2,
     "directory": 2,
