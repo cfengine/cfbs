@@ -87,15 +87,17 @@ class CFBSConfig(CFBSJson):
             else 0
         )
 
-    def add_with_dependencies(self, module, remote_config=None, dependent=None):
+    def add_with_dependencies(
+        self, module, remote_config=None, str_added_by="cfbs add"
+    ):
         if type(module) is list:
             # TODO: reuse logic from _add_modules instead
             for m in module:
-                self.add_with_dependencies(m, remote_config, dependent)
+                self.add_with_dependencies(m, remote_config, str_added_by)
             return
         if type(module) is str:
             module_str = module
-            module = (remote_config or self).get_module_for_build(module, dependent)
+            module = (remote_config or self).get_module_for_build(module, str_added_by)
         if not module:
             user_error("Module '%s' not found" % module_str)
         assert "name" in module
@@ -109,8 +111,10 @@ class CFBSConfig(CFBSJson):
         if "build" not in self._data:
             self._data["build"] = []
         self._data["build"].append(module)
-        if dependent:
-            print("Added module: %s (Dependency of %s)" % (module["name"], dependent))
+        if str_added_by != "cfbs add":
+            print(
+                "Added module: %s (Dependency of %s)" % (module["name"], str_added_by)
+            )
         else:
             print("Added module: %s" % module["name"])
 
@@ -134,7 +138,7 @@ class CFBSConfig(CFBSJson):
 
         remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
 
-        provides = remote_config.get_provides()
+        provides = remote_config.get_provides(added_by)
         add_all = True
         # URL specified in to_add, but no specific modules => let's add all (with a prompt)
         if len(to_add) == 0:
@@ -172,7 +176,7 @@ class CFBSConfig(CFBSJson):
                 )
                 if answer.lower() not in ("y", "yes"):
                     continue
-            self.add_with_dependencies(module, remote_config)
+            self.add_with_dependencies(module, remote_config, str_added_by=added_by)
 
     @staticmethod
     def _convert_added_by(added_by, to_add):

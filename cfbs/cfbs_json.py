@@ -7,7 +7,7 @@ from cfbs.pretty import pretty, TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.utils import read_json, user_error
 
 
-def _construct_provided_module(name, data, url, commit):
+def _construct_provided_module(name, data, url, commit, added_by="cfbs add"):
     # At this point the @commmit part should be removed from url so:
     # either url should not have an @,
     # or the @ should be for user@host.something
@@ -35,7 +35,7 @@ def _construct_provided_module(name, data, url, commit):
             "missing required key 'steps' in module definition: %s" % pretty(data)
         )
     module["steps"] = data["steps"]
-    module["added_by"] = "cfbs add"
+    module["added_by"] = added_by
     return module
 
 
@@ -123,7 +123,7 @@ class CFBSJson:
     def __contains__(self, key):
         return key in self._data
 
-    def get_provides(self):
+    def get_provides(self, added_by="cfbs add"):
         modules = OrderedDict()
         if "provides" not in self._data:
             user_error(
@@ -131,16 +131,20 @@ class CFBSJson:
                 % pretty(self._data)
             )
         for k, v in self._data["provides"].items():
-            module = _construct_provided_module(k, v, self.url, self.url_commit)
+            module = _construct_provided_module(
+                k, v, self.url, self.url_commit, added_by
+            )
             modules[k] = module
         return modules
 
-    def get_module_for_build(self, name, dependent):
+    def get_module_for_build(self, name, added_by="cfbs add"):
         if "provides" in self._data and name in self._data["provides"]:
             module = self._data["provides"][name]
-            return _construct_provided_module(name, module, self.url, self.url_commit)
+            return _construct_provided_module(
+                name, module, self.url, self.url_commit, added_by
+            )
         if name in self.index:
-            return self.index.get_module_object(name)
+            return self.index.get_module_object(name, added_by)
         return None
 
     def _module_is_in_build(self, module):
