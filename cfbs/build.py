@@ -3,6 +3,7 @@ import logging as log
 from cfbs.utils import (
     canonify,
     cp,
+    deduplicate_def_json,
     find,
     merge_json,
     mkdir,
@@ -115,6 +116,8 @@ def _perform_build_step(module, step, max_length):
             print("Warning: '%s' looks empty, adding nothing" % os.path.basename(src))
         if original:
             merged = merge_json(original, extras)
+            if os.path.basename(dst) == "def.json":
+                merged = deduplicate_def_json(merged)
         else:
             merged = extras
         write_json(dst, merged)
@@ -145,6 +148,7 @@ def _perform_build_step(module, step, max_length):
                     extra = read_json(os.path.join(root, f))
                     if extra:
                         merged = merge_json(merged, extra)
+                        merged = deduplicate_def_json(merged)
                 else:
                     s = os.path.join(root, f)
                     d = os.path.join(destination, dstarg, root[len(src) :], f)
@@ -182,6 +186,7 @@ def _perform_build_step(module, step, max_length):
         if original:
             log.debug("Original def.json: %s", pretty(original))
             merged = merge_json(original, extras)
+            merged = deduplicate_def_json(merged)
         else:
             merged = extras
         log.debug("Merged def.json: %s", pretty(merged))
@@ -208,7 +213,11 @@ def _perform_build_step(module, step, max_length):
         path = os.path.join(destination, "def.json")
         original = read_json(path)
         log.debug("Original def.json: %s" % pretty(original))
-        merged = merge_json(original, augment) if original else augment
+        if original:
+            merged = merge_json(original, augment)
+            merged = deduplicate_def_json(merged)
+        else:
+            merged = augment
         log.debug("Merged def.json: %s", pretty(merged))
         write_json(path, merged)
     elif operation == "bundles":
@@ -219,7 +228,11 @@ def _perform_build_step(module, step, max_length):
         path = os.path.join(destination, "def.json")
         original = read_json(path)
         log.debug("Original def.json: %s" % pretty(original))
-        merged = merge_json(original, augment) if original else augment
+        if original:
+            merged = merge_json(original, augment)
+            merged = deduplicate_def_json(merged)
+        else:
+            merged = augment
         log.debug("Merged def.json: %s", pretty(merged))
         write_json(path, merged)
     else:

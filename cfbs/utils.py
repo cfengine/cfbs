@@ -180,6 +180,38 @@ def merge_json(a, b, overwrite_callback=None, stack=None):
     return a
 
 
+def deduplicate_def_json(d):
+    if "inputs" in d:
+        d["inputs"] = deduplicate_list(d["inputs"])
+    if "augments" in d:
+        d["augments"] = deduplicate_list(d["augments"])
+
+    for variable in d.get("variables", {}).values():
+        if type(variable) is not dict:
+            continue
+        if "tags" in variable:
+            variable["tags"] = deduplicate_list(variable["tags"])
+
+    for class_name, class_v in d.get("classes", {}).items():
+        if type(class_v) is dict:
+            if "class_expressions" in class_v:
+                class_v["class_expressions"] = deduplicate_list(
+                    class_v["class_expressions"]
+                )
+            if "tags" in class_v:
+                class_v["tags"] = deduplicate_list(class_v["tags"])
+        elif type(class_v) is list:
+            d["classes"][class_name] = deduplicate_list(class_v)
+
+    # TODO: "vars" can have "augments_inputs", perhaps it could be deduplicated too
+
+    return d
+
+
+def deduplicate_list(l):
+    return list(OrderedDict.fromkeys(l))
+
+
 def cfbs_filename() -> str:
     return "cfbs.json"
 
