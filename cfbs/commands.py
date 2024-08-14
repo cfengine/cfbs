@@ -256,13 +256,13 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
         ) in ("yes", "y"):
             to_add = ["masterfiles"]
         else:
-            to_add = [
-                prompt_user(
-                    non_interactive,
-                    "Specify policy set to use instead (empty to skip)",
-                    default="",
-                )
-            ]
+            answer = prompt_user(
+                non_interactive,
+                "Specify policy set to use instead (empty to skip)",
+                default="",
+            )
+            if answer:
+                to_add = [answer]
     elif re.match(r"[0-9]+(\.[0-9]+){2}(\-[0-9]+)?", masterfiles):
         log.debug("--masterfiles=%s appears to be a version number" % masterfiles)
         to_add = ["masterfiles@%s" % masterfiles]
