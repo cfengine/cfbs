@@ -222,7 +222,7 @@ These are copies of the module directories, where it's more "safe" to do things 
 ## All available build steps
 
 The build steps below manipulate the temporary files in the steps directories and write results to the output policy set, in `out/masterfiles`.
-Unless otherwise noted, all steps are run inside the module's folder (`out/steps/...`) with sources / file paths relative to that folder, and targets / destinations mentioned below are relative to the output policy set (`out/masterfiles`, which in the end will be deployed as `/var/cfengine/masterfiles`)
+Unless otherwise noted, all steps are run inside the module's folder (`out/steps/...`) with sources / file paths relative to that folder, and targets / destinations mentioned below are relative to the output policy set (`out/masterfiles`, which in the end will be deployed as `/var/cfengine/masterfiles`).
 
 * `copy <source> <destination>`
   * Copy a single file or a directory recursively.
@@ -262,6 +262,14 @@ Unless otherwise noted, all steps are run inside the module's folder (`out/steps
   * Converts the input data for a module into the augments format and merges it with the target augments file.
   * Source is relative to module directory and target is relative to `out/masterfiles`.
     * In most cases, the build step should be: `input ./input.json def.json`
+
+When `def.json` is modified during a `json`, `input`, `directory`, `bundles`, or `policy_files` build step, the values of some lists of strings are deduplicated, when this does not make any difference in behavior.
+These cases are:
+
+1. Policy files and augments files in the `"inputs"` and `"augments"` top level keys.
+2. `"tags"` inside variables in `"variables"` and classes in `"classes"`.
+3. Class expressions for each class in `"classes"`.
+   These are in the subkey `"class_expressions"` when the class is defined using an object, and if the class is defined using just a list, that list is the list of class expressions implicitly.
 
 ### A note on reproducibility and backwards compatibility
 
