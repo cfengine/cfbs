@@ -3,6 +3,10 @@ from collections import OrderedDict
 from cfbs.pretty import pretty
 
 
+def is_module_added_manually(added_by: str):
+    return added_by in ("cfbs add", "cfbs init")
+
+
 class Module:
     """Class representing a module in cfbs.json"""
 

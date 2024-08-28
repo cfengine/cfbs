@@ -64,7 +64,7 @@ from cfbs.git import (
 )
 from cfbs.git_magic import Result, commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
-from cfbs.module import Module
+from cfbs.module import Module, is_module_added_manually
 
 
 class InputDataUpdateFailed(Exception):
@@ -521,7 +521,7 @@ def _clean_unused_modules(config=None):
         return 0
 
     def _someone_needs_me(this) -> bool:
-        if "added_by" not in this or this["added_by"] == "cfbs add":
+        if ("added_by" not in this) or is_module_added_manually(this["added_by"]):
             return True
         for other in modules:
             if not "dependencies" in other:
