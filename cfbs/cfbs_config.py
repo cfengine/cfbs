@@ -19,7 +19,7 @@ from cfbs.internal_file_management import (
 )
 from cfbs.pretty import pretty, CFBS_DEFAULT_SORTING_RULES
 from cfbs.cfbs_json import CFBSJson
-from cfbs.module import Module
+from cfbs.module import Module, is_module_added_manually
 from cfbs.prompts import prompt_user, YES_NO_CHOICES
 
 
@@ -101,22 +101,24 @@ class CFBSConfig(CFBSJson):
         if not module:
             user_error("Module '%s' not found" % module_str)
         assert "name" in module
+        name = module["name"]
         assert "steps" in module
         if self._module_is_in_build(module):
-            print("Skipping already added module '%s'" % module["name"])
+            print("Skipping already added module '%s'" % name)
             return
         if "dependencies" in module:
             for dep in module["dependencies"]:
-                self.add_with_dependencies(dep, remote_config, module["name"])
+                self.add_with_dependencies(dep, remote_config, name)
         if "build" not in self._data:
             self._data["build"] = []
         self._data["build"].append(module)
-        if str_added_by != "cfbs add":
-            print(
-                "Added module: %s (Dependency of %s)" % (module["name"], str_added_by)
-            )
+
+        assert "added_by" in module
+        added_by = module["added_by"]
+        if not is_module_added_manually(added_by):
+            print("Added module: %s (Dependency of %s)" % (name, added_by))
         else:
-            print("Added module: %s" % module["name"])
+            print("Added module: %s" % name)
 
     def _add_using_url(
         self,
@@ -326,11 +328,12 @@ class CFBSConfig(CFBSJson):
             self["build"].append(module)
             self._handle_local_module(module)
 
+            assert "added_by" in module
             added_by = module["added_by"]
-            if added_by == "cfbs add":
-                print("Added module: %s" % name)
-            else:
+            if not is_module_added_manually(added_by):
                 print("Added module: %s (Dependency of %s)" % (name, added_by))
+            else:
+                print("Added module: %s" % name)
 
     def _add_modules(
         self,
