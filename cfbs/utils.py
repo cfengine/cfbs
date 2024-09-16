@@ -249,6 +249,17 @@ def path_append(dir, subdir):
     return dir if not subdir else os.path.join(dir, subdir)
 
 
+def canonical_path(path):
+    return os.path.normcase(os.path.realpath(path))
+
+
+def are_paths_equal(path_a, path_b) -> bool:
+    canon_path_a = canonical_path(path_a)
+    canon_path_b = canonical_path(path_b)
+
+    return canon_path_a == canon_path_b
+
+
 def cfengine_dir(subdir=None):
     return path_append("~/.cfengine/", subdir)
 
