@@ -55,7 +55,7 @@ Here are the basic commands to set up a repo, add dependencies, build and deploy
 cfbs init
 ```
 
-### List or search available packages
+### List or search available modules
 
 ```
 cfbs search
