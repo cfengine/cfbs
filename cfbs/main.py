@@ -108,6 +108,8 @@ def main() -> int:
         return commands.validate_command()
     if args.command in ("info", "show"):
         return commands.info_command(args.args)
+    if args.command in ("analyze", "analyse"):
+        return commands.analyze_command(args.args)
 
     if args.command == "generate-release-information":
         return commands.generate_release_information_command(

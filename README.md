@@ -250,6 +250,8 @@ We run both user-oriented and automation-oriented commands in automated tests as
 These commands are centered around a user making changes to a project (manually from the shell / command line), not a computer building/deploying it:
 
 * `cfbs add`: Add a module to the project (local files/folders, prepended with `./` are also considered modules).
+* `cfbs analyse`: Same as `cfbs analyze`.
+* `cfbs analyze`: Analyze the policy set specified by the given path.
 * `cfbs clean`: Remove modules which were added as dependencies, but are no longer needed.
 * `cfbs help`: Print the help menu.
 * `cfbs info`: Print information about a module.

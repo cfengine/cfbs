@@ -1057,6 +1057,14 @@ def info_command(modules):
     return 0
 
 
+@cfbs_command("analyze")
+@cfbs_command("analyse")
+def analyze_command(path):
+    print("Version: 1.0.0")
+
+    return 0
+
+
 @cfbs_command("input")
 @commit_after_command("Added input for module%s", [PLURAL_S])
 def input_command(args, input_from="cfbs input"):
