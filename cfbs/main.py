@@ -91,6 +91,9 @@ def main() -> int:
     if args.command in ("info", "show"):
         return commands.info_command(args.args)
 
+    if args.command == "generate-release-information":
+        return commands.generate_release_information_command()
+
     if not is_cfbs_repo():
         user_error("This is not a cfbs repo, to get started, type: cfbs init")
 

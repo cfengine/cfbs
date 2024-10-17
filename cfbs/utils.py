@@ -244,6 +244,14 @@ def is_cfbs_repo() -> bool:
     return os.path.isfile(cfbs_filename())
 
 
+def immediate_subdirectories(path):
+    return [f.name for f in os.scandir(path) if f.is_dir()]
+
+
+def immediate_files(path):
+    return [f.name for f in os.scandir(path) if not f.is_dir()]
+
+
 def path_append(dir, subdir):
     dir = os.path.abspath(os.path.expanduser(dir))
     return dir if not subdir else os.path.join(dir, subdir)
@@ -276,6 +284,18 @@ def cfbs_dir(append=None) -> str:
     if not append:
         return directory
     return os.path.join(directory, append)
+
+
+def string_sha256(input):
+    return hashlib.sha256(input.encode("utf-8")).hexdigest()
+
+
+def file_sha256(file):
+    h = hashlib.sha256()
+
+    h.update(open(file, "rb").read())
+
+    return h.hexdigest()
 
 
 class FetchError(Exception):
