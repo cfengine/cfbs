@@ -5,7 +5,11 @@ import sys
 
 from cfbs.git import git_exists
 from cfbs.utils import write_json
-from cfbs.masterfiles.analyze import initialize_vcf, versions_checksums_files
+from cfbs.masterfiles.analyze import (
+    finalize_vcf,
+    initialize_vcf,
+    versions_checksums_files,
+)
 
 DIR_PATH = "."
 """The path of the working directory."""
@@ -78,6 +82,10 @@ def generate_vcf_git_checkout(interesting_tags=None):
         versions_dict, checksums_dict, files_dict = versions_checksums_files(
             MPF_PATH, tag, versions_dict, checksums_dict, files_dict
         )
+
+    versions_dict, checksums_dict, files_dict = finalize_vcf(
+        versions_dict, checksums_dict, files_dict
+    )
 
     write_json("versions-git.json", versions_dict)
     write_json("checksums-git.json", checksums_dict)

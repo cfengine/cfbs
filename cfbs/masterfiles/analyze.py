@@ -1,7 +1,7 @@
 # TODO merge this with ENT-12099 branch cfbs analyze.py
 import os
 
-from cfbs.utils import file_sha256
+from cfbs.utils import dict_sorted_by_key, file_sha256
 
 IGNORED_PATH_COMPONENTS = [".git/", ".gitignore", ".gitattributes"]
 # ignore a path iff it contains a component (single file or directory) from this list
@@ -50,5 +50,24 @@ def versions_checksums_files(
                     "version": version,
                 }
             )
+
+    return versions_dict, checksums_dict, files_dict
+
+
+def finalize_vcf(versions_dict, checksums_dict, files_dict):
+    # sort checksums
+    sorted_checksums_dict = dict_sorted_by_key(checksums_dict["checksums"])
+    checksums_dict["checksums"] = sorted_checksums_dict
+
+    # sort files, alphabetically
+    sorted_files_dict = dict_sorted_by_key(files_dict["files"])
+    files_dict["files"] = sorted_files_dict
+
+    # sort files of each version
+    working_dict = versions_dict["versions"]
+    for k in working_dict.keys():
+        sorted_dict = dict_sorted_by_key(working_dict[k]["files"])
+        working_dict[k]["files"] = sorted_dict
+    versions_dict["versions"] = working_dict
 
     return versions_dict, checksums_dict, files_dict

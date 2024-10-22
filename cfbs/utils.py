@@ -236,6 +236,12 @@ def deduplicate_list(l):
     return list(OrderedDict.fromkeys(l))
 
 
+def dict_sorted_by_key(the_dict):
+    sorted_dict = OrderedDict(sorted(the_dict.items()))
+
+    return sorted_dict
+
+
 def cfbs_filename() -> str:
     return "cfbs.json"
 
