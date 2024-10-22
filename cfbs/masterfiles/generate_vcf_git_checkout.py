@@ -5,7 +5,7 @@ import sys
 
 from cfbs.git import git_exists
 from cfbs.utils import write_json
-from masterfiles.analyze import initialize_vcf, versions_checksums_files
+from cfbs.masterfiles.analyze import initialize_vcf, versions_checksums_files
 
 DIR_PATH = "."
 """The path of the working directory."""

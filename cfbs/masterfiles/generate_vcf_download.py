@@ -1,5 +1,5 @@
 from cfbs.utils import write_json
-from masterfiles.analyze import initialize_vcf, versions_checksums_files
+from cfbs.masterfiles.analyze import initialize_vcf, versions_checksums_files
 
 
 def generate_vcf_download(dir_path, downloaded_versions):

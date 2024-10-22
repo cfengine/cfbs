@@ -65,7 +65,7 @@ from cfbs.git import (
 from cfbs.git_magic import Result, commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 from cfbs.module import Module, is_module_added_manually
-from masterfiles.generate_release_information import generate_release_information
+from cfbs.masterfiles.generate_release_information import generate_release_information
 
 
 class InputDataUpdateFailed(Exception):
