@@ -1,10 +1,11 @@
-from cfbs.utils import canonify, deduplicate_def_json, merge_json, loads_bundlenames
-
-
-def test_canonify():
-    assert canonify("Hello CFEngine!") == "Hello_CFEngine_"
-    assert canonify("/etc/os-release") == "_etc_os_release"
-    assert canonify("my-example-module") == "my_example_module"
+from cfbs.utils import (
+    canonify,
+    deduplicate_def_json,
+    file_sha256,
+    merge_json,
+    loads_bundlenames,
+    string_sha256,
+)
 
 
 def test_merge_json():
@@ -138,6 +139,26 @@ def test_deduplicate_def_json():
 
     deduplicated = deduplicate_def_json(case)
     assert deduplicated == expected
+
+
+def test_string_sha256():
+    s = "cfbs/masterfiles/"
+    checksum = "9e63d3266f80328fb6547b3462e81ab55b13f689d6b0944e242e2b3a0f3a32a3"
+
+    assert string_sha256(s) == checksum
+
+
+def test_file_sha256():
+    file_path = "tests/sample/foo/main.cf"
+    checksum = "da90bdfe7b5ee30e4d7871496e8434603315fb1b267660e2d49aee8ef47b246d"
+
+    assert file_sha256(file_path) == checksum
+
+
+def test_canonify():
+    assert canonify("Hello CFEngine!") == "Hello_CFEngine_"
+    assert canonify("/etc/os-release") == "_etc_os_release"
+    assert canonify("my-example-module") == "my_example_module"
 
 
 def test_loads_bundlenames_single_bundle():

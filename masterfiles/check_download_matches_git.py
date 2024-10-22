@@ -1,4 +1,8 @@
-# check that the downloadable files match the git files, mitigating a build system supply-chain attack
+"""Check that the downloadable files match the git files.
+
+This can be used to monitor / detect if something has been changed, accidentally or maliciously.
+"""
+
 import os
 import dictdiffer
 
