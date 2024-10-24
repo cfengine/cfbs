@@ -3,7 +3,6 @@ import shutil
 import subprocess
 import sys
 
-from cfbs.git import git_exists
 from cfbs.utils import write_json
 from cfbs.masterfiles.analyze import (
     finalize_vcf,
@@ -18,7 +17,21 @@ MPF_URL = "https://github.com/cfengine/masterfiles"
 MPF_PATH = os.path.join(DIR_PATH, "masterfiles")
 
 
+def check_required_command(command):
+    if not shutil.which(command):
+        print("`%s` was not found" % command)
+        sys.exit(1)
+
+
+def check_required_commands(commands):
+    for c in commands:
+        check_required_command(c)
+
+
 def generate_vcf_git_checkout(interesting_tags=None):
+    required_commands = ["git", "make", "automake", "autoconf"]
+    check_required_commands(required_commands)
+
     # clone the MPF repo every time the script is run, in case there are updates
     if os.path.isdir(MPF_PATH):
         shutil.rmtree(MPF_PATH)
@@ -28,10 +41,6 @@ def generate_vcf_git_checkout(interesting_tags=None):
         cwd=DIR_PATH,
         check=True,
     )
-
-    if not git_exists():
-        print("`git` was not found")
-        sys.exit(1)
 
     result = subprocess.run(
         ["git", "tag"], cwd=MPF_PATH, capture_output=True, check=True

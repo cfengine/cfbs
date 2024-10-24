@@ -3,11 +3,13 @@ import os
 
 from cfbs.utils import dict_sorted_by_key, file_sha256
 
+# TODO implement the ignoring
 IGNORED_PATH_COMPONENTS = [".git/", ".gitignore", ".gitattributes"]
-# ignore a path iff it contains a component (single file or directory) from this list
-# an element of this list should be just one component
-# folders should end with '/', files should not
-# TODO
+"""The analysis ignores paths described by this list. A path will be ignored if and only if it contains a component (a single file or directory, anywhere in the path) from this list.
+
+Each element of this list should specify a singular component.
+Folders should end with `/`, and files should not.
+"""
 
 
 def initialize_vcf():
