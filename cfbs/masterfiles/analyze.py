@@ -23,7 +23,7 @@ def initialize_vcf():
 def versions_checksums_files(
     files_dir_path, version, versions_dict, checksums_dict, files_dict
 ):
-    for root, dirs, files in os.walk(files_dir_path):
+    for root, _, files in os.walk(files_dir_path):
         for name in files:
             full_relpath = os.path.join(root, name)
             tarball_relpath = os.path.relpath(full_relpath, files_dir_path)

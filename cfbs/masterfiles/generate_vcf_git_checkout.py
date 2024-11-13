@@ -32,15 +32,19 @@ def generate_vcf_git_checkout(interesting_tags=None):
     required_commands = ["git", "make", "automake", "autoconf"]
     check_required_commands(required_commands)
 
-    # clone the MPF repo every time the script is run, in case there are updates
-    if os.path.isdir(MPF_PATH):
-        shutil.rmtree(MPF_PATH)
-
-    subprocess.run(
-        ["git", "clone", MPF_URL],
-        cwd=DIR_PATH,
-        check=True,
-    )
+    # get the current version of the MPF repo
+    if not os.path.isdir(MPF_PATH):
+        subprocess.run(
+            ["git", "clone", "--no-checkout", MPF_URL],
+            cwd=DIR_PATH,
+            check=True,
+        )
+    else:
+        subprocess.run(
+            ["git", "fetch", "--all"],
+            cwd=DIR_PATH,
+            check=True,
+        )
 
     result = subprocess.run(
         ["git", "tag"], cwd=MPF_PATH, capture_output=True, check=True
@@ -58,19 +62,11 @@ def generate_vcf_git_checkout(interesting_tags=None):
     versions_dict, checksums_dict, files_dict = initialize_vcf()
 
     for tag in interesting_tags:
-        print(tag)
+        print("Checkouting tag", tag)
 
-        # checkout the version tag
+        # checkout the version
         subprocess.run(
-            ["git", "checkout", "--force", tag],
-            cwd=MPF_PATH,
-            check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        # a clean is necessary to remove all the undesired files
-        subprocess.run(
-            ["git", "clean", "-dffx"],
+            ["git", "checkout", tag],
             cwd=MPF_PATH,
             check=True,
             stdout=subprocess.DEVNULL,
@@ -90,6 +86,15 @@ def generate_vcf_git_checkout(interesting_tags=None):
         # compute VCF data for all the files
         versions_dict, checksums_dict, files_dict = versions_checksums_files(
             MPF_PATH, tag, versions_dict, checksums_dict, files_dict
+        )
+
+        # clean the files to prevent spillage to other versions
+        subprocess.run(
+            ["git", "clean", "-dffx"],
+            cwd=MPF_PATH,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
 
     versions_dict, checksums_dict, files_dict = finalize_vcf(

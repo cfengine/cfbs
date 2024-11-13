@@ -1,3 +1,5 @@
+import os
+
 from cfbs.utils import write_json
 from cfbs.masterfiles.analyze import (
     finalize_vcf,
@@ -14,7 +16,7 @@ def generate_vcf_download(dir_path, downloaded_versions):
     versions_dict, checksums_dict, files_dict = initialize_vcf()
 
     for version in downloaded_versions:
-        files_dir_path = dir_path / version / "tarball"
+        files_dir_path = os.path.join(dir_path, version, "tarball")
 
         versions_dict, checksums_dict, files_dict = versions_checksums_files(
             files_dir_path, version, versions_dict, checksums_dict, files_dict
