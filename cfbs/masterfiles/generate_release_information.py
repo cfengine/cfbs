@@ -3,7 +3,6 @@
 import sys
 
 from cfbs.masterfiles.download_all_versions import download_all_versions_enterprise
-from cfbs.masterfiles.check_tarball_checksums import check_tarball_checksums
 from cfbs.masterfiles.generate_vcf_download import generate_vcf_download
 from cfbs.masterfiles.generate_vcf_git_checkout import generate_vcf_git_checkout
 
@@ -13,18 +12,13 @@ from cfbs.masterfiles.generate_vcf_git_checkout import generate_vcf_git_checkout
 
 def generate_release_information():
     print("Downloading Enterprise masterfiles...")
-    output_path, downloaded_versions, reported_checksums = (
-        download_all_versions_enterprise()
-    )
+
+    output_path, downloaded_versions = download_all_versions_enterprise()
     # TODO Community coverage:
     # downloaded_versions, reported_checksums = download_all_versions_community()
 
-    # Enterprise 3.9.2 is downloaded but there is no reported checksum, so both args are necessary
-    if check_tarball_checksums(output_path, downloaded_versions, reported_checksums):
-        print("Every checksum matches")
-    else:
-        print("Checksums differ!")
-        sys.exit(1)
+    print("Download finished. Every reported checksum matches.")
+    print("Generating release information...")
 
     generate_vcf_download(output_path, downloaded_versions)
     generate_vcf_git_checkout(downloaded_versions)

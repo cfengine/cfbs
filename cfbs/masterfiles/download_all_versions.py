@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from cfbs.utils import fetch_url, get_json, mkdir
+from cfbs.utils import FetchError, fetch_url, get_json, mkdir, user_error
 
 ENTERPRISE_URL = "https://cfengine.com/release-data/enterprise/releases.json"
 COMMUNITY_URL = "https://cfengine.com/release-data/community/releases.json"
@@ -13,21 +13,27 @@ def get_download_urls_enterprise():
     download_urls = {}
     reported_checksums = {}
 
+    print("* gathering download URLs...")
+
     data = get_json(ENTERPRISE_URL)
 
     for release_data in data["releases"]:
         version = release_data["version"]
 
         if version == "3.10.0":
-            # for 3.10.0, for some reason, the masterfiles download link points to the .tar.gz tarball, rather than the .pkg.tar.gz tarball
-            # download the .pkg.tar.gz from an unlisted analoguous URL instead
+            # for 3.10.0, for some reason, the "Masterfiles ready-to-install tarball" is a .tar.gz tarball, rather than a .pkg.tar.gz tarball
+            # download the .pkg.tar.gz tarball from an unlisted analoguous URL instead
             download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0.pkg.tar.gz"
+            digest = "7b5e237529e11ce4ae295922dad1a681f13b95f3a7d247d39d3f5088f1a1d7d3"
             download_urls[version] = download_url
+            reported_checksums[version] = digest
             continue
         if version == "3.9.2":
             # for 3.9.2, no masterfiles are listed, but an unlisted analoguous URL exists
             download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.9.2.pkg.tar.gz"
+            digest = "ae1a758530d4a4aad5b6812b61fc37ad1b5900b755f88a1ab98da7fd05a9f5cc"
             download_urls[version] = download_url
+            reported_checksums[version] = digest
             continue
 
         release_url = release_data["URL"]
@@ -57,7 +63,7 @@ def get_download_urls_enterprise():
     return download_urls, reported_checksums
 
 
-def download_versions_from_urls(output_path, download_urls):
+def download_versions_from_urls(output_path, download_urls, reported_checksums):
     downloaded_versions = []
 
     mkdir(output_path)
@@ -67,15 +73,20 @@ def download_versions_from_urls(output_path, download_urls):
         if url.startswith("http://buildcache"):
             continue
 
-        print("Downloading from", url)
+        print("* downloading from", url)
         downloaded_versions.append(version)
 
         version_path = os.path.join(output_path, version)
         mkdir(version_path)
 
+        # download a version, and verify the reported checksum matches
         filename = url.split("/")[-1]
         tarball_path = os.path.join(version_path, filename)
-        fetch_url(url, tarball_path)
+        checksum = reported_checksums[version]
+        try:
+            fetch_url(url, tarball_path, checksum)
+        except FetchError as e:
+            user_error("For version " + version + ": " + str(e))
 
         tarball_dir_path = os.path.join(version_path, "tarball")
         shutil.unpack_archive(tarball_path, tarball_dir_path)
@@ -92,8 +103,7 @@ def download_all_versions_enterprise():
     download_urls, reported_checksums = get_download_urls_enterprise()
 
     output_path, downloaded_versions = download_versions_from_urls(
-        ENTERPRISE_DOWNLOAD_PATH, download_urls
+        ENTERPRISE_DOWNLOAD_PATH, download_urls, reported_checksums
     )
 
-    # for local verification of the reported (Enterprise) (.pkg.tar.gz) checksums
-    return output_path, downloaded_versions, reported_checksums
+    return output_path, downloaded_versions
