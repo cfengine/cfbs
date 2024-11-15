@@ -28,7 +28,7 @@ def check_required_commands(commands):
         check_required_command(c)
 
 
-def generate_vcf_git_checkout(interesting_tags=None):
+def generate_vcf_git_checkout(checkout_tags):
     required_commands = ["git", "make", "automake", "autoconf"]
     check_required_commands(required_commands)
 
@@ -42,26 +42,13 @@ def generate_vcf_git_checkout(interesting_tags=None):
     else:
         subprocess.run(
             ["git", "fetch", "--all"],
-            cwd=DIR_PATH,
+            cwd=MPF_PATH,
             check=True,
         )
 
-    result = subprocess.run(
-        ["git", "tag"], cwd=MPF_PATH, capture_output=True, check=True
-    )
-    tags = result.stdout.decode("UTF-8").splitlines()
-
-    # if not given, choose tags to checkout - by default, only consider version releases
-    if interesting_tags is None:
-        interesting_tags = []
-
-        for tag in tags:
-            if "-" not in tag:
-                interesting_tags.append(tag)
-
     versions_dict, checksums_dict, files_dict = initialize_vcf()
 
-    for tag in interesting_tags:
+    for tag in checkout_tags:
         print("Checkouting tag", tag)
 
         # checkout the version
@@ -90,7 +77,7 @@ def generate_vcf_git_checkout(interesting_tags=None):
 
         # clean the files to prevent spillage to other versions
         subprocess.run(
-            ["git", "clean", "-dffx"],
+            ["git", "clean", "-dfx"],
             cwd=MPF_PATH,
             check=True,
             stdout=subprocess.DEVNULL,

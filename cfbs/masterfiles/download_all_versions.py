@@ -3,10 +3,9 @@ import shutil
 
 from cfbs.utils import FetchError, fetch_url, get_json, mkdir, user_error
 
-ENTERPRISE_URL = "https://cfengine.com/release-data/enterprise/releases.json"
-COMMUNITY_URL = "https://cfengine.com/release-data/community/releases.json"
+ENTERPRISE_RELEASES_URL = "https://cfengine.com/release-data/enterprise/releases.json"
 
-ENTERPRISE_DOWNLOAD_PATH = "enterprise"
+DOWNLOAD_PATH = "downloaded_masterfiles"
 
 
 def get_download_urls_enterprise():
@@ -15,7 +14,7 @@ def get_download_urls_enterprise():
 
     print("* gathering download URLs...")
 
-    data = get_json(ENTERPRISE_URL)
+    data = get_json(ENTERPRISE_RELEASES_URL)
 
     for release_data in data["releases"]:
         version = release_data["version"]
@@ -54,7 +53,7 @@ def get_download_urls_enterprise():
         if masterfiles_data is None:
             # happens for 3.9.2, 3.9.0, 3.8.2, 3.8.1, 3.8.0, 3.7.4--3.6.2
             # 3.9.2: see above
-            # 3.9.0 and below: no masterfiles listed, and analogous unlisted URLs seemingly do not exist
+            # 3.9.0 and below: no masterfiles listed, and unlisted analogous URLs seemingly do not exist
             continue
 
         download_urls[version] = masterfiles_data["URL"]
@@ -63,10 +62,10 @@ def get_download_urls_enterprise():
     return download_urls, reported_checksums
 
 
-def download_versions_from_urls(output_path, download_urls, reported_checksums):
+def download_versions_from_urls(download_path, download_urls, reported_checksums):
     downloaded_versions = []
 
-    mkdir(output_path)
+    mkdir(download_path)
 
     for version, url in download_urls.items():
         # ignore master and .x versions
@@ -76,7 +75,7 @@ def download_versions_from_urls(output_path, download_urls, reported_checksums):
         print("* downloading from", url)
         downloaded_versions.append(version)
 
-        version_path = os.path.join(output_path, version)
+        version_path = os.path.join(download_path, version)
         mkdir(version_path)
 
         # download a version, and verify the reported checksum matches
@@ -91,19 +90,28 @@ def download_versions_from_urls(output_path, download_urls, reported_checksums):
         tarball_dir_path = os.path.join(version_path, "tarball")
         shutil.unpack_archive(tarball_path, tarball_dir_path)
 
-    return output_path, downloaded_versions
+    return downloaded_versions
 
 
-# TODO
-# def download_all_versions_community():
-#     data = get_json(COMMUNITY_URL)
-
-
-def download_all_versions_enterprise():
+def download_all_versions():
     download_urls, reported_checksums = get_download_urls_enterprise()
 
-    output_path, downloaded_versions = download_versions_from_urls(
-        ENTERPRISE_DOWNLOAD_PATH, download_urls, reported_checksums
+    # add masterfiles versions which do not appear in Enterprise releases but appear in Community releases
+    # 3.12.0b1
+    version = "3.12.0b1"
+    download_url = "https://cfengine-package-repos.s3.amazonaws.com/community_binaries/Community-3.12.0b1/misc/cfengine-masterfiles-3.12.0b1.pkg.tar.gz"
+    digest = "ede305dae7be3edfac04fc5b7f63b46adb3a5b1612f4755e855ee8e6b8d344d7"
+    download_urls[version] = download_url
+    reported_checksums[version] = digest
+    # 3.10.0b1
+    version = "3.10.0b1"
+    download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0b1.pkg.tar.gz"
+    digest = "09291617254705d79dea2531b23dbd0754f09029e90ce0b43b275aa02c1223a3"
+    download_urls[version] = download_url
+    reported_checksums[version] = digest
+
+    downloaded_versions = download_versions_from_urls(
+        DOWNLOAD_PATH, download_urls, reported_checksums
     )
 
-    return output_path, downloaded_versions
+    return DOWNLOAD_PATH, downloaded_versions

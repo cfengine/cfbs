@@ -1,4 +1,3 @@
-# TODO merge this with ENT-12099 branch cfbs analyze.py
 import os
 
 from cfbs.utils import dict_sorted_by_key, file_sha256
