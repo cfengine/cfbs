@@ -51,9 +51,22 @@ def generate_vcf_git_checkout(checkout_tags):
     for tag in checkout_tags:
         print("Checkouting tag", tag)
 
+        # checkouting some tags equal to the downloaded version doesn't result in the same files
+        # the downloadable files are reproducible by checkouting specific tags
+        if tag == "3.18.0":
+            checkout_tag = "3.18.0-2"
+        elif tag == "3.15.4":
+            checkout_tag = "3.15.4-2-build2"
+        elif tag == "3.12.3":
+            checkout_tag = "3.12.3-build7"
+        elif tag == "3.7.7":
+            checkout_tag = "3.7.7-build1"
+        else:
+            checkout_tag = tag
+
         # checkout the version
         subprocess.run(
-            ["git", "checkout", tag],
+            ["git", "checkout", checkout_tag],
             cwd=MPF_PATH,
             check=True,
             stdout=subprocess.DEVNULL,
@@ -61,11 +74,18 @@ def generate_vcf_git_checkout(checkout_tags):
         )
 
         # build masterfiles from git as they are in the tarball packages
+        # for the files of this version to be reproducible, the `EXPLICIT_RELEASE` environment variable needs to be set to what it was when the downloadable files were built
+        if tag == "3.18.3":
+            release_number = "2"
+        else:
+            release_number = "1"
         subprocess.run(
             ["./autogen.sh"],
             cwd=MPF_PATH,
             check=True,
-            env=dict(os.environ.copy(), EXPLICIT_VERSION=tag),
+            env=dict(
+                os.environ.copy(), EXPLICIT_VERSION=tag, EXPLICIT_RELEASE=release_number
+            ),
         )
         # older masterfiles version READMEs instruct to use `make install` and newer `make` - always use `make` instead
         subprocess.run(["make"], cwd=MPF_PATH, check=True)

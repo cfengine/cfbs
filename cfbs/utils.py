@@ -242,6 +242,22 @@ def dict_sorted_by_key(the_dict):
     return sorted_dict
 
 
+def dict_diff(A, B):
+    keys_A = set(A.keys())
+    keys_B = set(B.keys())
+    keys_in_both = keys_A & keys_B
+    keys_only_A = keys_A - keys_in_both
+    keys_only_B = keys_B - keys_in_both
+
+    values_different = set((k, A[k], B[k]) for k in keys_in_both if A[k] != B[k])
+
+    keys_only_A = sorted(keys_only_A)
+    keys_only_B = sorted(keys_only_B)
+    values_different = sorted(values_different)
+
+    return keys_only_A, keys_only_B, values_different
+
+
 def cfbs_filename() -> str:
     return "cfbs.json"
 
