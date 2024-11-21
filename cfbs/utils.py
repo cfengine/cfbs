@@ -243,6 +243,11 @@ def dict_sorted_by_key(the_dict):
 
 
 def dict_diff(A, B):
+    """Returns three sorted lists:
+    * first: list of keys only in `A`
+    * second: list of keys only in `B`
+    * third: list of tuples `(k, A[k], B[k])` for keys `k` in both with differing values
+    """
     keys_A = set(A.keys())
     keys_B = set(B.keys())
     keys_in_both = keys_A & keys_B
@@ -315,7 +320,8 @@ def string_sha256(input):
 def file_sha256(file):
     h = hashlib.sha256()
 
-    h.update(open(file, "rb").read())
+    with open(file, "rb") as f:
+        h.update(f.read())
 
     return h.hexdigest()
 

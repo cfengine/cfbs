@@ -1,6 +1,7 @@
 from cfbs.utils import (
     canonify,
     deduplicate_def_json,
+    dict_diff,
     file_sha256,
     merge_json,
     loads_bundlenames,
@@ -139,6 +140,13 @@ def test_deduplicate_def_json():
 
     deduplicated = deduplicate_def_json(case)
     assert deduplicated == expected
+
+
+def test_dict_diff():
+    A = {"A": "a", "B": "b", "C": "c"}
+    B = {"A": "a", "B": "c", "D": "d"}
+
+    assert dict_diff(A, B) == (["C"], ["D"], [("B", "b", "c")])
 
 
 def test_string_sha256():
