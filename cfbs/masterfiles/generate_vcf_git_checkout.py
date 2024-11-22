@@ -49,10 +49,10 @@ def generate_vcf_git_checkout(checkout_tags):
     versions_dict, checksums_dict, files_dict = initialize_vcf()
 
     for tag in checkout_tags:
-        print("Checkouting tag", tag)
+        print("Checking out tag", tag)
 
-        # checkouting some tags equal to the downloaded version doesn't result in the same files
-        # the downloadable files are reproducible by checkouting specific tags
+        # checking out some tags equal to the downloaded version doesn't result in the same files
+        # the downloadable files are reproducible by checking out specific tags
         if tag == "3.18.0":
             checkout_tag = "3.18.0-2"
         elif tag == "3.15.4":
@@ -64,7 +64,7 @@ def generate_vcf_git_checkout(checkout_tags):
         else:
             checkout_tag = tag
 
-        # checkout the version
+        # check out the version
         subprocess.run(
             ["git", "checkout", checkout_tag],
             cwd=MPF_PATH,

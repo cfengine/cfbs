@@ -2,17 +2,24 @@ from cfbs.masterfiles.download_all_versions import download_all_versions
 from cfbs.masterfiles.generate_vcf_download import generate_vcf_download
 from cfbs.masterfiles.generate_vcf_git_checkout import generate_vcf_git_checkout
 from cfbs.masterfiles.check_download_matches_git import check_download_matches_git
+from cfbs.utils import immediate_subdirectories
+
+DOWNLOAD_PATH = "downloaded_masterfiles"
 
 
-def generate_release_information():
-    print("Downloading masterfiles...")
+def generate_release_information(omit_download=False):
+    if not omit_download:
+        print("Downloading masterfiles...")
 
-    download_path, downloaded_versions = download_all_versions()
+        downloaded_versions = download_all_versions(DOWNLOAD_PATH)
 
-    print("Download finished. Every reported checksum matches.")
+        print("Download finished. Every reported checksum matches.")
+    else:
+        downloaded_versions = immediate_subdirectories(DOWNLOAD_PATH)
+
     print("Generating release information...")
 
-    generate_vcf_download(download_path, downloaded_versions)
+    generate_vcf_download(DOWNLOAD_PATH, downloaded_versions)
     generate_vcf_git_checkout(downloaded_versions)
 
     print("Candidate release information generated.")

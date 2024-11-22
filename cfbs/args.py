@@ -101,6 +101,11 @@ def get_arg_parser():
         action="store_true",
     )
     parser.add_argument(
+        "--omit-download",
+        help="Use existing masterfiles instead of downloading in 'cfbs generate-release-information'",
+        action="store_true",
+    )
+    parser.add_argument(
         "--masterfiles", help="Add masterfiles on cfbs init choose between"
     )
     return parser

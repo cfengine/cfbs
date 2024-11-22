@@ -5,8 +5,6 @@ from cfbs.utils import FetchError, fetch_url, get_json, mkdir, user_error
 
 ENTERPRISE_RELEASES_URL = "https://cfengine.com/release-data/enterprise/releases.json"
 
-DOWNLOAD_PATH = "downloaded_masterfiles"
-
 
 def get_download_urls_enterprise():
     download_urls = {}
@@ -93,7 +91,7 @@ def download_versions_from_urls(download_path, download_urls, reported_checksums
     return downloaded_versions
 
 
-def download_all_versions():
+def download_all_versions(download_path):
     download_urls, reported_checksums = get_download_urls_enterprise()
 
     # add masterfiles versions which do not appear in Enterprise releases but appear in Community releases
@@ -111,7 +109,7 @@ def download_all_versions():
     reported_checksums[version] = digest
 
     downloaded_versions = download_versions_from_urls(
-        DOWNLOAD_PATH, download_urls, reported_checksums
+        download_path, download_urls, reported_checksums
     )
 
-    return DOWNLOAD_PATH, downloaded_versions
+    return downloaded_versions

@@ -1,4 +1,4 @@
-.TH CFBS "1" "2024\-06\-07" "cfbs" "CFEngine Build System manual"
+.TH CFBS "1" "2024\-11\-22" "cfbs" "CFEngine Build System manual"
 .SH NAME
 cfbs \- combines multiple modules into 1 policy set to deploy on your infrastructure. Modules can be custom promise types, JSON files which enable certain functionality, or reusable CFEngine policy. The modules you use can be written by the CFEngine team, others in the community, your colleagues, or yourself.
 .SH SYNOPSIS
@@ -9,7 +9,7 @@ CFEngine Build System.
 
 .TP
 \fBcmd\fR
-The command to perform (pretty, init, status, search, add, remove, clean, update, validate, download, build, install, help, info, show, input, set\-input, get\-input)
+The command to perform (pretty, init, status, search, add, remove, clean, update, validate, download, build, install, help, info, show, input, set\-input, get\-input, generate\-release\-information)
 
 .TP
 \fBargs\fR
@@ -71,6 +71,10 @@ Specify git commit message
 .TP
 \fB\-\-ignore\-versions\-json\fR
 Ignore versions.json. Necessary in case of a custom index or testing changes to the default index.
+
+.TP
+\fB\-\-omit\-download\fR
+Use existing masterfiles instead of downloading in 'cfbs generate-release-information'
 
 .TP
 \fB\-\-masterfiles\fR \fI\,MASTERFILES\/\fR
