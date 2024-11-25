@@ -65,6 +65,7 @@ from cfbs.git import (
 from cfbs.git_magic import Result, commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 from cfbs.module import Module, is_module_added_manually
+from cfbs.masterfiles.generate_release_information import generate_release_information
 
 
 class InputDataUpdateFailed(Exception):
@@ -1204,3 +1205,8 @@ def get_input_command(name, outfile):
         log.error("Failed to write json: %s" % e)
         return 1
     return 0
+
+
+@cfbs_command("generate-release-information")
+def generate_release_information_command(omit_download=False):
+    generate_release_information(omit_download)

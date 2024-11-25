@@ -287,6 +287,7 @@ These commands are intended to be run as part of build systems / deployment pipe
   `cfbs set-input` and `cfbs get-input` can be thought of as ways to save and load the input file.
   Similar to `cfbs get-input` the JSON contains both the specification (what the module accepts and how it's presented to the user) as well as the user's responses (if present).
   Expected usage is to run `cfbs get-input` to get the JSON, and then fill out the response part and run `cfbs set-input`.
+* `cfbs generate-release-information`: An internal command used to generate JSON release information files from the [official CFEngine masterfiles](https://github.com/cfengine/masterfiles/).
 * `cfbs validate`: Used to validate the [index JSON file](https://github.com/cfengine/build-index/blob/master/cfbs.json).
   May be expanded to validate other files and formats in the future.
   **Note:** If you use `cfbs validate` as part of your automation, scripts, and build systems, be aware that we might add more strict validation rules in the future, so be prepared to sometimes have it fail after upgrading the version of cfbs.

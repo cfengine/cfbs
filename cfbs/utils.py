@@ -236,12 +236,47 @@ def deduplicate_list(l):
     return list(OrderedDict.fromkeys(l))
 
 
+def dict_sorted_by_key(the_dict):
+    sorted_dict = OrderedDict(sorted(the_dict.items()))
+
+    return sorted_dict
+
+
+def dict_diff(A, B):
+    """Returns three sorted lists:
+    * first: list of keys only in `A`
+    * second: list of keys only in `B`
+    * third: list of tuples `(k, A[k], B[k])` for keys `k` in both with differing values
+    """
+    keys_A = set(A.keys())
+    keys_B = set(B.keys())
+    keys_in_both = keys_A & keys_B
+    keys_only_A = keys_A - keys_in_both
+    keys_only_B = keys_B - keys_in_both
+
+    values_different = set((k, A[k], B[k]) for k in keys_in_both if A[k] != B[k])
+
+    keys_only_A = sorted(keys_only_A)
+    keys_only_B = sorted(keys_only_B)
+    values_different = sorted(values_different)
+
+    return keys_only_A, keys_only_B, values_different
+
+
 def cfbs_filename() -> str:
     return "cfbs.json"
 
 
 def is_cfbs_repo() -> bool:
     return os.path.isfile(cfbs_filename())
+
+
+def immediate_subdirectories(path):
+    return [f.name for f in os.scandir(path) if f.is_dir()]
+
+
+def immediate_files(path):
+    return [f.name for f in os.scandir(path) if not f.is_dir()]
 
 
 def path_append(dir, subdir):
@@ -276,6 +311,19 @@ def cfbs_dir(append=None) -> str:
     if not append:
         return directory
     return os.path.join(directory, append)
+
+
+def string_sha256(input):
+    return hashlib.sha256(input.encode("utf-8")).hexdigest()
+
+
+def file_sha256(file):
+    h = hashlib.sha256()
+
+    with open(file, "rb") as f:
+        h.update(f.read())
+
+    return h.hexdigest()
 
 
 class FetchError(Exception):

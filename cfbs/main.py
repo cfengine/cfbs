@@ -58,6 +58,12 @@ def main() -> int:
             % args.command
         )
 
+    if args.omit_download and args.command != "generate-release-information":
+        user_error(
+            "The option --omit-download is only for 'cfbs generate-release-information', not 'cfbs %s'"
+            % args.command
+        )
+
     if args.non_interactive and args.command not in (
         "init",
         "add",
@@ -90,6 +96,11 @@ def main() -> int:
         return commands.validate_command()
     if args.command in ("info", "show"):
         return commands.info_command(args.args)
+
+    if args.command == "generate-release-information":
+        return commands.generate_release_information_command(
+            omit_download=args.omit_download
+        )
 
     if not is_cfbs_repo():
         user_error("This is not a cfbs repo, to get started, type: cfbs init")
