@@ -1208,5 +1208,5 @@ def get_input_command(name, outfile):
 
 
 @cfbs_command("generate-release-information")
-def generate_release_information_command(omit_download=False):
-    generate_release_information(omit_download)
+def generate_release_information_command(omit_download=False, check=False):
+    generate_release_information(omit_download, check)
