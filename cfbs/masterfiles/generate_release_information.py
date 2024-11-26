@@ -17,17 +17,19 @@ def generate_release_information(omit_download=False, check=False):
     else:
         downloaded_versions = immediate_subdirectories(DOWNLOAD_PATH)
 
-    print("Generating release information...")
-
+    print("Downloading releases of masterfiles from cfengine.com and generating release information...")
     generate_vcf_download(DOWNLOAD_PATH, downloaded_versions)
-    generate_vcf_git_checkout(downloaded_versions)
 
     if check:
+        print("Downloading releases of masterfiles from git (github.com) and generating additional release information for comparison...")
+        generate_vcf_git_checkout(downloaded_versions)
         print("Candidate release information generated.")
-        print("Checking that downloadable files match git files...")
+        print("Comparing files from cfengine.com and github.com...")
 
         check_download_matches_git(downloaded_versions)
 
-        print("Downloadable files match git files.")
-
-    print("Release information generation successfully finished.")
+        print("The masterfiles downloaded from github.com and cfengine.com match.")
+    else:
+        print("Release information successfully generated.")
+        print("See the results in ./versions.json, ./checksums.json, and ./files.json")
+        print("(Run again with --check-against-git to download and compare with files from git, and generate -git.json files)")

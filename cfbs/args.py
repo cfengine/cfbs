@@ -106,8 +106,8 @@ def get_arg_parser():
         action="store_true",
     )
     parser.add_argument(
-        "--check-against-downloads",
-        help="Check whether downloadable files match git files in 'cfbs generate-release-information'",
+        "--check-against-git",
+        help="Check whether masterfiles from cfengine.com and github.com match in 'cfbs generate-release-information'",
         action="store_true",
     )
     parser.add_argument(
