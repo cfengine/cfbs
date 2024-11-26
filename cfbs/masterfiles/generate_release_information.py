@@ -7,7 +7,7 @@ from cfbs.utils import immediate_subdirectories
 DOWNLOAD_PATH = "downloaded_masterfiles"
 
 
-def generate_release_information(omit_download=False):
+def generate_release_information(omit_download=False, check=False):
     if not omit_download:
         print("Downloading masterfiles...")
 
@@ -22,10 +22,12 @@ def generate_release_information(omit_download=False):
     generate_vcf_download(DOWNLOAD_PATH, downloaded_versions)
     generate_vcf_git_checkout(downloaded_versions)
 
-    print("Candidate release information generated.")
-    print("Checking that downloadable files match git files...")
+    if check:
+        print("Candidate release information generated.")
+        print("Checking that downloadable files match git files...")
 
-    check_download_matches_git(downloaded_versions)
+        check_download_matches_git(downloaded_versions)
 
-    print("Downloadable files match git files.")
+        print("Downloadable files match git files.")
+
     print("Release information generation successfully finished.")
