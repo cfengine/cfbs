@@ -87,8 +87,8 @@ def finalize_vcf(versions_dict, checksums_dict, files_dict):
     # sort version numbers, in decreasing order
     versions_dict["versions"] = OrderedDict(
         sorted(
-            versions_dict["versions"].items(),
-            key=lambda p: (version_as_comparable_list(p[0]), p[1]),
+            working_dict.items(),
+            key=lambda p: version_as_comparable_list(p[0]),
             reverse=True,
         )
     )
