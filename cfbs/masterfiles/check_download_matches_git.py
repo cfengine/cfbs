@@ -22,17 +22,17 @@ def check_download_matches_git(versions):
     differing_count = 0
 
     for version in versions:
-        download_version_dict = download_versions_dict["versions"][version]["files"]
-        git_version_dict = git_versions_dict["versions"][version]["files"]
+        dl_version_files_dict = download_versions_dict["versions"][version]
+        git_version_files_dict = git_versions_dict["versions"][version]
 
         # normalize downloaded version dictionary filepaths
         # necessary because the downloaded version and git version dictionaries have filepaths of different forms
         new_download_dict = {}
-        for key, value in download_version_dict.items():
+        for key, value in dl_version_files_dict.items():
             if key.startswith("masterfiles/"):
                 key = key[12:]
             new_download_dict[key] = value
-        download_version_dict = new_download_dict
+        dl_version_files_dict = new_download_dict
 
         version_diffs_dict = {}
         version_diffs_dict["files_only_in_downloads"] = []
@@ -40,7 +40,7 @@ def check_download_matches_git(versions):
         version_diffs_dict["files_with_different_content"] = []
 
         only_dl, only_git, value_diff = dict_diff(
-            download_version_dict, git_version_dict
+            dl_version_files_dict, git_version_files_dict
         )
 
         for filepath in only_dl:
