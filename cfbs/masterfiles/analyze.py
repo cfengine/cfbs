@@ -120,3 +120,9 @@ def version_as_comparable_list_negated(version):
     vcl[1] = [-x for x in vcl[1]]
 
     return vcl
+
+
+def version_is_at_least(version, min_version):
+    return min_version is None or (
+        version_as_comparable_list(version) >= version_as_comparable_list(min_version)
+    )
