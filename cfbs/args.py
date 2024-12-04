@@ -112,9 +112,8 @@ def get_arg_parser():
     )
     parser.add_argument(
         "--from",
-        help="Specify minimal version in 'cfbs generate-release-information'",
-        dest="from_",
-        metavar="FROM",
+        help="Specify minimum version in 'cfbs generate-release-information'",
+        dest="minimum_version",
     )
     parser.add_argument(
         "--masterfiles", help="Add masterfiles on cfbs init choose between"
