@@ -70,6 +70,12 @@ def main() -> int:
             % args.command
         )
 
+    if args.minimum_version and args.command != "generate-release-information":
+        user_error(
+            "The option --from is only for 'cfbs generate-release-information', not 'cfbs %s'"
+            % args.command
+        )
+
     if args.non_interactive and args.command not in (
         "init",
         "add",
@@ -105,7 +111,9 @@ def main() -> int:
 
     if args.command == "generate-release-information":
         return commands.generate_release_information_command(
-            omit_download=args.omit_download, check=args.check_against_git
+            omit_download=args.omit_download,
+            check=args.check_against_git,
+            min_version=args.minimum_version,
         )
 
     if not is_cfbs_repo():
