@@ -5,7 +5,9 @@ from args import get_arg_parser
 try:
     from build_manpages.manpage import Manpage
 except ImportError:
-    user_error("'Manpage' dependency not satisfied")
+    user_error(
+        "Missing dependency, install from PyPI: 'pip install argparse-manpage setuptools'"
+    )
 
 
 def generate_man_page():
