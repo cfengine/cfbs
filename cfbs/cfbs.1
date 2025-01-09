@@ -1,15 +1,16 @@
-.TH CFBS "1" "2024\-11\-26" "cfbs" "CFEngine Build System manual"
+.TH CFBS "1" "2025\-01\-09" "cfbs" "CFEngine Build System manual"
 .SH NAME
 cfbs \- combines multiple modules into 1 policy set to deploy on your infrastructure. Modules can be custom promise types, JSON files which enable certain functionality, or reusable CFEngine policy. The modules you use can be written by the CFEngine team, others in the community, your colleagues, or yourself.
 .SH SYNOPSIS
 .B cfbs
-[-h] [--loglevel LOGLEVEL] [-M] [--version] [--force] [--non-interactive] [--index INDEX] [--check] [--checksum CHECKSUM] [--keep-order] [--git {yes,no}] [--git-user-name GIT_USER_NAME] [--git-user-email GIT_USER_EMAIL] [--git-commit-message GIT_COMMIT_MESSAGE] [--ignore-versions-json] [--masterfiles MASTERFILES] [cmd] [args ...]
+[-h] [--loglevel LOGLEVEL] [-M] [--version] [--force] [--non-interactive] [--index INDEX] [--check] [--checksum CHECKSUM] [--keep-order] [--git {yes,no}] [--git-user-name GIT_USER_NAME] [--git-user-email GIT_USER_EMAIL] [--git-commit-message GIT_COMMIT_MESSAGE] [--ignore-versions-json] [--omit-download] [--check-against-git] [--from MINIMUM_VERSION] [--masterfiles MASTERFILES] [cmd] [args ...]
 .SH DESCRIPTION
 CFEngine Build System.
 
 .TP
 \fBcmd\fR
-The command to perform (pretty, init, status, search, add, remove, clean, update, validate, download, build, install, help, info, show, input, set\-input, get\-input, generate\-release\-information)
+The command to perform (pretty, init, status, search, add, remove, clean, update, validate, download, build, install, help, info, show, input, set\-input, get\-input, generate\-
+release\-information)
 
 .TP
 \fBargs\fR
@@ -74,15 +75,15 @@ Ignore versions.json. Necessary in case of a custom index or testing changes to 
 
 .TP
 \fB\-\-omit\-download\fR
-Use existing masterfiles instead of downloading in 'cfbs generate-release-information'
+Use existing masterfiles instead of downloading in 'cfbs generate\-release\-information'
 
 .TP
 \fB\-\-check\-against\-git\fR
-Check whether masterfiles from cfengine.com and github.com match in 'cfbs generate-release-information'
+Check whether masterfiles from cfengine.com and github.com match in 'cfbs generate\-release\-information'
 
 .TP
-\fB\-\-from\fR
-Specify minimum version in 'cfbs generate-release-information'
+\fB\-\-from\fR \fI\,MINIMUM_VERSION\/\fR
+Specify minimum version in 'cfbs generate\-release\-information'
 
 .TP
 \fB\-\-masterfiles\fR \fI\,MASTERFILES\/\fR
