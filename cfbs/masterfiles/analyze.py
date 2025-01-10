@@ -100,6 +100,9 @@ def version_as_comparable_list(version: str):
     * `version_as_comparable_list("3.24.0b1")` is `[[3, 24, 0], [-1, 1]]`
     * `version_as_comparable_list("3.24.0-2")` is `[[3, 24, 0], [1, 2]]`
     * `version_as_comparable_list("3.24.x")` is `[[3, 24, 99999], [0, 0]]`"""
+    if version == "master":
+        version = "x"
+
     if "b" not in version:
         if "-" not in version:
             version += "|0.0"
