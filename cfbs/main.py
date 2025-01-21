@@ -76,6 +76,30 @@ def main() -> int:
             % args.command
         )
 
+    if args.masterfiles_dir and args.command not in ("analyze", "analyse"):
+        user_error(
+            "The option --masterfiles-dir is only for 'cfbs analyze', not 'cfbs %s'"
+            % args.command
+        )
+
+    if args.reference_version and args.command not in ("analyze", "analyse"):
+        user_error(
+            "The option --reference-version is only for 'cfbs analyze', not 'cfbs %s'"
+            % args.command
+        )
+
+    if args.to_json and args.command not in ("analyze", "analyse"):
+        user_error(
+            "The option --to-json is only for 'cfbs analyze', not 'cfbs %s'"
+            % args.command
+        )
+
+    if args.ignored_path_components and args.command not in ("analyze", "analyse"):
+        user_error(
+            "The option --ignored-path-components is only for 'cfbs analyze', not 'cfbs %s'"
+            % args.command
+        )
+
     if args.non_interactive and args.command not in (
         "init",
         "add",
@@ -108,8 +132,15 @@ def main() -> int:
         return commands.validate_command()
     if args.command in ("info", "show"):
         return commands.info_command(args.args)
+
     if args.command in ("analyze", "analyse"):
-        return commands.analyze_command(args.args)
+        return commands.analyze_command(
+            args.args,
+            args.to_json,
+            args.reference_version,
+            args.masterfiles_dir,
+            args.ignored_path_components,
+        )
 
     if args.command == "generate-release-information":
         return commands.generate_release_information_command(

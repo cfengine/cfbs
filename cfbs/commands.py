@@ -8,9 +8,9 @@ import re
 import copy
 import logging as log
 import json
-import sys
 import functools
 from collections import OrderedDict
+from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
 
 from cfbs.utils import (
@@ -1059,8 +1059,59 @@ def info_command(modules):
 
 @cfbs_command("analyze")
 @cfbs_command("analyse")
-def analyze_command(path):
-    print("Version: 1.0.0")
+def analyze_command(
+    policyset_paths,
+    to_json=False,
+    reference_version=None,
+    masterfiles_dir=None,
+    user_ignored_path_components=None,
+):
+    if len(policyset_paths) == 0:
+        # no policyset path is a shorthand for using the current directory as the policyset path
+        path = "."
+    else:
+        # currently, only support analyzing only one path
+        path = policyset_paths[0]
+
+        if len(policyset_paths) > 1:
+            log.warning(
+                "More than one path to analyze provided. Analyzing the first one and ignoring the others."
+            )
+
+    if masterfiles_dir is None:
+        masterfiles_dir = "masterfiles"
+    # override masterfiles directory name (e.g. "inputs")
+    # strip trailing path separators
+    masterfiles_dir = masterfiles_dir.rstrip(os.sep)
+    # we assume the modules directory is always called "modules"
+    # thus `masterfiles_dir` can't be set to "modules"
+    if masterfiles_dir == "modules":
+        log.warning(
+            'The masterfiles directory cannot be named "modules". Using the name "masterfiles" instead.'
+        )
+        masterfiles_dir = "masterfiles"
+
+    # the policyset path can either contain only masterfiles (masterfiles-path), or contain folders containing modules and masterfiles (parent-path)
+    # try to automatically determine which one it is (by checking whether `path` contains `masterfiles_dir`)
+    is_parentpath = os.path.isdir(os.path.join(path, masterfiles_dir))
+
+    print("Policy set path:", path, "\n")
+
+    analyzed_files, versions_data = analyze_policyset(
+        path,
+        is_parentpath,
+        reference_version,
+        masterfiles_dir,
+        user_ignored_path_components,
+    )
+
+    versions_data.display()
+
+    analyzed_files.display()
+
+    if to_json:
+        analyzed_files_json = analyzed_files.to_json()
+        write_json("analyzed-files.json", analyzed_files_json)
 
     return 0
 

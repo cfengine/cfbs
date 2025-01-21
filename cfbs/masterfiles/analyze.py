@@ -129,3 +129,15 @@ def version_is_at_least(version, min_version):
     return min_version is None or (
         version_as_comparable_list(version) >= version_as_comparable_list(min_version)
     )
+
+
+def sort_versions(versions: list):
+    """Sorts a list of versions in descending order."""
+    versions.sort(
+        key=version_as_comparable_list,
+        reverse=True,
+    )
+
+
+def highest_version(versions):
+    return max(versions, key=version_as_comparable_list, default=None)
