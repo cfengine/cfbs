@@ -131,11 +131,11 @@ def version_is_at_least(version, min_version):
     )
 
 
-def sort_versions(versions: list):
-    """Sorts a list of versions in descending order."""
+def sort_versions(versions: list, reverse: bool = True):
+    """Sorts a list of versions, in descending order by default."""
     versions.sort(
         key=version_as_comparable_list,
-        reverse=True,
+        reverse=reverse,
     )
 
 

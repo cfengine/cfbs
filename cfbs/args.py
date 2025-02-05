@@ -117,7 +117,7 @@ def get_arg_parser():
     )
     parser.add_argument(
         "--to-json",
-        help="Output 'cfbs analyze' results to JSON files",
+        help="Output 'cfbs analyze' results to a JSON file",
         action="store_true",
     )
     parser.add_argument(
