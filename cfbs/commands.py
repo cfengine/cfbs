@@ -1061,7 +1061,7 @@ def info_command(modules):
 @cfbs_command("analyse")
 def analyze_command(
     policyset_paths,
-    to_json=False,
+    json_filename=None,
     reference_version=None,
     masterfiles_dir=None,
     user_ignored_path_components=None,
@@ -1109,14 +1109,14 @@ def analyze_command(
     print()
     analyzed_files.display()
 
-    if to_json:
+    if json_filename is not None:
         json_dict = OrderedDict()
 
         json_dict["policy_set_path"] = path
         json_dict["versions_data"] = versions_data.to_json_dict()
         json_dict["analyzed_files"] = analyzed_files.to_json_dict()
 
-        write_json("analysis.json", json_dict)
+        write_json(json_filename + ".json", json_dict)
 
     return 0
 
