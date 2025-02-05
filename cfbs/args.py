@@ -117,8 +117,10 @@ def get_arg_parser():
     )
     parser.add_argument(
         "--to-json",
-        help="Output 'cfbs analyze' results to a JSON file",
-        action="store_true",
+        help="Output 'cfbs analyze' results to a JSON file; optionally specify the JSON's filename",
+        nargs="?",
+        const="analysis",
+        default=None,
     )
     parser.add_argument(
         "--reference-version",
