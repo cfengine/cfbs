@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import os
 
 from cfbs.internal_file_management import fetch_archive
@@ -113,20 +114,18 @@ def mpf_vcf_dicts():
     return mpf_versions_dict, mpf_checksums_dict, mpf_files_dict
 
 
-def filepath_sorted(filepaths):
-    """Returns a list of file paths sorted hierarchically.
-
-    Currently not implemented, sorting regularly instead, TODO."""
+def filepaths_sorted(filepaths):
+    """Currently sorts alphabetically, not hierarchically."""
     return sorted(filepaths)
 
 
-def path_hierarchy_print(path_list):
-    path_list = filepath_sorted(path_list)
+def filepaths_display(filepaths):
+    filepaths = filepaths_sorted(filepaths)
 
-    for path in path_list[:-1]:
+    for path in filepaths[:-1]:
         print("├──", path)
-    if len(path_list) > 0:
-        print("└──", path_list[-1])
+    if len(filepaths) > 0:
+        print("└──", filepaths[-1])
 
 
 def mpf_normalized_path(path, is_parentpath, masterfiles_dir):
@@ -206,23 +205,41 @@ class VersionsData:
 
     def display(self):
         if not self.version_counter.is_empty():
-            print("Versions distribution:", self.version_counter.sorted_list())
             print(
-                "Highest versions distribution:",
+                "Same filepath versions distribution:",
+                self.version_counter.sorted_list(),
+            )
+            print(
+                "Same filepath highest versions distribution:",
                 self.highest_version_counter.sorted_list(),
             )
-        else:
-            print("Not a single file in the analyzed policy set appears in MPF.")
         if not self.different_filepath_vc.is_empty():
             print(
                 "Different filepath versions distribution:",
                 self.different_filepath_vc.sorted_list(),
             )
-        if not self.different_filepath_hvc.is_empty():
             print(
                 "Different filepath highest versions distribution:",
                 self.different_filepath_hvc.sorted_list(),
             )
+        if self.version_counter.is_empty() and self.different_filepath_vc.is_empty():
+            print("Not a single file in the analyzed policy set appears in MPF.")
+
+    def to_json_dict(self):
+        json_dict = OrderedDict()
+
+        json_dict["same_filepath_versions"] = self.version_counter.sorted_list()
+        json_dict["same_filepath_highest_versions"] = (
+            self.highest_version_counter.sorted_list()
+        )
+        json_dict["different_filepath_versions"] = (
+            self.different_filepath_vc.sorted_list()
+        )
+        json_dict["different_filepath_highest_versions"] = (
+            self.different_filepath_hvc.sorted_list()
+        )
+
+        return json_dict
 
 
 class AnalyzedFiles:
@@ -237,7 +254,7 @@ class AnalyzedFiles:
         self.different_moved_or_renamed = []
         self.not_from_any = []
 
-    def denormalize_origin(origin, is_parentpath, masterfiles_dir):
+    def _denormalize_origin(origin, is_parentpath, masterfiles_dir):
         return [
             (mpf_denormalized_path(filepath, is_parentpath, masterfiles_dir), versions)
             for (filepath, versions) in origin.items()
@@ -257,7 +274,7 @@ class AnalyzedFiles:
         self.moved_or_renamed = [
             (
                 mpf_denormalized_path(file, is_parentpath, masterfiles_dir),
-                AnalyzedFiles.denormalize_origin(
+                AnalyzedFiles._denormalize_origin(
                     origin, is_parentpath, masterfiles_dir
                 ),
             )
@@ -280,7 +297,7 @@ class AnalyzedFiles:
         self.different_moved_or_renamed = [
             (
                 mpf_denormalized_path(file, is_parentpath, masterfiles_dir),
-                AnalyzedFiles.denormalize_origin(
+                AnalyzedFiles._denormalize_origin(
                     origin, is_parentpath, masterfiles_dir
                 ),
             )
@@ -292,15 +309,15 @@ class AnalyzedFiles:
         ]
 
     def sort(self):
-        self.missing = filepath_sorted(self.missing)
-        self.modified = filepath_sorted(self.modified)
-        self.moved_or_renamed = filepath_sorted(self.moved_or_renamed)
-        self.different = filepath_sorted(self.different)
-        self.different_modified = filepath_sorted(self.different_modified)
-        self.different_moved_or_renamed = filepath_sorted(
+        self.missing = filepaths_sorted(self.missing)
+        self.modified = filepaths_sorted(self.modified)
+        self.moved_or_renamed = filepaths_sorted(self.moved_or_renamed)
+        self.different = filepaths_sorted(self.different)
+        self.different_modified = filepaths_sorted(self.different_modified)
+        self.different_moved_or_renamed = filepaths_sorted(
             self.different_moved_or_renamed
         )
-        self.not_from_any = filepath_sorted(self.not_from_any)
+        self.not_from_any = filepaths_sorted(self.not_from_any)
 
     def display(self):
         print("Reference version:", self.reference_version, "\n")
@@ -309,16 +326,16 @@ class AnalyzedFiles:
             print("Files missing from the version:")
         elif self.reference_version is not None:
             print("No files are missing from the version.")
-        path_hierarchy_print(self.missing)
+        filepaths_display(self.missing)
 
         if len(self.modified) == 0 and len(self.moved_or_renamed) == 0:
             print("No files of the version are modified.")
         if len(self.modified) > 0:
             print("Files from the version but with modifications:")
-        path_hierarchy_print(self.modified)
+        filepaths_display(self.modified)
         if len(self.moved_or_renamed) > 0:
             print("Files moved or renamed:")
-        path_hierarchy_print(self.moved_or_renamed)
+        filepaths_display(self.moved_or_renamed)
 
         if (
             len(self.different) == 0
@@ -328,24 +345,24 @@ class AnalyzedFiles:
             print("No files are from a different version.")
         if len(self.different) > 0:
             print("Files from a different version:")
-        path_hierarchy_print(self.different)
+        filepaths_display(self.different)
         if len(self.different_modified) > 0:
             print("Files from a different version, with modifications:")
-        path_hierarchy_print(self.different_modified)
+        filepaths_display(self.different_modified)
         if len(self.different_moved_or_renamed) > 0:
             print("Files moved or renamed from a different version:")
-        path_hierarchy_print(self.different_moved_or_renamed)
+        filepaths_display(self.different_moved_or_renamed)
 
         if len(self.not_from_any) > 0:
             print("Files not from any version (with both custom content and path):")
         else:
             print("No files are not from any version.")
-        path_hierarchy_print(self.not_from_any)
+        filepaths_display(self.not_from_any)
 
-    def to_json(self):
+    def to_json_dict(self):
         self.sort()
 
-        json_dict = {}
+        json_dict = OrderedDict()
 
         json_dict["reference_version"] = self.reference_version
 
@@ -389,7 +406,7 @@ def analyze_policyset(
 
     # MPF filepath data contains "masterfiles/" (which might not be the same as `masterfiles_dir + "/"`) and "modules/" at the beginning of the filepaths
     # therefore, care is needed comparing policyset filepaths to MPF filepaths
-    # before such comparing, convert the policyset filepaths to an MPF-comparable form using `mpf_normalize_path`
+    # before such comparing, convert the policyset filepaths to an MPF-comparable form using `mpf_normalized_path`
     mpf_versions_dict, mpf_checksums_dict, mpf_files_dict = mpf_vcf_dicts()
 
     # as mentioned above, normalize the analyzed policyset filepaths to be of the same form as filepaths in MPF dicts so that the two can be compared
@@ -484,7 +501,7 @@ def analyze_policyset(
                         analyzed_files.different.append((filepath, other_versions))
                 else:
                     # 1A2. checksum is known but there's no matching filepath with that checksum:
-                    ## therefore, it must be a rename/move
+                    # therefore, it must be a rename/move
                     origin = mpf_checksums_dict[checksum]
                     if checksum in reference_version_checksums:
                         analyzed_files.moved_or_renamed.append((filepath, origin))

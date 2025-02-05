@@ -1106,12 +1106,17 @@ def analyze_command(
     )
 
     versions_data.display()
-
+    print()
     analyzed_files.display()
 
     if to_json:
-        analyzed_files_json = analyzed_files.to_json()
-        write_json("analyzed-files.json", analyzed_files_json)
+        json_dict = OrderedDict()
+
+        json_dict["policy_set_path"] = path
+        json_dict["versions_data"] = versions_data.to_json_dict()
+        json_dict["analyzed_files"] = analyzed_files.to_json_dict()
+
+        write_json("analysis.json", json_dict)
 
     return 0
 
