@@ -7,7 +7,16 @@ from cfbs.masterfiles.analyze import (
     sort_versions,
     version_as_comparable_list,
 )
-from cfbs.utils import cfbs_dir, file_sha256, get_or_read_json
+from cfbs.utils import (
+    FetchError,
+    cfbs_dir,
+    fetch_url,
+    file_sha256,
+    get_json,
+    get_or_read_json,
+    mkdir,
+    user_error,
+)
 
 
 def path_components(path):
@@ -82,21 +91,53 @@ def checksums_files(
 
 
 def mpf_vcf_dicts():
-    RI_ARCHIVE_URL = (
-        "https://github.com/cfengine/release-information/archive/refs/heads/main.zip"
+    REPO_OWNER = "cfengine"
+    REPO_NAME = "release-information"
+
+    REPO_OWNERNAME = REPO_OWNER + "/" + REPO_NAME
+    REPO_URL = "https://github.com/" + REPO_OWNERNAME
+    LATEST_RELEASE_API_URL = (
+        "https://api.github.com/repos/" + REPO_OWNERNAME + "/releases/latest"
     )
-    RI_SHA1_CHECKSUM = "d1bafca809320df8561005a02438b9fa6ea5b995"
-    mpf_vcf_subpath = (
-        "downloads/github.com/cfengine/release-information/archive/refs/heads/"
-        + RI_SHA1_CHECKSUM
-        + "/release-information-main/masterfiles/"
+
+    latest_release_data = get_json(LATEST_RELEASE_API_URL)
+
+    latest_release_name = latest_release_data["name"]
+    ri_archive_url = REPO_URL + "/archive/refs/tags/" + latest_release_name + ".zip"
+    ri_checksums_url = (
+        REPO_URL + "/releases/download/" + latest_release_name + "/checksums.txt"
     )
-    mpf_vcf_path = os.path.join(cfbs_dir(), mpf_vcf_subpath)
+    ri_version_subdirs = (
+        "downloads/github.com/"
+        + REPO_OWNERNAME
+        + "/archive/refs/tags/"
+        + latest_release_name
+    )
+    mpf_vcf_subdirs = REPO_NAME + "-" + latest_release_name + "/masterfiles/"
+    ri_version_path = os.path.join(cfbs_dir(), ri_version_subdirs)
+    mpf_vcf_path = os.path.join(ri_version_path, mpf_vcf_subdirs)
+
     if not os.path.exists(mpf_vcf_path):
-        fetch_archive(RI_ARCHIVE_URL, RI_SHA1_CHECKSUM, with_index=False)
-    # TODO the release information checksum needs to be updated on each new release
-    # currently, if the checksum is not manually updated, the old, already downloaded files will continue to be used
-    # and if the old files have not already been downloaded, the download from GitHub will fail
+        mkdir(ri_version_path)
+
+        archive_checksums_path = ri_version_path + "/checksums.txt"
+        try:
+            fetch_url(ri_checksums_url, archive_checksums_path)
+        except FetchError as e:
+            user_error(str(e))
+
+        with open(archive_checksums_path) as file:
+            lines = [line.rstrip() for line in file]
+            zip_line = lines[1]
+            zip_checksum = zip_line.split(" ")[0]
+
+        fetch_archive(
+            ri_archive_url,
+            zip_checksum,
+            directory=ri_version_path,
+            with_index=False,
+            extract_to_directory=True,
+        )
 
     mpf_versions_json_path = os.path.join(mpf_vcf_path, "versions.json")
     mpf_checkfiles_json_path = os.path.join(mpf_vcf_path, "checksums.json")
