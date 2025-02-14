@@ -14,6 +14,7 @@ from cfbs.utils import (
     file_sha256,
     get_json,
     get_or_read_json,
+    immediate_subdirectories,
     mkdir,
     user_error,
 )
@@ -90,54 +91,70 @@ def checksums_files(
     return checksums_dict, files_dict
 
 
-def mpf_vcf_dicts():
+def mpf_vcf_dicts(offline=False):
     REPO_OWNER = "cfengine"
     REPO_NAME = "release-information"
 
     REPO_OWNERNAME = REPO_OWNER + "/" + REPO_NAME
-    REPO_URL = "https://github.com/" + REPO_OWNERNAME
-    LATEST_RELEASE_API_URL = (
-        "https://api.github.com/repos/" + REPO_OWNERNAME + "/releases/latest"
-    )
+    RI_SUBDIRS = "downloads/github.com/" + REPO_OWNERNAME + "/archive/refs/tags/"
 
-    latest_release_data = get_json(LATEST_RELEASE_API_URL)
+    if offline:
+        ERROR_MESSAGE = "MPF release information not found. Provide the release information, for example by running 'cfbs analyze' without '--offline'."
 
-    latest_release_name = latest_release_data["name"]
-    ri_archive_url = REPO_URL + "/archive/refs/tags/" + latest_release_name + ".zip"
-    ri_checksums_url = (
-        REPO_URL + "/releases/download/" + latest_release_name + "/checksums.txt"
-    )
-    ri_version_subdirs = (
-        "downloads/github.com/"
-        + REPO_OWNERNAME
-        + "/archive/refs/tags/"
-        + latest_release_name
-    )
-    mpf_vcf_subdirs = REPO_NAME + "-" + latest_release_name + "/masterfiles/"
-    ri_version_path = os.path.join(cfbs_dir(), ri_version_subdirs)
-    mpf_vcf_path = os.path.join(ri_version_path, mpf_vcf_subdirs)
+        cfbs_ri_dir = os.path.join(cfbs_dir(), RI_SUBDIRS)
+        if not os.path.exists(cfbs_ri_dir):
+            user_error(ERROR_MESSAGE)
 
-    if not os.path.exists(mpf_vcf_path):
-        mkdir(ri_version_path)
+        ri_versions = immediate_subdirectories(cfbs_ri_dir)
+        if len(ri_versions) == 0:
+            user_error(ERROR_MESSAGE)
 
-        archive_checksums_path = ri_version_path + "/checksums.txt"
-        try:
-            fetch_url(ri_checksums_url, archive_checksums_path)
-        except FetchError as e:
-            user_error(str(e))
-
-        with open(archive_checksums_path) as file:
-            lines = [line.rstrip() for line in file]
-            zip_line = lines[1]
-            zip_checksum = zip_line.split(" ")[0]
-
-        fetch_archive(
-            ri_archive_url,
-            zip_checksum,
-            directory=ri_version_path,
-            with_index=False,
-            extract_to_directory=True,
+        ri_latest_version = max(ri_versions)
+        mpf_vcf_path = os.path.join(
+            cfbs_ri_dir,
+            ri_latest_version,
+            REPO_NAME + "-" + ri_latest_version,
+            "masterfiles",
         )
+    else:
+        REPO_URL = "https://github.com/" + REPO_OWNERNAME
+        LATEST_RELEASE_API_URL = (
+            "https://api.github.com/repos/" + REPO_OWNERNAME + "/releases/latest"
+        )
+
+        latest_release_data = get_json(LATEST_RELEASE_API_URL)
+
+        latest_release_name = latest_release_data["name"]
+        ri_archive_url = REPO_URL + "/archive/refs/tags/" + latest_release_name + ".zip"
+        ri_checksums_url = (
+            REPO_URL + "/releases/download/" + latest_release_name + "/checksums.txt"
+        )
+        ri_version_subdirs = RI_SUBDIRS + latest_release_name
+        ri_version_path = os.path.join(cfbs_dir(), ri_version_subdirs)
+        mpf_vcf_subdirs = REPO_NAME + "-" + latest_release_name + "/masterfiles/"
+        mpf_vcf_path = os.path.join(ri_version_path, mpf_vcf_subdirs)
+
+        if not os.path.exists(mpf_vcf_path):
+            mkdir(ri_version_path)
+
+            archive_checksums_path = ri_version_path + "/checksums.txt"
+            try:
+                fetch_url(ri_checksums_url, archive_checksums_path)
+            except FetchError as e:
+                user_error(str(e))
+
+            with open(archive_checksums_path) as file:
+                lines = [line.rstrip() for line in file]
+                zip_line = lines[1]
+                zip_checksum = zip_line.split(" ")[0]
+
+            fetch_archive(
+                ri_archive_url,
+                zip_checksum,
+                directory=ri_version_path,
+                with_index=False,
+                extract_to_directory=True,
+            )
 
     mpf_versions_json_path = os.path.join(mpf_vcf_path, "versions.json")
     mpf_checkfiles_json_path = os.path.join(mpf_vcf_path, "checksums.json")
@@ -431,6 +448,7 @@ def analyze_policyset(
     reference_version=None,
     masterfiles_dir="masterfiles",
     ignored_path_components=None,
+    offline=False,
 ):
     """`path` should be either a masterfiles-path (containing masterfiles files directly), or a parent-path (containing `masterfiles_dir` and "modules" folders). `is_parentpath` should specify which of the two it is.
 
@@ -448,7 +466,7 @@ def analyze_policyset(
     # MPF filepath data contains "masterfiles/" (which might not be the same as `masterfiles_dir + "/"`) and "modules/" at the beginning of the filepaths
     # therefore, care is needed comparing policyset filepaths to MPF filepaths
     # before such comparing, convert the policyset filepaths to an MPF-comparable form using `mpf_normalized_path`
-    mpf_versions_dict, mpf_checksums_dict, mpf_files_dict = mpf_vcf_dicts()
+    mpf_versions_dict, mpf_checksums_dict, mpf_files_dict = mpf_vcf_dicts(offline)
 
     # as mentioned above, normalize the analyzed policyset filepaths to be of the same form as filepaths in MPF dicts so that the two can be compared
     for checksum in checksums_dict:

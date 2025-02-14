@@ -100,6 +100,12 @@ def main() -> int:
             % args.command
         )
 
+    if args.offline and args.command not in ("analyze", "analyse"):
+        user_error(
+            "The option --offline is only for 'cfbs analyze', not 'cfbs %s'"
+            % args.command
+        )
+
     if args.non_interactive and args.command not in (
         "init",
         "add",
@@ -140,6 +146,7 @@ def main() -> int:
             args.reference_version,
             args.masterfiles_dir,
             args.ignored_path_components,
+            args.offline,
         )
 
     if args.command == "generate-release-information":

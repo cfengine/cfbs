@@ -1065,6 +1065,7 @@ def analyze_command(
     reference_version=None,
     masterfiles_dir=None,
     user_ignored_path_components=None,
+    offline=False,
 ):
     if len(policyset_paths) == 0:
         # no policyset path is a shorthand for using the current directory as the policyset path
@@ -1103,6 +1104,7 @@ def analyze_command(
         reference_version,
         masterfiles_dir,
         user_ignored_path_components,
+        offline,
     )
 
     versions_data.display()

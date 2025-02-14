@@ -136,6 +136,11 @@ def get_arg_parser():
         nargs="*",
     )
     parser.add_argument(
+        "--offline",
+        help="Do not connect to the Internet to download the latest version of MPF release information during 'cfbs analyze'",
+        action="store_true",
+    )
+    parser.add_argument(
         "--masterfiles", help="Add masterfiles on cfbs init choose between"
     )
     return parser
