@@ -43,8 +43,8 @@ def sh(cmd: str, directory=None):
     _sh("%s" % cmd)
 
 
-def mkdir(path: str):
-    os.makedirs(path, exist_ok=True)
+def mkdir(path: str, exist_ok=True):
+    os.makedirs(path, exist_ok=exist_ok)
 
 
 def touch(path: str):
