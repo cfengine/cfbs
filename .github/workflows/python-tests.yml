@@ -39,6 +39,9 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+    - name: Check local Python version for sanity
+      run: |
+        python -V
     - name: Install
       run: |
         python setup.py sdist bdist_wheel
@@ -47,7 +50,7 @@ jobs:
       run: |
         UNSAFE_TESTS=1 bash tests/shell/all.sh
   test-legacy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
       # Temporary workaround for Python 3.5 failures - May 2024, see CFE-4395
       PIP_TRUSTED_HOST: "pypi.python.org pypi.org files.pythonhosted.org"
