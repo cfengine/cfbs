@@ -65,8 +65,8 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         enable-cache: true
+        cache-dependency-glob: "requirements**.txt"
         version: "0.6.2"
-        python-preference: "only-managed"
     - name: Install dependencies
       run: |
         uv pip install flake8 pytest setuptools wheel
