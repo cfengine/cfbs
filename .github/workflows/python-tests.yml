@@ -57,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.5", "3.6", "3.7"]
+        python-version: ["3.5.10", "3.6.15", "3.7.10"]
 
     steps:
     - uses: actions/checkout@v4
@@ -68,9 +68,6 @@ jobs:
       with:
         default: "${{ matrix.python-version }}"
         command: pip install -U pip
-    - name: Set local Python version
-      run: |
-        pyenv local ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         python -m pip install flake8 pytest setuptools wheel
