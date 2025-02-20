@@ -47,7 +47,7 @@ jobs:
       run: |
         UNSAFE_TESTS=1 bash tests/shell/all.sh
   test-legacy:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-20.04
     env:
       # Temporary workaround for Python 3.5 failures - May 2024, see CFE-4395
       PIP_TRUSTED_HOST: "pypi.python.org pypi.org files.pythonhosted.org"
@@ -60,17 +60,15 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - name: Set up Python ${{ matrix.python-version }} using uv
-      uses: astral-sh/setup-uv@v5
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        enable-cache: true
-        cache-dependency-glob: "requirements**.txt"
-        version: "0.6.2"
     - name: Install dependencies
       run: |
-        uv pip install flake8 pytest setuptools wheel
-        if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+        python -m pip install --upgrade pip
+        python -m pip install flake8 pytest setuptools wheel
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -83,7 +81,7 @@ jobs:
     - name: Install
       run: |
         python setup.py sdist bdist_wheel
-        uv pip install dist/cfbs-*.whl
+        pip install dist/cfbs-*.whl
     - name: Run bash tests
       run: |
         UNSAFE_TESTS=1 bash tests/shell/all.sh
