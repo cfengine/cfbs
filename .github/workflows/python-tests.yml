@@ -68,6 +68,9 @@ jobs:
       with:
         default: "${{ matrix.python-version }}"
         command: pip install -U pip
+    - name: Set local Python version
+      run: |
+        pyenv ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         python -m pip install flake8 pytest setuptools wheel
