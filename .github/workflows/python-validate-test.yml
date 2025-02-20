@@ -11,7 +11,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     env:
       # Temporary workaround for Python 3.5 failures - May 2024, see CFE-4395
       PIP_TRUSTED_HOST: "pypi.python.org pypi.org files.pythonhosted.org"
