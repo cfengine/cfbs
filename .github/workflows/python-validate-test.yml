@@ -42,7 +42,7 @@ jobs:
       id: pyenv-cache
       with:
         path: |
-          PYENV_ROOT
+          /opt/hostedtoolcache/pyenv_root/2.3.28/x64/versions/${{ matrix.python-version }}
         key: ${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
     - name: Install
       run: |
