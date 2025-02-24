@@ -10,28 +10,36 @@ on:
     branches: [ master ]
 
 jobs:
-  test:
-    runs-on: ubuntu-20.04
+  test-legacy:
+    runs-on: ubuntu-24.04
     env:
       # Temporary workaround for Python 3.5 failures - May 2024, see CFE-4395
       PIP_TRUSTED_HOST: "pypi.python.org pypi.org files.pythonhosted.org"
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.5]
+        python-version: ["3.5.10"]
 
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - uses: actions/cache@v4
+      id: pyenv-cache
       with:
-        python-version: ${{ matrix.python-version }}
+        path: |
+          /opt/hostedtoolcache/pyenv_root/2.3.28/x64/versions/${{ matrix.python-version }}
+        key: ${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+    - name: Set up Python ${{ matrix.python-version }} using pyenv
+      uses: gabrielfalcao/pyenv-action@32ef4d2c861170ce17ded56d10329d83f4c8f797
+      if: steps.pyenv-cache.outputs.cache-hit != 'true'
+      with:
+        default: "${{ matrix.python-version }}"
+        command: pip install -U pip
     - name: Install dependencies
+      if: steps.pyenv-cache.outputs.cache-hit != 'true'
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install flake8 pytest setuptools wheel
+        python -m pip install setuptools wheel
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Install
       run: |
