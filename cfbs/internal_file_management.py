@@ -192,7 +192,9 @@ def clone_url_repo(repo_url):
         )
 
 
-def fetch_archive(url, checksum=None, directory=None, with_index=True):
+def fetch_archive(
+    url, checksum=None, directory=None, with_index=True, extract_to_directory=False
+):
     assert url.endswith(SUPPORTED_ARCHIVES)
 
     url_path = url[url.index("://") + 3 :]
@@ -210,7 +212,8 @@ def fetch_archive(url, checksum=None, directory=None, with_index=True):
     downloads = os.path.join(cfbs_dir(), "downloads")
 
     archive_dir = os.path.join(downloads, archive_dirname)
-    mkdir(archive_dir)
+    if not extract_to_directory or not os.path.exists(archive_dir):
+        mkdir(archive_dir)
 
     archive_path = os.path.join(downloads, archive_dir, archive_filename)
     try:
@@ -219,12 +222,15 @@ def fetch_archive(url, checksum=None, directory=None, with_index=True):
         user_error(str(e))
 
     content_dir = os.path.join(downloads, archive_dir, archive_checksum)
+    if extract_to_directory:
+        content_dir = directory
     index_path = os.path.join(content_dir, "cfbs.json")
     if with_index and os.path.exists(index_path):
         # available already
         return (index_path, archive_checksum)
     else:
-        mkdir(content_dir)
+        if not extract_to_directory or not os.path.exists(content_dir):
+            mkdir(content_dir)
 
     # TODO: use Python modules instead of CLI tools?
     if archive_type.startswith(_SUPPORTED_TAR_TYPES):
@@ -267,7 +273,7 @@ def fetch_archive(url, checksum=None, directory=None, with_index=True):
                 "Archive '%s' doesn't contain a valid cfbs.json index file" % url
             )
     else:
-        if directory is not None:
+        if not extract_to_directory and directory is not None:
             directory = directory.rstrip("/")
             mkdir(os.path.dirname(directory))
             sh("rsync -a %s/ %s/" % (content_dir, directory))
