@@ -33,6 +33,10 @@ def init_logging(level):
         raise ValueError("Unknown log level: {}".format(level))
 
 
+def does_log_info(level):
+    return level == "info" or level == "debug"
+
+
 def main() -> int:
     args = get_args()
     init_logging(args.loglevel)
@@ -147,6 +151,7 @@ def main() -> int:
             args.masterfiles_dir,
             args.ignored_path_components,
             args.offline,
+            does_log_info(args.loglevel),
         )
 
     if args.command == "generate-release-information":

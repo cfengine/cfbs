@@ -23,7 +23,7 @@ from cfbs.utils import (
 def path_components(path):
     """Returns a list of path components of `path`.
 
-    The first component is `""` for a relative path starting with a separator. On Windows, if `path` begins with n backslashes, the first n components will be `""`.
+    The first component is `""` for a path starting with a separator. On Windows, if `path` begins with n backslashes, the first n components will be `""`.
 
     The last component is the filename, trailing separators do not affect the result."""
     norm_path = os.path.normpath(path)
@@ -92,14 +92,16 @@ def checksums_files(
 
 
 def mpf_vcf_dicts(offline=False):
+    """(vcf stands for versions, checksums, files)"""
     REPO_OWNER = "cfengine"
     REPO_NAME = "release-information"
 
     REPO_OWNERNAME = REPO_OWNER + "/" + REPO_NAME
+    # RI stands for release information
     RI_SUBDIRS = "downloads/github.com/" + REPO_OWNERNAME + "/archive/refs/tags/"
 
     if offline:
-        ERROR_MESSAGE = "MPF release information not found. Provide the release information, for example by running 'cfbs analyze' without '--offline'."
+        ERROR_MESSAGE = "Masterfiles Policy Framework release information not found. Provide the release information, for example by running 'cfbs analyze' without '--offline'."
 
         cfbs_ri_dir = os.path.join(cfbs_dir(), RI_SUBDIRS)
         if not os.path.exists(cfbs_ri_dir):
@@ -186,6 +188,21 @@ def filepaths_display(filepaths):
         print("└──", filepaths[-1])
 
 
+def list_or_single(l):
+    if len(l) == 1:
+        return l[0]
+    return l
+
+
+def filepaths_display_moved(filepaths):
+    filepaths = filepaths_sorted(filepaths)
+
+    for path in filepaths[:-1]:
+        print("├──", path[0], "<-", list_or_single(path[1]))
+    if len(filepaths) > 0:
+        print("└──", filepaths[-1][0], "<-", list_or_single(filepaths[-1][1]))
+
+
 def mpf_normalized_path(path, is_parentpath, masterfiles_dir):
     """Returns a filepath converted from `path` to an MPF-comparable form."""
     # downloaded MPF release information filepaths always have forward slashes
@@ -261,27 +278,35 @@ class VersionsData:
         self.different_filepath_vc = VersionsCounter()
         self.different_filepath_hvc = VersionsCounter()
 
-    def display(self):
+    def display(self, verbose=False):
         if not self.version_counter.is_empty():
-            print(
-                "Same filepath versions distribution:",
-                self.version_counter.sorted_list(),
-            )
-            print(
-                "Same filepath highest versions distribution:",
-                self.highest_version_counter.sorted_list(),
-            )
+            if verbose:
+                print(
+                    "Same filepath versions distribution:",
+                    self.version_counter.sorted_list(),
+                )
+            if verbose:
+                print(
+                    "Same filepath highest versions distribution:",
+                    self.highest_version_counter.sorted_list(),
+                )
         if not self.different_filepath_vc.is_empty():
-            print(
-                "Different filepath versions distribution:",
-                self.different_filepath_vc.sorted_list(),
-            )
-            print(
-                "Different filepath highest versions distribution:",
-                self.different_filepath_hvc.sorted_list(),
-            )
+            if verbose:
+                print(
+                    "Different filepath versions distribution:",
+                    self.different_filepath_vc.sorted_list(),
+                )
+            if verbose:
+                print(
+                    "Different filepath highest versions distribution:",
+                    self.different_filepath_hvc.sorted_list(),
+                )
         if self.version_counter.is_empty() and self.different_filepath_vc.is_empty():
-            print("Not a single file in the analyzed policy set appears in MPF.")
+            print(
+                "Not a single file in the analyzed policy set appears in the Masterfiles Policy Framework.\n"
+            )
+        elif verbose:
+            print()
 
     def to_json_dict(self):
         json_dict = OrderedDict()
@@ -332,11 +357,12 @@ class AnalyzedFiles:
         self.moved_or_renamed = [
             (
                 mpf_denormalized_path(file, is_parentpath, masterfiles_dir),
-                AnalyzedFiles._denormalize_origin(
-                    origin, is_parentpath, masterfiles_dir
-                ),
+                [
+                    mpf_denormalized_path(o_f, is_parentpath, masterfiles_dir)
+                    for o_f in origin_filepaths
+                ],
             )
-            for (file, origin) in self.moved_or_renamed
+            for (file, origin_filepaths) in self.moved_or_renamed
         ]
         self.different = [
             (
@@ -393,7 +419,7 @@ class AnalyzedFiles:
         filepaths_display(self.modified)
         if len(self.moved_or_renamed) > 0:
             print("Files moved or renamed:")
-        filepaths_display(self.moved_or_renamed)
+        filepaths_display_moved(self.moved_or_renamed)
 
         if (
             len(self.different) == 0
@@ -409,7 +435,7 @@ class AnalyzedFiles:
         filepaths_display(self.different_modified)
         if len(self.different_moved_or_renamed) > 0:
             print("Files moved or renamed from a different version:")
-        filepaths_display(self.different_moved_or_renamed)
+        filepaths_display_moved(self.different_moved_or_renamed)
 
         if len(self.not_from_any) > 0:
             print("Files not from any version (with both custom content and path):")
@@ -563,7 +589,10 @@ def analyze_policyset(
                     # therefore, it must be a rename/move
                     origin = mpf_checksums_dict[checksum]
                     if checksum in reference_version_checksums:
-                        analyzed_files.moved_or_renamed.append((filepath, origin))
+                        origin_filepaths = origin.keys()
+                        analyzed_files.moved_or_renamed.append(
+                            (filepath, origin_filepaths)
+                        )
                     else:
                         analyzed_files.different_moved_or_renamed.append(
                             (filepath, origin)
@@ -589,7 +618,14 @@ def analyze_policyset(
     # 2. files missing from the reference version:
     for filepath in reference_version_files:
         if filepath not in files_dict:
-            analyzed_files.missing.append(filepath)
+            # the file is missing, but only if it's not present in any origin in moved_or_renamed
+            is_present = False
+            for _, origin_filepaths in analyzed_files.moved_or_renamed:
+                if filepath in origin_filepaths:
+                    is_present = True
+                    break
+            if not is_present:
+                analyzed_files.missing.append(filepath)
 
     # denormalize filepaths in all the analyzed files lists for display
     analyzed_files.denormalize(is_parentpath, masterfiles_dir)

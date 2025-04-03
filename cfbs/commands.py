@@ -1066,9 +1066,13 @@ def analyze_command(
     masterfiles_dir=None,
     user_ignored_path_components=None,
     offline=False,
+    verbose=False,
 ):
     if len(policyset_paths) == 0:
         # no policyset path is a shorthand for using the current directory as the policyset path
+        log.info(
+            "No path was provided. Using the current directory as the policy set path."
+        )
         path = "."
     else:
         # currently, only support analyzing only one path
@@ -1107,8 +1111,7 @@ def analyze_command(
         offline,
     )
 
-    versions_data.display()
-    print()
+    versions_data.display(verbose)
     analyzed_files.display()
 
     if json_filename is not None:

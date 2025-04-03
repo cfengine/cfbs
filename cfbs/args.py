@@ -132,7 +132,7 @@ def get_arg_parser():
     )
     parser.add_argument(
         "--ignored-path-components",
-        help="Specify path components which should be ignored during 'cfbs analyze'",
+        help="Specify path components which should be ignored during 'cfbs analyze' (the components should be passed separately, delimited by spaces)",
         nargs="*",
     )
     parser.add_argument(
