@@ -87,7 +87,6 @@ _commands = OrderedDict()
 # Does not modify/wrap the function it decorates.
 def cfbs_command(name):
     def inner(function):
-        global _commands
         _commands[name] = function
         return function  # Unmodified, we've just added it to the dict
 
@@ -95,7 +94,6 @@ def cfbs_command(name):
 
 
 def get_command_names():
-    global _commands
     names = _commands.keys()
     return names
 
