@@ -116,6 +116,31 @@ def get_arg_parser():
         dest="minimum_version",
     )
     parser.add_argument(
+        "--to-json",
+        help="Output 'cfbs analyze' results to a JSON file; optionally specify the JSON's filename",
+        nargs="?",
+        const="analysis",
+        default=None,
+    )
+    parser.add_argument(
+        "--reference-version",
+        help="Specify version to compare against for 'cfbs analyze'",
+    )
+    parser.add_argument(
+        "--masterfiles-dir",
+        help="If the path given to 'cfbs analyze' contains a masterfiles subdirectory, specify the subdirectory's name",
+    )
+    parser.add_argument(
+        "--ignored-path-components",
+        help="Specify path components which should be ignored during 'cfbs analyze' (the components should be passed separately, delimited by spaces)",
+        nargs="*",
+    )
+    parser.add_argument(
+        "--offline",
+        help="Do not connect to the Internet to download the latest version of MPF release information during 'cfbs analyze'",
+        action="store_true",
+    )
+    parser.add_argument(
         "--masterfiles", help="Add masterfiles on cfbs init choose between"
     )
     return parser

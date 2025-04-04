@@ -8,9 +8,9 @@ import re
 import copy
 import logging as log
 import json
-import sys
 import functools
 from collections import OrderedDict
+from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
 
 from cfbs.utils import (
@@ -87,7 +87,6 @@ _commands = OrderedDict()
 # Does not modify/wrap the function it decorates.
 def cfbs_command(name):
     def inner(function):
-        global _commands
         _commands[name] = function
         return function  # Unmodified, we've just added it to the dict
 
@@ -95,7 +94,6 @@ def cfbs_command(name):
 
 
 def get_command_names():
-    global _commands
     names = _commands.keys()
     return names
 
@@ -1054,6 +1052,75 @@ def info_command(modules):
         data["module"] = (module + "({})".format(alias)) if alias else module
         _print_module_info(data)
     print()  # extra line for ease of reading
+    return 0
+
+
+@cfbs_command("analyze")
+@cfbs_command("analyse")
+def analyze_command(
+    policyset_paths,
+    json_filename=None,
+    reference_version=None,
+    masterfiles_dir=None,
+    user_ignored_path_components=None,
+    offline=False,
+    verbose=False,
+):
+    if len(policyset_paths) == 0:
+        # no policyset path is a shorthand for using the current directory as the policyset path
+        log.info(
+            "No path was provided. Using the current directory as the policy set path."
+        )
+        path = "."
+    else:
+        # currently, only support analyzing only one path
+        path = policyset_paths[0]
+
+        if len(policyset_paths) > 1:
+            log.warning(
+                "More than one path to analyze provided. Analyzing the first one and ignoring the others."
+            )
+
+    if masterfiles_dir is None:
+        masterfiles_dir = "masterfiles"
+    # override masterfiles directory name (e.g. "inputs")
+    # strip trailing path separators
+    masterfiles_dir = masterfiles_dir.rstrip(os.sep)
+    # we assume the modules directory is always called "modules"
+    # thus `masterfiles_dir` can't be set to "modules"
+    if masterfiles_dir == "modules":
+        log.warning(
+            'The masterfiles directory cannot be named "modules". Using the name "masterfiles" instead.'
+        )
+        masterfiles_dir = "masterfiles"
+
+    # the policyset path can either contain only masterfiles (masterfiles-path), or contain folders containing modules and masterfiles (parent-path)
+    # try to automatically determine which one it is (by checking whether `path` contains `masterfiles_dir`)
+    is_parentpath = os.path.isdir(os.path.join(path, masterfiles_dir))
+
+    print("Policy set path:", path, "\n")
+
+    analyzed_files, versions_data = analyze_policyset(
+        path,
+        is_parentpath,
+        reference_version,
+        masterfiles_dir,
+        user_ignored_path_components,
+        offline,
+    )
+
+    versions_data.display(verbose)
+    analyzed_files.display()
+
+    if json_filename is not None:
+        json_dict = OrderedDict()
+
+        json_dict["policy_set_path"] = path
+        json_dict["versions_data"] = versions_data.to_json_dict()
+        json_dict["analyzed_files"] = analyzed_files.to_json_dict()
+
+        write_json(json_filename + ".json", json_dict)
+
     return 0
 
 
