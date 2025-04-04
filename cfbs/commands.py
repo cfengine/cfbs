@@ -1081,6 +1081,9 @@ def analyze_command(
                 "More than one path to analyze provided. Analyzing the first one and ignoring the others."
             )
 
+    if not os.path.isdir(path):
+        user_error("the provided policy set path is not a directory")
+
     if masterfiles_dir is None:
         masterfiles_dir = "masterfiles"
     # override masterfiles directory name (e.g. "inputs")
