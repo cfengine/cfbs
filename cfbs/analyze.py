@@ -10,6 +10,7 @@ from cfbs.masterfiles.analyze import (
 from cfbs.utils import (
     FetchError,
     cfbs_dir,
+    deduplicate_list,
     fetch_url,
     file_sha256,
     get_json,
@@ -25,12 +26,18 @@ def path_components(path):
 
     The first component is `""` for a path starting with a separator. On Windows, if `path` begins with n backslashes, the first n components will be `""`.
 
-    The last component is the filename, trailing separators do not affect the result."""
+    The last component is the name of the file or directory, trailing separators do not affect the result.
+    """
     norm_path = os.path.normpath(path)
 
     dir_components = norm_path.split(os.sep)
 
     return dir_components
+
+
+def name(path):
+    """Returns the name of the path to file or directory."""
+    return path_components(path)[-1]
 
 
 def is_path_component(path, component):
@@ -551,8 +558,51 @@ def analyze_policyset(
     if reference_version is None:
         reference_version = versions_data.version_counter.most_common_version()
 
-    # if not a single file in the analyzed policyset has an MPF-known checksum, and a specific `reference_version` was not given, `reference_version` will still be `None`
+    # if not a single file in the analyzed policyset has an MPF-known (checksum, filepath), and a specific `reference_version` was not given, `reference_version` will still be `None`
     if reference_version is None:
+        # try to detect whether the user provided a wrong policy set path
+        # gather all possible policy set paths, by detecting promises.cf or update.cf
+        possible_policyset_relpaths = []
+        mpfnorm_path = mpf_normalized_path(path, is_parentpath, masterfiles_dir)
+        for filepath in files_dict:
+            file_name = name(filepath)
+            if file_name in ("promises.cf", "update.cf"):
+                relpath = os.path.relpath(filepath, mpfnorm_path)
+                relpath = relpath.replace(os.sep, "/")
+
+                if "/" not in relpath:
+                    # `"."`, not `path`, as the list collects relative paths
+                    possible_policyset_relpaths.append(".")
+                if relpath.endswith("/update.cf"):
+                    possible_policyset_relpaths.append(relpath[:-10])
+                if relpath.endswith("/promises.cf"):
+                    possible_policyset_relpaths.append(relpath[:-12])
+
+        # for drive root, the path's parent is the path itself, so only check the parent path if this is not the case
+        if os.path.realpath(path) != os.path.realpath(os.path.join(path, "..")):
+            if os.path.exists(os.path.join(path, "..", "update.cf")) or os.path.exists(
+                os.path.join(path, "..", "promises.cf")
+            ):
+                possible_policyset_relpaths.append("..")
+
+        possible_policyset_relpaths = deduplicate_list(possible_policyset_relpaths)
+
+        # check whether the policy set contains update.cf or promises.cf directly in masterfiles
+        if not (
+            (masterfiles_dir if is_parentpath else ".") in possible_policyset_relpaths
+        ):
+            extra_error_text = ""
+            if len(possible_policyset_relpaths) > 0:
+                extra_error_text = (
+                    "Did you mean to provide one of the following paths (or their parent paths), relative to the provided path, instead?:\n  "
+                    + "\n  ".join(possible_policyset_relpaths)
+                    + "\n"
+                )
+            user_error(
+                "There doesn't seem to be a valid policy set in the supplied path.\n       Usage: cfbs analyze path/to/policy-set\n"
+                + extra_error_text
+            )
+
         reference_version_files = []
         reference_version_checksums = {}
     else:
