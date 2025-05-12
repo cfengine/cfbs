@@ -472,7 +472,17 @@ class AnalyzedFiles:
         return json_dict
 
 
-DEFAULT_IGNORED_PATH_COMPONENTS = [".git/", ".gitignore", ".gitattributes", ".github/"]
+DEFAULT_IGNORED_PATH_COMPONENTS = [
+    # VCS files - Git:
+    ".git/",
+    ".gitignore",
+    ".gitattributes",
+    # infrastructure configuration files - GitHub:
+    ".github/",
+    # CFEngine policy distribution generated files:
+    "cf_promises_release_id",
+    "cf_promises_validated",
+]
 
 
 def analyze_policyset(
