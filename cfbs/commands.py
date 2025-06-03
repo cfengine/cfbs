@@ -301,6 +301,13 @@ def status_command() -> int:
     print("Name:        %s" % config["name"])
     print("Description: %s" % config["description"])
     print("File:        %s" % cfbs_filename())
+    if "index" in config:
+        index = config.raw_data["index"]
+
+        if type(index) is str:
+            print("Index:       %s" % index)
+        else:
+            print("Index:       %s" % "inline index in cfbs.json")
 
     modules = config.get("build")
     if not modules:
