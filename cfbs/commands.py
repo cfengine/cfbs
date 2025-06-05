@@ -35,8 +35,6 @@ from cfbs.pretty import (
     pretty_check_file,
     pretty_file,
     CFBS_DEFAULT_SORTING_RULES,
-    TOP_LEVEL_KEYS,
-    MODULE_KEYS,
 )
 from cfbs.build import (
     init_out_folder,
@@ -54,7 +52,6 @@ from cfbs.index import _VERSION_INDEX, Index
 from cfbs.git import (
     git_exists,
     is_git_repo,
-    git_commit,
     git_get_config,
     git_set_config,
     git_init,
