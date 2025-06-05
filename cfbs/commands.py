@@ -30,7 +30,6 @@ from cfbs.utils import (
     is_a_commit_hash,
 )
 
-from cfbs.args import get_args
 from cfbs.pretty import (
     pretty,
     pretty_check_file,
