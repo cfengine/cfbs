@@ -780,8 +780,8 @@ def update_command(to_update):
                     input_data = read_json(input_path)
                     if input_data == None:
                         log.debug(
-                            "Skipping input update for module '%s': "
-                            + "No input found in '%s'" % (module["name"], input_path)
+                            "Skipping input update for module '%s': " % module["name"]
+                            + "No input found in '%s'" % input_path
                         )
                     else:
                         try:
