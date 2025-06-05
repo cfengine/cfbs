@@ -43,6 +43,7 @@ from cfbs.build import (
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import validate_config
 from cfbs.internal_file_management import (
+    clone_url_repo,
     fetch_archive,
     get_download_path,
     local_module_copy,
@@ -663,6 +664,16 @@ def update_input_data(module, input_data):
     return changes_made
 
 
+def update_module_from_url(module):
+    _, latest_commit = clone_url_repo(module.get("url"))
+
+    changes_made = module["commit"] != latest_commit
+    if changes_made:
+        module["commit"] = latest_commit
+
+    return changes_made
+
+
 @cfbs_command("update")
 @commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update):
@@ -710,10 +721,11 @@ def update_command(to_update):
             continue
 
         if "version" not in module:
-            log.warning(
-                "Module '%s' not updatable. Skipping its update." % module["name"]
-            )
             log.debug("Module '%s' has no version attribute." % module["name"])
+
+            changes_made = update_module_from_url(module)
+            if not changes_made:
+                print("Module '%s' already up to date" % module["name"])
             continue
         old_version = module["version"]
 
