@@ -665,6 +665,109 @@ def update_input_data(module, input_data) -> bool:
     return changes_made
 
 
+class ModuleUpdates:
+
+    def __init__(self, config):
+        self.new_deps = []
+        self.new_deps_added_by = dict()
+        self.changes_made = False
+        self.files = []
+        self.config = config
+        self.msg = ""
+
+
+def update_module(old_module, new_module, module_updates, update):
+    commit_differs = old_module["commit"] != new_module["commit"]
+    for key in old_module.keys():
+        if key not in new_module or old_module[key] == new_module[key]:
+            continue
+        if key == "steps":
+            # same commit => user modifications, don't revert them
+            if commit_differs:
+                ans = prompt_user(
+                    module_updates.config.non_interactive,
+                    "Module %s has different build steps now\n" % old_module["name"]
+                    + "old steps: %s\n" % old_module["steps"]
+                    + "new steps: %s\n" % new_module["steps"]
+                    + "Do you want to use the new build steps?",
+                    choices=YES_NO_CHOICES,
+                    default="yes",
+                )
+                if ans.lower() in ["y", "yes"]:
+                    old_module["steps"] = new_module["steps"]
+                    module_updates.changes_made = True
+                else:
+                    print(
+                        "Please make sure the old build steps work"
+                        + " with the new version of the module"
+                    )
+        elif key == "input":
+            if commit_differs:
+                old_module["input"] = new_module["input"]
+
+                input_path = os.path.join(".", old_module["name"], "input.json")
+                input_data = read_json(input_path)
+                if input_data == None:
+                    log.debug(
+                        "Skipping input update for module '%s': "
+                        + "No input found in '%s'" % (old_module["name"], input_path)
+                    )
+                else:
+                    try:
+                        module_updates.changes_made |= update_input_data(
+                            old_module, input_data
+                        )
+                    except InputDataUpdateFailed as e:
+                        log.warning(e)
+                        if prompt_user(
+                            module_updates.config.non_interactive,
+                            "Input for module '%s' has changed " % old_module["name"]
+                            + "and may no longer be compatible. "
+                            + "Do you want to re-enter input now?",
+                            YES_NO_CHOICES,
+                            "no",
+                        ).lower() in ("no", "n"):
+                            continue
+                        input_data = copy.deepcopy(old_module["input"])
+                        module_updates.config.input_command(
+                            old_module["name"], input_data
+                        )
+                        module_updates.changes_made = True
+
+                if module_updates.changes_made:
+                    write_json(input_path, input_data)
+                    module_updates.files.append(input_path)
+        else:
+            if key == "dependencies":
+                extra = set(new_module["dependencies"]) - set(
+                    old_module["dependencies"]
+                )
+                module_updates.new_deps.extend(extra)
+                module_updates.new_deps_added_by.update(
+                    {item: old_module["name"] for item in extra}
+                )
+
+            old_module[key] = new_module[key]
+            module_updates.changes_made = True
+
+    for key in set(new_module.keys()) - set(old_module.keys()):
+        old_module[key] = new_module[key]
+        if key == "dependencies":
+            extra = new_module["dependencies"]
+            module_updates.new_deps.extend(extra)
+            module_updates.new_deps_added_by.update(
+                {item: old_module["name"] for item in extra}
+            )
+
+    if not update.version:
+        update.version = new_module["version"]
+    module_updates.msg += "\n - Updated module '%s' from version %s to version %s" % (
+        update.name,
+        old_module["version"],
+        update.version,
+    )
+
+
 @cfbs_command("update")
 @commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update) -> Result:
@@ -679,173 +782,101 @@ def update_command(to_update) -> Result:
         else [Module(m["name"]) for m in build]
     )
 
-    new_deps = []
-    new_deps_added_by = dict()
-    changes_made = False
-    msg = ""
-    files = []
     updated = []
+    module_updates = ModuleUpdates(config)
 
     for update in to_update:
-        module = config.get_module_from_build(update.name)
+        old_module = config.get_module_from_build(update.name)
 
-        custom_index = module is not None and "index" in module
-        index = Index(module["index"]) if custom_index else config.index
+        custom_index = old_module is not None and "index" in old_module
+        index = Index(old_module["index"]) if custom_index else config.index
 
-        if not module:
+        if not old_module:
             index.translate_alias(update)
-            module = config.get_module_from_build(update.name)
+            old_module = config.get_module_from_build(update.name)
 
-        if not module:
-            log.warning("Module '%s' not in build. Skipping its update." % update.name)
-            continue
-
-        custom_index = module is not None and "index" in module
-        index = Index(module["index"]) if custom_index else config.index
-
-        if not module:
-            index.translate_alias(update)
-            module = config.get_module_from_build(update.name)
-
-        if not module:
-            log.warning("Module '%s' not in build. Skipping its update." % update.name)
-            continue
-
-        if "version" not in module:
+        if not old_module:
             log.warning(
-                "Module '%s' not updatable. Skipping its update." % module["name"]
+                "old_Module '%s' not in build. Skipping its update." % update.name
             )
-            log.debug("Module '%s' has no version attribute." % module["name"])
             continue
-        old_version = module["version"]
+
+        custom_index = old_module is not None and "index" in old_module
+        index = Index(old_module["index"]) if custom_index else config.index
+
+        if not old_module:
+            index.translate_alias(update)
+            old_module = config.get_module_from_build(update.name)
+
+        if not old_module:
+            log.warning("Module '%s' not in build. Skipping its update." % update.name)
+            continue
+
+        if "version" not in old_module:
+            log.warning(
+                "Module '%s' not updatable. Skipping its update." % old_module["name"]
+            )
+            log.debug("Module '%s' has no version attribute." % old_module["name"])
+            continue
 
         index_info = index.get_module_object(update.name)
         if not index_info:
             log.warning(
                 "Module '%s' not present in the index, cannot update it."
-                % module["name"]
+                % old_module["name"]
             )
             continue
 
         local_ver = [
             int(version_number)
-            for version_number in re.split(r"[-\.]", module["version"])
+            for version_number in re.split(r"[-\.]", old_module["version"])
         ]
         index_ver = [
             int(version_number)
             for version_number in re.split(r"[-\.]", index_info["version"])
         ]
         if local_ver == index_ver:
-            print("Module '%s' already up to date" % module["name"])
+            print("Module '%s' already up to date" % old_module["name"])
             continue
         elif local_ver > index_ver:
             log.warning(
                 "The requested version of module '%s' is older than current version (%s < %s)."
                 " Skipping its update."
-                % (module["name"], index_info["version"], module["version"])
+                % (old_module["name"], index_info["version"], old_module["version"])
             )
             continue
 
-        commit_differs = module["commit"] != index_info["commit"]
-        for key in module.keys():
-            if key not in index_info or module[key] == index_info[key]:
-                continue
-            if key == "steps":
-                # same commit => user modifications, don't revert them
-                if commit_differs:
-                    ans = prompt_user(
-                        config.non_interactive,
-                        "Module %s has different build steps now\n" % module["name"]
-                        + "old steps: %s\n" % module["steps"]
-                        + "new steps: %s\n" % index_info["steps"]
-                        + "Do you want to use the new build steps?",
-                        choices=YES_NO_CHOICES,
-                        default="yes",
-                    )
-                    if ans.lower() in ["y", "yes"]:
-                        module["steps"] = index_info["steps"]
-                        changes_made = True
-                    else:
-                        print(
-                            "Please make sure the old build steps work"
-                            + " with the new version of the module"
-                        )
-            elif key == "input":
-                if commit_differs:
-                    module["input"] = index_info["input"]
+        new_module = index_info
 
-                    input_path = os.path.join(".", module["name"], "input.json")
-                    input_data = read_json(input_path)
-                    if input_data == None:
-                        log.debug(
-                            "Skipping input update for module '%s': " % module["name"]
-                            + "No input found in '%s'" % input_path
-                        )
-                    else:
-                        try:
-                            changes_made |= update_input_data(module, input_data)
-                        except InputDataUpdateFailed as e:
-                            log.warning(e)
-                            if prompt_user(
-                                config.non_interactive,
-                                "Input for module '%s' has changed " % module["name"]
-                                + "and may no longer be compatible. "
-                                + "Do you want to re-enter input now?",
-                                YES_NO_CHOICES,
-                                "no",
-                            ).lower() in ("no", "n"):
-                                continue
-                            input_data = copy.deepcopy(module["input"])
-                            config.input_command(module["name"], input_data)
-                            changes_made = True
-
-                    if changes_made:
-                        write_json(input_path, input_data)
-                        files.append(input_path)
-            else:
-                if key == "dependencies":
-                    extra = set(index_info["dependencies"]) - set(
-                        module["dependencies"]
-                    )
-                    new_deps.extend(extra)
-                    new_deps_added_by.update({item: module["name"] for item in extra})
-
-                module[key] = index_info[key]
-                changes_made = True
+        update_module(old_module, new_module, module_updates, update)
 
         # add new items
-        for key in set(index_info.keys()) - set(module.keys()):
-            module[key] = index_info[key]
-            if key == "dependencies":
-                extra = index_info["dependencies"]
-                new_deps.extend(extra)
-                new_deps_added_by.update({item: module["name"] for item in extra})
 
-        if not update.version:
-            update.version = index_info["version"]
         updated.append(update)
-        msg += "\n - Updated module '%s' from version %s to version %s" % (
-            update.name,
-            old_version,
-            update.version,
-        )
 
-    if new_deps:
-        objects = [index.get_module_object(d, new_deps_added_by[d]) for d in new_deps]
+    if module_updates.new_deps:
+        objects = [
+            index.get_module_object(d, module_updates.new_deps_added_by[d])
+            for d in module_updates.new_deps
+        ]
         config.add_with_dependencies(objects)
     config.save()
 
-    if changes_made:
+    if module_updates.changes_made:
         if len(updated) > 1:
-            msg = "Updated %d modules\n" % len(updated) + msg
+            module_updates.msg = (
+                "Updated %d modules\n" % len(updated) + module_updates.msg
+            )
         else:
             # Remove the '\n - ' part of the message
-            msg = msg[len("\n - ") :]
-        print("%s\n" % msg)
+            module_updates.msg = module_updates.msg[len("\n - ") :]
+        print("%s\n" % module_updates.msg)
     else:
         print("Modules are already up to date")
 
-    return Result(0, changes_made, msg, files)
+    return Result(
+        0, module_updates.changes_made, module_updates.msg, module_updates.files
+    )
 
 
 @cfbs_command("validate")
