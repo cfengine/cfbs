@@ -5,7 +5,6 @@ import json
 import copy
 import subprocess
 import hashlib
-import logging as log
 from typing import List, Tuple
 import urllib
 import urllib.request  # needed on some platforms
@@ -79,12 +78,12 @@ def cp(src, dst):
     sh("rsync -r %s/ %s" % (src, dst))
 
 
-def pad_left(s, n) -> int:
-    return s if len(s) >= n else " " * (n - len(s)) + s
+def pad_left(s, n):
+    return s.rjust(n)
 
 
-def pad_right(s, n) -> int:
-    return s if len(s) >= n else s + " " * (n - len(s))
+def pad_right(s, n):
+    return s.ljust(n)
 
 
 def split_command(command) -> Tuple[str, List[str]]:
@@ -137,12 +136,14 @@ def item_index(iterable, item, extra_at_end=True):
 
 
 def strip_right(string, ending):
+    # can be replaced with str.removesuffix from Python 3.9 onwards
     if not string.endswith(ending):
         return string
     return string[0 : -len(ending)]
 
 
 def strip_left(string, beginning):
+    # can be replaced with str.removeprefix from Python 3.9 onwards
     if not string.startswith(beginning):
         return string
     return string[len(beginning) :]
@@ -163,7 +164,7 @@ def save_file(path, data):
         f.write(data)
 
 
-def read_json(path):
+def read_json(path) -> OrderedDict:
     try:
         with open(path, "r") as f:
             return json.loads(f.read(), object_pairs_hook=OrderedDict)
@@ -280,7 +281,6 @@ def immediate_files(path):
 
 
 def path_append(dir, subdir):
-    dir = os.path.abspath(os.path.expanduser(dir))
     return dir if not subdir else os.path.join(dir, subdir)
 
 
@@ -296,7 +296,10 @@ def are_paths_equal(path_a, path_b) -> bool:
 
 
 def cfengine_dir(subdir=None):
-    return path_append("~/.cfengine/", subdir)
+    CFENGINE_DIR = "~/.cfengine/"
+    cfengine_dir_abspath = os.path.abspath(os.path.expanduser(CFENGINE_DIR))
+
+    return path_append(cfengine_dir_abspath, subdir)
 
 
 def cfbs_dir(append=None) -> str:

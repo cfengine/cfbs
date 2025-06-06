@@ -1,12 +1,48 @@
+from collections import OrderedDict
 from cfbs.utils import (
     canonify,
     deduplicate_def_json,
+    deduplicate_list,
     dict_diff,
+    dict_sorted_by_key,
     file_sha256,
+    immediate_files,
+    immediate_subdirectories,
+    is_a_commit_hash,
     merge_json,
     loads_bundlenames,
+    pad_left,
+    pad_right,
+    path_append,
+    read_json,
     string_sha256,
 )
+
+
+def test_pad_left():
+    s = "module_name"
+    n = 20
+
+    assert pad_left(s, n) == "         module_name"
+
+
+def test_pad_right():
+    s = "module_name"
+    n = 20
+
+    assert pad_right(s, n) == "module_name         "
+
+
+def test_read_json():
+    json_path = "tests/sample/sample_json.json"
+    expected_dict = OrderedDict(
+        [("a", 1), ("b", OrderedDict([("c", "value"), ("d", [2, "string"])]))]
+    )
+
+    assert read_json(json_path) == expected_dict
+
+    assert read_json("tests/thisfiledoesntexist.json") is None
+    assert read_json("tests/thisdirdoesntexist/file.json") is None
 
 
 def test_merge_json():
@@ -142,11 +178,46 @@ def test_deduplicate_def_json():
     assert deduplicated == expected
 
 
+def test_deduplicate_list():
+    l = [1, 2, 3, 3, 1, 4]
+
+    assert deduplicate_list(l) == [1, 2, 3, 4]
+
+
+def test_dict_sorted_by_key():
+    d = {"b": 1, "c": 3, "a": 2}
+
+    expected_dict = OrderedDict([("a", 2), ("b", 1), ("c", 3)])
+
+    assert dict_sorted_by_key(d) == expected_dict
+
+
 def test_dict_diff():
     A = {"A": "a", "B": "b", "C": "c"}
     B = {"A": "a", "B": "c", "D": "d"}
 
     assert dict_diff(A, B) == (["C"], ["D"], [("B", "b", "c")])
+
+
+def test_immediate_subdirectories():
+    path = "tests/sample/sample_dir"
+    expected = ["sample_subdir_A", "sample_subdir_B"]
+
+    assert immediate_subdirectories(path) == expected
+
+
+def test_immediate_files():
+    path = "tests/sample/sample_dir"
+    expected = ["sample_file_1.txt", "sample_file_2.txt"]
+
+    assert immediate_files(path) == expected
+
+
+def test_path_append():
+    path = "tests/sample/sample_dir"
+
+    assert path_append(path, "abc") == "tests/sample/sample_dir/abc"
+    assert path_append(path, None) == path
 
 
 def test_string_sha256():
@@ -161,6 +232,15 @@ def test_file_sha256():
     checksum = "da90bdfe7b5ee30e4d7871496e8434603315fb1b267660e2d49aee8ef47b246d"
 
     assert file_sha256(file_path) == checksum
+
+
+def test_is_a_commit_hash():
+    assert is_a_commit_hash("304d123ac7ff50714a1eb57077acf159f923c941") == True
+    sha256_hash = "98142d6fa7e2e5f0942b0a215c1c4b976e7ae2ee5edb61cef974f1ba6756cbbc"
+    assert is_a_commit_hash(sha256_hash) == True
+    # at least currently, commit cannot be a shortened hash
+    assert is_a_commit_hash("4738c43") == False
+    assert is_a_commit_hash("") == False
 
 
 def test_canonify():
