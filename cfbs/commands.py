@@ -13,6 +13,7 @@ from collections import OrderedDict
 from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
 
+from cfbs.cfbs_json import CFBSJson
 from cfbs.utils import (
     FetchError,
     cfbs_dir,
@@ -44,6 +45,7 @@ from cfbs.build import (
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import validate_config
 from cfbs.internal_file_management import (
+    clone_url_repo,
     SUPPORTED_URI_SCHEMES,
     fetch_archive,
     get_download_path,
@@ -678,6 +680,8 @@ class ModuleUpdates:
 
 def update_module(old_module, new_module, module_updates, update):
     commit_differs = old_module["commit"] != new_module["commit"]
+    old_version = old_module.get("version")
+    local_changes_made = False
     for key in old_module.keys():
         if key not in new_module or old_module[key] == new_module[key]:
             continue
@@ -695,7 +699,7 @@ def update_module(old_module, new_module, module_updates, update):
                 )
                 if ans.lower() in ["y", "yes"]:
                     old_module["steps"] = new_module["steps"]
-                    module_updates.changes_made = True
+                    local_changes_made = True
                 else:
                     print(
                         "Please make sure the old build steps work"
@@ -709,14 +713,12 @@ def update_module(old_module, new_module, module_updates, update):
                 input_data = read_json(input_path)
                 if input_data == None:
                     log.debug(
-                        "Skipping input update for module '%s': "
-                        + "No input found in '%s'" % (old_module["name"], input_path)
+                        "Skipping input update for module '%s': " % old_module["name"]
+                        + "No input found in '%s'" % input_path
                     )
                 else:
                     try:
-                        module_updates.changes_made |= update_input_data(
-                            old_module, input_data
-                        )
+                        local_changes_made |= update_input_data(old_module, input_data)
                     except InputDataUpdateFailed as e:
                         log.warning(e)
                         if prompt_user(
@@ -732,9 +734,9 @@ def update_module(old_module, new_module, module_updates, update):
                         module_updates.config.input_command(
                             old_module["name"], input_data
                         )
-                        module_updates.changes_made = True
+                        local_changes_made = True
 
-                if module_updates.changes_made:
+                if local_changes_made:
                     write_json(input_path, input_data)
                     module_updates.files.append(input_path)
         else:
@@ -748,7 +750,7 @@ def update_module(old_module, new_module, module_updates, update):
                 )
 
             old_module[key] = new_module[key]
-            module_updates.changes_made = True
+            local_changes_made = True
 
     for key in set(new_module.keys()) - set(old_module.keys()):
         old_module[key] = new_module[key]
@@ -759,13 +761,22 @@ def update_module(old_module, new_module, module_updates, update):
                 {item: old_module["name"] for item in extra}
             )
 
-    if not update.version:
-        update.version = new_module["version"]
-    module_updates.msg += "\n - Updated module '%s' from version %s to version %s" % (
-        update.name,
-        old_module["version"],
-        update.version,
-    )
+    if local_changes_made:
+        if new_module.get("version"):
+            module_updates.msg += (
+                "\n - Updated module '%s' from version %s to version %s"
+                % (
+                    update.name,
+                    old_version,
+                    update.version if update.version else new_module["version"],
+                )
+            )
+        else:
+            module_updates.msg += "\n - Updated module '%s' from url" % (update.name)
+    else:
+        print("Module '%s' already up to date" % old_module["name"])
+
+    module_updates.changes_made |= local_changes_made
 
 
 @cfbs_command("update")
@@ -812,41 +823,57 @@ def update_command(to_update) -> Result:
             log.warning("Module '%s' not in build. Skipping its update." % update.name)
             continue
 
-        if "version" not in old_module:
-            log.warning(
-                "Module '%s' not updatable. Skipping its update." % old_module["name"]
+        if "url" in old_module:
+            path, commit = clone_url_repo(old_module["url"])
+            remote_config = CFBSJson(
+                path=path, url=old_module["url"], url_commit=commit
             )
-            log.debug("Module '%s' has no version attribute." % old_module["name"])
-            continue
 
-        index_info = index.get_module_object(update.name)
-        if not index_info:
-            log.warning(
-                "Module '%s' not present in the index, cannot update it."
-                % old_module["name"]
-            )
-            continue
+            module_name = old_module["name"]
+            provides = remote_config.get_provides()
 
-        local_ver = [
-            int(version_number)
-            for version_number in re.split(r"[-\.]", old_module["version"])
-        ]
-        index_ver = [
-            int(version_number)
-            for version_number in re.split(r"[-\.]", index_info["version"])
-        ]
-        if local_ver == index_ver:
-            print("Module '%s' already up to date" % old_module["name"])
-            continue
-        elif local_ver > index_ver:
-            log.warning(
-                "The requested version of module '%s' is older than current version (%s < %s)."
-                " Skipping its update."
-                % (old_module["name"], index_info["version"], old_module["version"])
-            )
-            continue
+            if not module_name or module_name not in provides:
+                continue
 
-        new_module = index_info
+            new_module = provides[module_name]
+        else:
+
+            if "version" not in old_module:
+                log.warning(
+                    "Module '%s' not updatable. Skipping its update."
+                    % old_module["name"]
+                )
+                log.debug("Module '%s' has no version attribute." % old_module["name"])
+                continue
+
+            index_info = index.get_module_object(update.name)
+            if not index_info:
+                log.warning(
+                    "Module '%s' not present in the index, cannot update it."
+                    % old_module["name"]
+                )
+                continue
+
+            local_ver = [
+                int(version_number)
+                for version_number in re.split(r"[-\.]", old_module["version"])
+            ]
+            index_ver = [
+                int(version_number)
+                for version_number in re.split(r"[-\.]", index_info["version"])
+            ]
+            if local_ver == index_ver:
+                print("Module '%s' already up to date" % old_module["name"])
+                continue
+            elif local_ver > index_ver:
+                log.warning(
+                    "The requested version of module '%s' is older than current version (%s < %s)."
+                    " Skipping its update."
+                    % (old_module["name"], index_info["version"], old_module["version"])
+                )
+                continue
+
+            new_module = index_info
 
         update_module(old_module, new_module, module_updates, update)
 
