@@ -14,6 +14,7 @@ from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
 
 from cfbs.utils import (
+    FetchError,
     cfbs_dir,
     cfbs_filename,
     is_cfbs_repo,
@@ -905,7 +906,12 @@ def _download_dependencies(
                 sh("git clone %s %s" % (url, commit_dir))
                 sh("(cd %s && git checkout %s)" % (commit_dir, commit))
             else:
-                versions = get_json(_VERSION_INDEX)
+                try:
+                    versions = get_json(_VERSION_INDEX)
+                except FetchError as e:
+                    user_error(
+                        "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
+                    )
                 try:
                     checksum = versions[name][module["version"]]["archive_sha256"]
                 except KeyError:

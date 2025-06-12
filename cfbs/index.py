@@ -2,7 +2,7 @@ import sys, os
 from collections import OrderedDict
 
 from cfbs.module import Module
-from cfbs.utils import get_or_read_json, user_error, get_json
+from cfbs.utils import FetchError, get_or_read_json, user_error, get_json
 from cfbs.internal_file_management import local_module_name
 
 _DEFAULT_INDEX = (
@@ -87,7 +87,13 @@ class Index:
 
         assert type(index) is str
 
-        self._data = get_or_read_json(index)
+        try:
+            self._data = get_or_read_json(index)
+        except FetchError as e:
+            user_error(
+                "Downloading index '%s' failed - check your Wi-Fi / network settings."
+                % index
+            )
 
         if not self._data:
             sys.exit("Could not download or find module index")
@@ -121,7 +127,13 @@ class Index:
             return True
         if not version:
             return name in self
-        versions = get_json(_VERSION_INDEX)
+        try:
+            versions = get_json(_VERSION_INDEX)
+        except FetchError as e:
+            user_error(
+                "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
+            )
+
         return name in versions and version in versions[name]
 
     def check_existence(self, modules: list):
@@ -162,7 +174,12 @@ class Index:
         else:
             object = self[name]
             if version:
-                versions = get_json(_VERSION_INDEX)
+                try:
+                    versions = get_json(_VERSION_INDEX)
+                except FetchError as e:
+                    user_error(
+                        "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
+                    )
                 new_values = versions[name][version]
                 specifics = {
                     k: v for (k, v) in new_values.items() if k in Module.attributes()

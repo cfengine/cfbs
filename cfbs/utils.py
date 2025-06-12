@@ -115,9 +115,12 @@ def user_error(msg: str):
 
 
 def get_json(url: str) -> OrderedDict:
-    with urllib.request.urlopen(url) as r:
-        assert r.status >= 200 and r.status < 300
-        return json.loads(r.read().decode(), object_pairs_hook=OrderedDict)
+    try:
+        with urllib.request.urlopen(url) as r:
+            assert r.status >= 200 and r.status < 300
+            return json.loads(r.read().decode(), object_pairs_hook=OrderedDict)
+    except urllib.error.URLError as e:
+        raise FetchError("Failed to get JSON from '%s'" % url) from e
 
 
 def get_or_read_json(path: str) -> OrderedDict:

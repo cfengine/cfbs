@@ -131,7 +131,12 @@ def mpf_vcf_dicts(offline=False):
             "https://api.github.com/repos/" + REPO_OWNERNAME + "/releases/latest"
         )
 
-        latest_release_data = get_json(LATEST_RELEASE_API_URL)
+        try:
+            latest_release_data = get_json(LATEST_RELEASE_API_URL)
+        except FetchError as e:
+            user_error(
+                "Downloading CFEngine release information failed - check your Wi-Fi / network settings."
+            )
 
         latest_release_name = latest_release_data["name"]
         ri_archive_url = REPO_URL + "/archive/refs/tags/" + latest_release_name + ".zip"
