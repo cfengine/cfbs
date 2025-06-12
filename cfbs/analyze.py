@@ -14,9 +14,9 @@ from cfbs.utils import (
     fetch_url,
     file_sha256,
     get_json,
-    get_or_read_json,
     immediate_subdirectories,
     mkdir,
+    read_json,
     user_error,
 )
 
@@ -169,13 +169,14 @@ def mpf_vcf_dicts(offline=False):
     mpf_checkfiles_json_path = os.path.join(mpf_vcf_path, "checksums.json")
     mpf_files_json_path = os.path.join(mpf_vcf_path, "files.json")
 
-    mpf_versions_dict = get_or_read_json(mpf_versions_json_path)
+    mpf_versions_dict = read_json(mpf_versions_json_path)
+
     mpf_versions_dict = mpf_versions_dict["versions"]
 
-    mpf_checksums_dict = get_or_read_json(mpf_checkfiles_json_path)
+    mpf_checksums_dict = read_json(mpf_checkfiles_json_path)
     mpf_checksums_dict = mpf_checksums_dict["checksums"]
 
-    mpf_files_dict = get_or_read_json(mpf_files_json_path)
+    mpf_files_dict = read_json(mpf_files_json_path)
     mpf_files_dict = mpf_files_dict["files"]
 
     return mpf_versions_dict, mpf_checksums_dict, mpf_files_dict
