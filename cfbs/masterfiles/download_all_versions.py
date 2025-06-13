@@ -13,7 +13,12 @@ def get_download_urls_enterprise(min_version=None):
 
     print("* gathering download URLs...")
 
-    data = get_json(ENTERPRISE_RELEASES_URL)
+    try:
+        data = get_json(ENTERPRISE_RELEASES_URL)
+    except FetchError as e:
+        user_error(
+            "Downloading CFEngine release data failed - check your Wi-Fi / network settings."
+        )
 
     for release_data in data["releases"]:
         version = release_data["version"]
@@ -38,7 +43,13 @@ def get_download_urls_enterprise(min_version=None):
             continue
 
         release_url = release_data["URL"]
-        subdata = get_json(release_url)
+        try:
+            subdata = get_json(release_url)
+        except FetchError as e:
+            user_error(
+                "Downloading CFEngine release data for version %s failed - check your Wi-Fi / network settings."
+                % version
+            )
         artifacts_data = subdata["artifacts"]
 
         if "Additional Assets" not in artifacts_data:
