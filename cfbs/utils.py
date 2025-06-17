@@ -274,11 +274,21 @@ def is_cfbs_repo() -> bool:
 
 
 def immediate_subdirectories(path):
-    return [f.name for f in os.scandir(path) if f.is_dir()]
+    l = [f.name for f in os.scandir(path) if f.is_dir()]
+
+    # `os.scandir` returns the entries in arbitrary order, so sort for determinism
+    l = sorted(l)
+
+    return l
 
 
 def immediate_files(path):
-    return [f.name for f in os.scandir(path) if not f.is_dir()]
+    l = [f.name for f in os.scandir(path) if not f.is_dir()]
+
+    # `os.scandir` returns the entries in arbitrary order, so sort for determinism
+    l = sorted(l)
+
+    return l
 
 
 def path_append(dir, subdir):
