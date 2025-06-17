@@ -79,12 +79,12 @@ def cp(src, dst):
     sh("rsync -r %s/ %s" % (src, dst))
 
 
-def pad_left(s, n) -> int:
-    return s if len(s) >= n else " " * (n - len(s)) + s
+def pad_left(s, n):
+    return s.rjust(n)
 
 
-def pad_right(s, n) -> int:
-    return s if len(s) >= n else s + " " * (n - len(s))
+def pad_right(s, n):
+    return s.ljust(n)
 
 
 def split_command(command) -> Tuple[str, List[str]]:
@@ -140,12 +140,14 @@ def item_index(iterable, item, extra_at_end=True):
 
 
 def strip_right(string, ending):
+    # can be replaced with str.removesuffix from Python 3.9 onwards
     if not string.endswith(ending):
         return string
     return string[0 : -len(ending)]
 
 
 def strip_left(string, beginning):
+    # can be replaced with str.removeprefix from Python 3.9 onwards
     if not string.startswith(beginning):
         return string
     return string[len(beginning) :]
