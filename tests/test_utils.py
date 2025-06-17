@@ -216,11 +216,6 @@ def test_immediate_files():
 def test_path_append():
     path = "tests/sample/sample_dir"
 
-    # `path_append` is currently coupled with the below code
-    import os
-
-    path = os.path.abspath(os.path.expanduser(path))
-
     assert path_append(path, "abc") == path + "/abc"
     assert path_append(path, None) == path
 

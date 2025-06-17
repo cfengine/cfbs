@@ -5,7 +5,6 @@ import json
 import copy
 import subprocess
 import hashlib
-import logging as log
 from typing import List, Tuple
 import urllib
 import urllib.request  # needed on some platforms
@@ -165,7 +164,7 @@ def save_file(path, data):
         f.write(data)
 
 
-def read_json(path):
+def read_json(path) -> OrderedDict:
     try:
         with open(path, "r") as f:
             return json.loads(f.read(), object_pairs_hook=OrderedDict)
@@ -292,7 +291,6 @@ def immediate_files(path):
 
 
 def path_append(dir, subdir):
-    dir = os.path.abspath(os.path.expanduser(dir))
     return dir if not subdir else os.path.join(dir, subdir)
 
 
@@ -308,7 +306,10 @@ def are_paths_equal(path_a, path_b) -> bool:
 
 
 def cfengine_dir(subdir=None):
-    return path_append("~/.cfengine/", subdir)
+    CFENGINE_DIR = "~/.cfengine/"
+    cfengine_dir_abspath = os.path.abspath(os.path.expanduser(CFENGINE_DIR))
+
+    return path_append(cfengine_dir_abspath, subdir)
 
 
 def cfbs_dir(append=None) -> str:
