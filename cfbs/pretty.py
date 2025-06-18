@@ -201,10 +201,13 @@ def pretty_check_string(s, sorting_rules=None):
 
 def pretty_file(filename, sorting_rules=None):
     with open(filename) as f:
-        data = pretty_string(f.read(), sorting_rules)
-    with open(filename, "w") as f:
-        f.write(data)
-        f.write("\n")
+        old_data = f.read()
+    new_data = pretty_string(old_data, sorting_rules) + "\n"
+    if old_data != new_data:
+        with open(filename, "w") as f:
+            f.write(new_data)
+        return True
+    return False
 
 
 def pretty_string(s, sorting_rules=None):
