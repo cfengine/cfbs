@@ -1,6 +1,6 @@
 from collections import OrderedDict
-from cfbs.pretty import pretty, pretty_check_string, pretty_string
-from cfbs.utils import item_index
+from cfbs.pretty import pretty, pretty_check_string, pretty_string, pretty_file
+from cfbs.utils import item_index, mkdir, read_file
 
 
 def test_pretty():
@@ -203,6 +203,15 @@ def test_pretty_string():
   }
 ]"""
     assert pretty_string(test) == expected
+
+
+def test_pretty_file():
+    mkdir("tests/tmp/", exist_ok=True)
+    with open("tests/tmp/test_pretty_file.json", "w") as f:
+        f.write(" {} \n")
+    assert pretty_file("tests/tmp/test_pretty_file.json") == True
+    assert read_file("tests/tmp/test_pretty_file.json") == "{}\n"
+    assert pretty_file("tests/tmp/test_pretty_file.json") == False
 
 
 def test_pretty_check_string():
