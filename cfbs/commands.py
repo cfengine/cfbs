@@ -959,9 +959,12 @@ def build_command(ignore_versions=False) -> int:
             + "\nPlease see the error messages above and apply fixes accordingly."
             + "\nIf not fixed, these errors will cause your project to not build in future cfbs versions."
         )
+        # We want the cfbs build command to be as backwards compatible as possible,
+        # so we try building anyway and don't return error(s)
     init_out_folder()
     _download_dependencies(config, prefer_offline=True, ignore_versions=ignore_versions)
-    perform_build_steps(config)
+    r = perform_build_steps(config)
+    return r
 
 
 @cfbs_command("install")
