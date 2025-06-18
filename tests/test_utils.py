@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from cfbs.utils import (
+    are_paths_equal,
     canonify,
     deduplicate_def_json,
     deduplicate_list,
@@ -14,8 +15,11 @@ from cfbs.utils import (
     pad_left,
     pad_right,
     path_append,
+    read_file,
     read_json,
     string_sha256,
+    strip_left,
+    strip_right,
 )
 
 
@@ -31,6 +35,29 @@ def test_pad_right():
     n = 20
 
     assert pad_right(s, n) == "module_name         "
+
+
+def test_strip_right():
+    s = "abab"
+
+    assert strip_right(s, "ab") == "ab"
+    assert strip_right(s, "a") == "abab"
+
+
+def test_strip_left():
+    s = "abab"
+
+    assert strip_left(s, "ab") == "ab"
+    assert strip_left(s, "b") == "abab"
+
+
+def test_read_file():
+    file_path = "tests/sample/sample_dir/sample_file_1.txt"
+    expected_str = "sample_string\n123"
+    nonpath = "tests/sample/sample_dir/sample_file_doesnt_exist.txt"
+
+    assert read_file(file_path) == expected_str
+    assert read_file(nonpath) is None
 
 
 def test_read_json():
@@ -218,6 +245,13 @@ def test_path_append():
 
     assert path_append(path, "abc") == path + "/abc"
     assert path_append(path, None) == path
+
+
+def test_are_paths_equal():
+    path_a = "abc"
+    path_b = "abc/..//abc/"
+
+    assert are_paths_equal(path_a, path_b)
 
 
 def test_string_sha256():
