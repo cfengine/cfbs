@@ -223,7 +223,7 @@ These are copies of the module directories, where it's more "safe" to do things 
 ## All available build steps
 
 The build steps below manipulate the temporary files in the steps directories and write results to the output policy set, in `out/masterfiles`.
-Unless otherwise noted, all steps are run inside the module's folder (`out/steps/...`) with sources / file paths relative to that folder, and targets / destinations mentioned below are relative to the output policy set (`out/masterfiles`, which in the end will be deployed as `/var/cfengine/masterfiles`).
+Unless otherwise noted, all steps are run inside the module's folder (`out/steps/...`) with sources / file paths relative to that folder, and targets / destinations mentioned below are relative to the output policy set (`out/masterfiles`, which in the end will be deployed as `/var/cfengine/masterfiles`). In `cfbs.json`'s `"steps"`, the build step name must be separated from the rest of the build step by a regular space.
 
 - `copy <source> <destination>`
   - Copy a single file or a directory recursively.
