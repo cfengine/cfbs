@@ -562,7 +562,7 @@ def _clean_unused_modules(config=None):
     return 0
 
 
-def update_input_data(module, input_data):
+def update_input_data(module, input_data) -> bool:
     """
     Update input data from module definition
 
@@ -666,7 +666,7 @@ def update_input_data(module, input_data):
 
 @cfbs_command("update")
 @commit_after_command("Updated module%s", [PLURAL_S])
-def update_command(to_update):
+def update_command(to_update) -> Result:
     config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
     build = config["build"]
@@ -1074,7 +1074,7 @@ def analyze_command(
     user_ignored_path_components=None,
     offline=False,
     verbose=False,
-):
+) -> int:
     if len(policyset_paths) == 0:
         # no policyset path is a shorthand for using the current directory as the policyset path
         log.info(
@@ -1138,7 +1138,7 @@ def analyze_command(
 
 @cfbs_command("input")
 @commit_after_command("Added input for module%s", [PLURAL_S])
-def input_command(args, input_from="cfbs input"):
+def input_command(args, input_from="cfbs input") -> Result:
     config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
     do_commit = False
@@ -1256,7 +1256,7 @@ def set_input_command(name, infile):
 
 
 @cfbs_command("get-input")
-def get_input_command(name, outfile):
+def get_input_command(name, outfile) -> int:
     config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
     module = config.get_module_from_build(name)
