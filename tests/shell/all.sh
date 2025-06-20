@@ -42,5 +42,7 @@ bash tests/shell/035_cfbs_build_compatibility_1.sh
 bash tests/shell/036_cfbs_build_compatibility_2.sh
 bash tests/shell/037_cfbs_validate.sh
 bash tests/shell/038_global_dir.sh
+bash tests/shell/039_add_added_by_field_update_1.sh
+bash tests/shell/040_add_added_by_field_update_2.sh
 
 echo "All cfbs shell tests completed successfully!"
