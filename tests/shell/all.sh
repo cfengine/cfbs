@@ -44,5 +44,6 @@ bash tests/shell/037_cfbs_validate.sh
 bash tests/shell/038_global_dir.sh
 bash tests/shell/039_add_added_by_field_update_1.sh
 bash tests/shell/040_add_added_by_field_update_2.sh
+bash tests/shell/041_add_multidep.sh
 
 echo "All cfbs shell tests completed successfully!"
