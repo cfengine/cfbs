@@ -1,13 +1,15 @@
 import argparse
-import json
 import sys
 import re
 from collections import OrderedDict
 
-from cfbs.utils import is_valid_arg_count, is_a_commit_hash, split_command, user_error
+from cfbs.utils import (
+    is_a_commit_hash,
+    user_error,
+)
 from cfbs.pretty import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig
-from cfbs.build import AVAILABLE_BUILD_STEPS
+from cfbs.build import AVAILABLE_BUILD_STEPS, step_has_valid_arg_count, split_build_step
 
 
 class CFBSValidationError(Exception):
@@ -266,7 +268,7 @@ def _validate_module_object(context, name, module, config):
                 raise CFBSValidationError(
                     name, '"steps" must be a list of non-empty / non-whitespace strings'
                 )
-            operation, args = split_command(step)
+            operation, args = split_build_step(step)
             if not operation in AVAILABLE_BUILD_STEPS:
                 x = ", ".join(AVAILABLE_BUILD_STEPS)
                 raise CFBSValidationError(
@@ -276,7 +278,7 @@ def _validate_module_object(context, name, module, config):
                 )
             expected = AVAILABLE_BUILD_STEPS[operation]
             actual = len(args)
-            if not is_valid_arg_count(args, expected):
+            if not step_has_valid_arg_count(args, expected):
                 if type(expected) is int:
                     raise CFBSValidationError(
                         name,

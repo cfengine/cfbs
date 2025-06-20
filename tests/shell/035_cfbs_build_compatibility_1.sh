@@ -6,7 +6,7 @@ cd ./tmp/
 rm -rf ./*
 
 # The purpose of this test is to ensure that older CFEngine Build projects
-# still buid in newer versions of cfbs
+# still build in newer versions of cfbs
 
 # The below cfbs.json file was generated using cfbs 3.2.7
 # which is the cfbs version shipped with CFEngine Enterprise 3.21.0
