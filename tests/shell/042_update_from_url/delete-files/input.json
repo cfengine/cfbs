@@ -1,0 +1,19 @@
+[
+  {
+    "type": "list",
+    "variable": "files",
+    "namespace": "delete_files",
+    "bundle": "delete_files",
+    "label": "Files",
+    "subtype": [
+      {
+        "key": "path",
+        "type": "string",
+        "label": "Path",
+        "question": "Path to file"
+      }
+    ],
+    "while": "test?",
+    "response": ["/tmp/file"]
+  }
+]
