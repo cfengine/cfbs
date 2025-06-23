@@ -10,13 +10,13 @@ This file is specifically about the `cfbs.json` file format, it should serve as 
 The type of a project is specified in a top-level `type` key in `cfbs.json`.
 There are 3 types of projects:
 
-* `policy-set`: For projects which build a policy set (which will be deployed to a hub).
+- `policy-set`: For projects which build a policy set (which will be deployed to a hub).
   This is the default when running `cfbs init`, and what most users encounter when first using the tool and CFEngine.
   You then need to use the `build` key to specify which modules to use in `cfbs build`.
-* `index`: For defining an index of all available modules for `cfbs add <module-name>`.
+- `index`: For defining an index of all available modules for `cfbs add <module-name>`.
   The available modules must be in a dictionary in the `index` field.
   By default, [this index available in GitHub](https://github.com/cfengine/build-index/blob/master/cfbs.json) is used.
-* `module`: For developing your own reusable modules to use in other projects.
+- `module`: For developing your own reusable modules to use in other projects.
 
 When `cfbs` is using the default index and when we build the [build.cfengine.com](https://build.cfengine.com) website, we use a separate [`versions.json`](https://github.com/cfengine/build-index/blob/master/versions.json) file to keep track of all the versions of modules, their tarballs and checksums.
 When contributors edit the index ([like this](https://github.com/cfengine/build-index/pull/465/files)), an automated PR is generated to make the appropriate edit to `versions.json` ([like this](https://github.com/cfengine/build-index/pull/466/files)), (after downloading and uploading the module), so users don't have to update `versions.json` manually.
@@ -118,6 +118,7 @@ bundles my_bundle
 ```
 
 The 3 build steps above achieve 3 distinct things:
+
 1. The policy file `policy.cf` is included in the policy set (`out/masterfiles`).
    It will be deployed to `/var/cfengine/masterfiles/services/cfbs/policy.cf` on the hub.
 2. The path to `policy.cf` is added to `"inputs"` making cf-agent and other binaries aware of it and parse it.
@@ -138,26 +139,26 @@ Please use `cfbs validate` while editing `cfbs.json` files manually - we won't a
 
 At the top level of a `cfbs.json` file, these fields are available:
 
-* `name` (string): The human readable name of the project.
+- `name` (string): The human readable name of the project.
   An example could be: `Northern.tech production policy`
-* `description` (string): Human readable description of what this project is for.
+- `description` (string): Human readable description of what this project is for.
   For example: `This project builds the policy set we deploy to all production hosts.`
-* `type` (string): What kind of project this is.
+- `type` (string): What kind of project this is.
   One of:
-  * `policy-set` (default): For projects which build a policy set (to deploy on a hub).
-  * `module`: For developing a new module (or multiple) to publish on [build.cfengine.com](https://build.cfengine.com), or to use in your other projects.
-  * `index`: For setting up an alternate list of modules (instead of relying on [the default one on GitHub](https://github.com/cfengine/build-index/blob/master/cfbs.json)).
-* `index` (string or dictionary): URL, relative path, or inline dictionary.
+  - `policy-set` (default): For projects which build a policy set (to deploy on a hub).
+  - `module`: For developing a new module (or multiple) to publish on [build.cfengine.com](https://build.cfengine.com), or to use in your other projects.
+  - `index`: For setting up an alternate list of modules (instead of relying on [the default one on GitHub](https://github.com/cfengine/build-index/blob/master/cfbs.json)).
+- `index` (string or dictionary): URL, relative path, or inline dictionary.
   Used by `cfbs add` and `cfbs search`, to know where to look for modules.
   Required and must be dictionary if the `type` is `index`, optional otherwise.
   When it's a dictionary, the keys must be the unique module name which will be converted to the module's `name` field when added to the `build` array.
-* `git` (true or false): Whether `cfbs` should make git commits after editing `./cfbs.json` and related files.
+- `git` (true or false): Whether `cfbs` should make git commits after editing `./cfbs.json` and related files.
   Optional, defaults to false.
-* `provides` (dictionary of modules): Which modules this repo provides when someone tries to add it by URL (`cfbs add https://github.com/some/repo`).
+- `provides` (dictionary of modules): Which modules this repo provides when someone tries to add it by URL (`cfbs add https://github.com/some/repo`).
   Required for `cfbs add <URL>` to work, optional otherwise.
   Most commonly used for projects with type `module`.
   The keys must be the unique module name which will be converted to the module's `name` field when added to the `build` array.
-* `build` (list of modules): The modules to combine into a policy set when running `cfbs build`.
+- `build` (list of modules): The modules to combine into a policy set when running `cfbs build`.
   Required and must be non-empty for `policy-set` type and also for `cfbs build` command to work, optional otherwise.
   (Even if you are developing a `module`, it is useful to be able to put modules in `build`, to build and deploy a policy set to test).
 
@@ -165,46 +166,46 @@ At the top level of a `cfbs.json` file, these fields are available:
 
 The modules inside `build`, `provides`, and `index` use these fields:
 
-* `alias` (string): Used to rename a module in an index, or to provide a short name alternative.
+- `alias` (string): Used to rename a module in an index, or to provide a short name alternative.
   Gets translated to the value (real module name) by `cfbs add`.
   Only valid inside `index`.
   Optional, must be the only field if used.
-* `name` (string): The unique name of the module (unique within project and within index).
+- `name` (string): The unique name of the module (unique within project and within index).
   For `provides` and `index` dictionaries, this name must be the key of each entry (not a field inside).
   For the `build` array, it must be inside each module object (with `name` as the key).
   Local modules (files and folders in same directory as `cfbs.json`), must start with `./`, and end with `/` if it's a directory.
-* `description` (string): Human readable description of what this module does.
-* `tags` (array of strings): Mostly used for information / finding modules on [build.cfengine.com](https://build.cfengine.com).
+- `description` (string): Human readable description of what this module does.
+- `tags` (array of strings): Mostly used for information / finding modules on [build.cfengine.com](https://build.cfengine.com).
   Some common examples include `supported`, `experimental`, `security`, `library`, `promise-type`.
   Try to look at what tags are in use already and fit your module, instead of inventing new ones.
-* `repo` (string): Git repository URL where the module comes from.
+- `repo` (string): Git repository URL where the module comes from.
   Note that by default, `cfbs` downloads tarballs from `build.cfengine.com`, not directly from other git repos.
   When your module is added to the index, we snapshot (download) your module and create this tarball.
   Required for modules in an index, or modules added from an index, not accepted otherwise.
-* `url` (string): This field is added automatically when using `cfbs add <URL>` to directly add a module (not via index).
+- `url` (string): This field is added automatically when using `cfbs add <URL>` to directly add a module (not via index).
   It is required for non-local, non-index modules, and not accepted otherwise.
-* `by` (string): Author information for display on [build.cfengine.com](https://build.cfengine.com), URL to GitHub profile.
-* `version` (string): Version number of module used in `cfbs add`, `cfbs update`, as well as for display on the [build.cfengine.com](https://build.cfengine.com) website.
+- `by` (string): Author information for display on [build.cfengine.com](https://build.cfengine.com), URL to GitHub profile.
+- `version` (string): Version number of module used in `cfbs add`, `cfbs update`, as well as for display on the [build.cfengine.com](https://build.cfengine.com) website.
   Used in `index` and modules added from an index.
   Must be updated together with `commit`.
-* `commit` (string): Commit hash used when we download and snapshot the version of a module.
+- `commit` (string): Commit hash used when we download and snapshot the version of a module.
   Used in `index` and modules added from an index.
   Must be updated together with `version`.
-* `subdirectory` (string): Used if the module is inside a subdirectory of a repo.
+- `subdirectory` (string): Used if the module is inside a subdirectory of a repo.
   See for example [the `cfbs.json` of our modules repo](https://github.com/cfengine/modules/blob/master/cfbs.json).
   Not used for local modules (policy files or folders) - the name is the path to the module in this case.
   Optional.
-* `dependencies` (array of strings): List of modules (by name) required to make this module work correctly.
+- `dependencies` (array of strings): List of modules (by name) required to make this module work correctly.
   Dependencies are added automatically by `cfbs add` when attempting to add a module with dependencies.
   For modules in `index`, must refer to other modules in `index`.
   For modules in `provides`, must refer to other modules in `provides` or `index` (default one if not specified).
   For modules in `build`, must refer to other modules in `build`.
-* `added_by` (string): Information about how the module was added to `build`.
+- `added_by` (string): Information about how the module was added to `build`.
   Name of the module which added it as a dependency, or `"cfbs add"` if the user added the module itself.
   Optional in `build` modules, not accepted in `provides` or `index`.
-* `steps` (array of strings): The operations performed (in order) to build the module.
+- `steps` (array of strings): The operations performed (in order) to build the module.
   See the section below on build steps.
-* `input` (array of objects): Used for modules which accept input, allowing users of the module to change it's behavior by entering values in the interactive CLI, via a JSON file, via MP API or GUI.
+- `input` (array of objects): Used for modules which accept input, allowing users of the module to change it's behavior by entering values in the interactive CLI, via a JSON file, via MP API or GUI.
   See the section below on [modules with input](#modules-with-input) for keys inside `input`, explanations of how this works and examples.
   Optional.
 
@@ -224,44 +225,44 @@ These are copies of the module directories, where it's more "safe" to do things 
 The build steps below manipulate the temporary files in the steps directories and write results to the output policy set, in `out/masterfiles`.
 Unless otherwise noted, all steps are run inside the module's folder (`out/steps/...`) with sources / file paths relative to that folder, and targets / destinations mentioned below are relative to the output policy set (`out/masterfiles`, which in the end will be deployed as `/var/cfengine/masterfiles`).
 
-* `copy <source> <destination>`
-  * Copy a single file or a directory recursively.
-* `json <source> <destination>`
-  * Merge the source json file into the destination json file.
-* `append <source> <destination>`
-  * Append the source file to the end of destination file.
-* `run <command ...>`
-  * Run a shell command / script.
-  * Usually used to prepare the module directory, delete files, etc. before a copy step.
-  * Running scripts should be avoided if possible.
-  * Script is run inside the module directory (the step folder).
-  * Additional space separated arguments are passed as arguments.
-* `delete <paths ...>`
-  * Delete multiple files or paths recursively.
-  * Files are deleted from the step folder.
-  * Typically used before copying files to the output policy set with the `copy` step.
-* `directory <source> <destination>`
-  * Copy any .cf policy files recursively and add their paths to `def.json`'s `inputs`.
-  * Enable `services_autorun_bundles` class in `def.json`.
-  * Merge any `def.json` recursively into `out/masterfiles/def.json`.
-  * Copy any other files with their existing directory structure to destination.
-* `bundles <bundles ...>`
-  * Ensure bundles are evaluated by adding them to the bundle sequence, using `def.json`.
-    * Note that this relies on using the default policy set from the CFEngine team, the Masterfiles Policy Framework, commonly added as the first module (`masterfiles`).
-    Specifically, this build step adds the bundles to the variable `default:def.control_common_bundlesequence_end`, which the MPF looks for.
-  * Only manipulates the bundle sequence, to ensure policy files are copied and parsed, use other build steps, for example `copy` and `policy_files`.
-* `policy_files <paths ...>`
-  * Add policy (`.cf`) files to `inputs` key in `def.json`, ensuring they are parsed.
-    * Note that this relies on using the default policy set from the CFEngine team, the Masterfiles Policy Framework, commonly added as the first module (`masterfiles`).
-    * Only edits `def.json`, does not copy files. Should be used after a `copy` or `directory` build step.
-    * Does not add any bundles to the bundle sequence, to ensure a bundle is evaluated, use the `bundles` build step or the autorun mechanism.
-  * All paths are relative to `out/masterfiles`.
-  * If any of the paths are directories (end with `/`), the folder(s) are recursively searched and all `.cf` files are added.
-    * **Note:** Directories should be module-specific, otherwise this build step can find policy files from other modules (when they are mixed in the same directory).
-* `input <source input.json> <target def.json>`
-  * Converts the input data for a module into the augments format and merges it with the target augments file.
-  * Source is relative to module directory and target is relative to `out/masterfiles`.
-    * In most cases, the build step should be: `input ./input.json def.json`
+- `copy <source> <destination>`
+  - Copy a single file or a directory recursively.
+- `json <source> <destination>`
+  - Merge the source json file into the destination json file.
+- `append <source> <destination>`
+  - Append the source file to the end of destination file.
+- `run <command ...>`
+  - Run a shell command / script.
+  - Usually used to prepare the module directory, delete files, etc. before a copy step.
+  - Running scripts should be avoided if possible.
+  - Script is run inside the module directory (the step folder).
+  - Additional space separated arguments are passed as arguments.
+- `delete <paths ...>`
+  - Delete multiple files or paths recursively.
+  - Files are deleted from the step folder.
+  - Typically used before copying files to the output policy set with the `copy` step.
+- `directory <source> <destination>`
+  - Copy any .cf policy files recursively and add their paths to `def.json`'s `inputs`.
+  - Enable `services_autorun_bundles` class in `def.json`.
+  - Merge any `def.json` recursively into `out/masterfiles/def.json`.
+  - Copy any other files with their existing directory structure to destination.
+- `bundles <bundles ...>`
+  - Ensure bundles are evaluated by adding them to the bundle sequence, using `def.json`.
+    - Note that this relies on using the default policy set from the CFEngine team, the Masterfiles Policy Framework, commonly added as the first module (`masterfiles`).
+      Specifically, this build step adds the bundles to the variable `default:def.control_common_bundlesequence_end`, which the MPF looks for.
+  - Only manipulates the bundle sequence, to ensure policy files are copied and parsed, use other build steps, for example `copy` and `policy_files`.
+- `policy_files <paths ...>`
+  - Add policy (`.cf`) files to `inputs` key in `def.json`, ensuring they are parsed.
+    - Note that this relies on using the default policy set from the CFEngine team, the Masterfiles Policy Framework, commonly added as the first module (`masterfiles`).
+    - Only edits `def.json`, does not copy files. Should be used after a `copy` or `directory` build step.
+    - Does not add any bundles to the bundle sequence, to ensure a bundle is evaluated, use the `bundles` build step or the autorun mechanism.
+  - All paths are relative to `out/masterfiles`.
+  - If any of the paths are directories (end with `/`), the folder(s) are recursively searched and all `.cf` files are added.
+    - **Note:** Directories should be module-specific, otherwise this build step can find policy files from other modules (when they are mixed in the same directory).
+- `input <source input.json> <target def.json>`
+  - Converts the input data for a module into the augments format and merges it with the target augments file.
+  - Source is relative to module directory and target is relative to `out/masterfiles`.
+    - In most cases, the build step should be: `input ./input.json def.json`
 
 When `def.json` is modified during a `json`, `input`, `directory`, `bundles`, or `policy_files` build step, the values of some lists of strings are deduplicated, when this does not make any difference in behavior.
 These cases are:
@@ -284,10 +285,10 @@ https://northerntech.atlassian.net/browse/CFE-4102
 Conversely, for other commands, we might choose to make changes where we think it's a good idea (for example for the user experience, performance or security of the tool).
 Some examples of where you might experience changes are:
 
-* The commands which edit `cfbs.json`, or other files, might produce different JSON files in future versions.
+- The commands which edit `cfbs.json`, or other files, might produce different JSON files in future versions.
   (`cfbs init`, `cfbs add`, etc.).
-* We might add more strict validation, so `cfbs validate` and `cfbs status` could start giving warnings or errors after upgrading to a new version.
-* The interactive prompts might be drastically changed to help the user experience and give more advanced options.
+- We might add more strict validation, so `cfbs validate` and `cfbs status` could start giving warnings or errors after upgrading to a new version.
+- The interactive prompts might be drastically changed to help the user experience and give more advanced options.
   Don't rely on the exact prompts, order of prompts, or output of `cfbs init`, `cfbs add`, etc.
 
 ## Examples
@@ -447,7 +448,6 @@ cfbs init && cfbs add https://github.com/cfengine/some-repo
 }
 ```
 
-
 ## Modules with input
 
 Some modules allow for users to add module input by responding to questions
@@ -541,8 +541,8 @@ $ cat ./out/masterfiles/def.json
 From the example above we can see our beloved `filename`-variable along with a
 class generated by the autorun dependency. Studying our variable closer, we can
 see that a namespace, bundle, and a comment, were automatically assigned some
-default values.  I.e. `cfbs`, the module name canonified, and `Added by 'cfbs
-input'` respectivy.  These defaults can easily be overridden using the
+default values. I.e. `cfbs`, the module name canonified, and `Added by 'cfbs
+input'` respectivy. These defaults can easily be overridden using the
 `namespace`, `bundle`, and `comment` attributes in the variable definition. E.g.
 the following variable definition;
 
@@ -702,7 +702,7 @@ What file should this module create? /tmp/create-multiple-files-2.txt
 Do you want to create another file? no
 ```
 
-The *_./create-multiple-files/input.json_* file would look similar to the
+The _*./create-multiple-files/input.json*_ file would look similar to the
 following JSON:
 
 ```json
@@ -714,7 +714,7 @@ following JSON:
     "subtype": {
       "type": "string",
       "label": "Filename",
-      "question": "What file should this module create?",
+      "question": "What file should this module create?"
     },
     "while": "Do you want to create another file?",
     "response": [
