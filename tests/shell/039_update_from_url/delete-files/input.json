@@ -1,0 +1,25 @@
+[
+    {
+        "type": "list",
+        "variable": "files",
+        "namespace": "delete_files",
+        "bundle": "delete_files",
+        "label": "Files",
+        "subtype": [
+        {
+            "key": "path",
+            "type": "string",
+            "label": "Path",
+            "question": "Path to file"
+        },
+        {
+            "key": "why",
+            "type": "string",
+            "label": "Why",
+            "question": "Why should this file be deleted?",
+            "default": "Unknown"
+        }
+        ],
+        "while": "test?"
+    }
+]
