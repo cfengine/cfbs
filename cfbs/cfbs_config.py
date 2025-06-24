@@ -104,7 +104,8 @@ class CFBSConfig(CFBSJson):
         name = module["name"]
         assert "steps" in module
         if self._module_is_in_build(module):
-            print("Skipping already added module '%s'" % name)
+            if is_module_added_manually(str_added_by):
+                print("Skipping already added module '%s'" % name)
             return
         if "dependencies" in module:
             for dep in module["dependencies"]:
