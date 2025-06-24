@@ -1,4 +1,8 @@
 from collections import OrderedDict
+import os
+
+import pytest
+
 from cfbs.utils import (
     are_paths_equal,
     canonify,
@@ -70,6 +74,10 @@ def test_read_json():
 
     assert read_json("tests/thisfiledoesntexist.json") is None
     assert read_json("tests/thisdirdoesntexist/file.json") is None
+
+    with pytest.raises(SystemExit) as exc_info:
+        read_json("tests/sample/sample_bad_syntax.json")
+    assert exc_info.value.code == 1
 
 
 def test_merge_json():
@@ -210,6 +218,14 @@ def test_deduplicate_list():
 
     assert deduplicate_list(l) == [1, 2, 3, 4]
 
+    assert deduplicate_list([1, 1, 2, 3]) == [1, 2, 3]
+    assert deduplicate_list([1, 2, 3, 3]) == [1, 2, 3]
+    assert deduplicate_list([1, 2, 3]) == [1, 2, 3]
+
+    assert deduplicate_list([]) == []
+    assert deduplicate_list([1]) == [1]
+    assert deduplicate_list([1, 1, 1, 1, 1, 1, 1]) == [1]
+
 
 def test_dict_sorted_by_key():
     d = {"b": 1, "c": 3, "a": 2}
@@ -217,6 +233,9 @@ def test_dict_sorted_by_key():
     expected_dict = OrderedDict([("a", 2), ("b", 1), ("c", 3)])
 
     assert dict_sorted_by_key(d) == expected_dict
+
+    assert dict_sorted_by_key({}) == OrderedDict([])
+    assert dict_sorted_by_key({"a": 1}) == OrderedDict([("a", 1)])
 
 
 def test_dict_diff():
@@ -252,6 +271,11 @@ def test_are_paths_equal():
     path_b = "abc/..//abc/"
 
     assert are_paths_equal(path_a, path_b)
+
+    assert are_paths_equal(".", os.getcwd())
+
+    assert are_paths_equal("a", "b") == False
+    assert are_paths_equal("a", "") == False
 
 
 def test_string_sha256():
