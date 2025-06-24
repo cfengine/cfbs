@@ -28,6 +28,7 @@ from cfbs.utils import (
 
 _SUPPORTED_TAR_TYPES = (".tar.gz", ".tgz")
 SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
+SUPPORTED_URI_SCHEMES = ("https://", "ssh://", "git://")
 
 
 def local_module_name(module_path):
@@ -113,7 +114,7 @@ def local_module_copy(module, counter, max_length):
 
 
 def _get_path_from_url(url):
-    if not url.startswith(("https://", "ssh://", "git://")):
+    if not url.startswith(SUPPORTED_URI_SCHEMES):
         if "://" in url:
             return user_error("Unsupported URL protocol in '%s'" % url)
         else:
@@ -153,7 +154,7 @@ def _clone_and_checkout(url, path, commit):
 
 
 def clone_url_repo(repo_url):
-    assert repo_url.startswith(("https://", "ssh://", "git://"))
+    assert repo_url.startswith(SUPPORTED_URI_SCHEMES)
 
     commit = None
     if "@" in repo_url and (repo_url.rindex("@") > repo_url.rindex(".")):

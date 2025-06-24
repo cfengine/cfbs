@@ -44,6 +44,7 @@ from cfbs.build import (
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import validate_config
 from cfbs.internal_file_management import (
+    SUPPORTED_URI_SCHEMES,
     fetch_archive,
     get_download_path,
     local_module_copy,
@@ -455,7 +456,7 @@ def remove_command(to_remove: list):
     msg = ""
     files = []
     for name in to_remove:
-        if name.startswith(("https://", "ssh://", "git://")):
+        if name.startswith(SUPPORTED_URI_SCHEMES):
             matches = _get_modules_by_url(name)
             if not matches:
                 user_error("Could not find module with URL '%s'" % name)
