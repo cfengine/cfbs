@@ -230,31 +230,18 @@ def test_immediate_subdirectories():
     path = "tests/sample/sample_dir"
     expected = ["sample_subdir_A", "sample_subdir_B"]
 
-    actual = immediate_subdirectories(path)
-    # `immediate_subdirectories` currently returns the entries in arbitrary order
-    actual = sorted(actual)
-
-    assert actual == expected
+    assert immediate_subdirectories(path) == expected
 
 
 def test_immediate_files():
     path = "tests/sample/sample_dir"
     expected = ["sample_file_1.txt", "sample_file_2.txt"]
 
-    actual = immediate_files(path)
-    # `immediate_files` currently returns the entries in arbitrary order
-    actual = sorted(actual)
-
-    assert actual == expected
+    assert immediate_files(path) == expected
 
 
 def test_path_append():
     path = "tests/sample/sample_dir"
-
-    # `path_append` is currently coupled with the below code
-    import os
-
-    path = os.path.abspath(os.path.expanduser(path))
 
     assert path_append(path, "abc") == path + "/abc"
     assert path_append(path, None) == path

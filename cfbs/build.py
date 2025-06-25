@@ -1,18 +1,17 @@
 import os
 import logging as log
+from typing import List, Tuple
 from cfbs.utils import (
     canonify,
     cp,
     deduplicate_def_json,
     find,
-    is_valid_arg_count,
     merge_json,
     mkdir,
     pad_right,
     read_json,
     rm,
     sh,
-    split_command,
     strip_left,
     touch,
     user_error,
@@ -73,8 +72,31 @@ def _generate_augment(module_name, input_data):
     return augment
 
 
+def split_build_step(command) -> Tuple[str, List[str]]:
+    terms = command.split(" ")
+    operation, args = terms[0], terms[1:]
+    return operation, args
+
+
+def step_has_valid_arg_count(args, expected):
+    actual = len(args)
+
+    if type(expected) is int:
+        if actual != expected:
+            return False
+
+    else:
+        # Only other option is a string of 1+, 2+ or similar:
+        assert type(expected) is str and expected.endswith("+")
+        expected = int(expected[0:-1])
+        if actual < expected:
+            return False
+
+    return True
+
+
 def _perform_build_step(module, step, max_length):
-    operation, args = split_command(step)
+    operation, args = split_build_step(step)
     source = module["_directory"]
     counter = module["_counter"]
     destination = "out/masterfiles"
@@ -245,7 +267,7 @@ def perform_build_steps(config) -> int:
     # mini-validation
     for module in config.get("build", []):
         for step in module["steps"]:
-            operation, args = split_command(step)
+            operation, args = split_build_step(step)
 
             if step.split() != [operation] + args:
                 user_error(
@@ -258,7 +280,7 @@ def perform_build_steps(config) -> int:
 
             expected = AVAILABLE_BUILD_STEPS[operation]
             actual = len(args)
-            if not is_valid_arg_count(args, expected):
+            if not step_has_valid_arg_count(args, expected):
                 if type(expected) is int:
                     user_error(
                         "The `%s` build step expects %d arguments, %d were given"
