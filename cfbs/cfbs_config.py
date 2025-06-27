@@ -13,6 +13,7 @@ from cfbs.utils import (
     load_bundlenames,
 )
 from cfbs.internal_file_management import (
+    SUPPORTED_URI_SCHEMES,
     clone_url_repo,
     fetch_archive,
     SUPPORTED_ARCHIVES,
@@ -132,7 +133,7 @@ class CFBSConfig(CFBSJson):
         if url.endswith(SUPPORTED_ARCHIVES):
             config_path, url_commit = fetch_archive(url, checksum)
         else:
-            assert url.startswith(("https://", "git://", "ssh://"))
+            assert url.startswith(SUPPORTED_URI_SCHEMES)
             config_path, url_commit = clone_url_repo(url)
 
         if "@" in url and (url.rindex("@") > url.rindex(".")):
@@ -385,9 +386,7 @@ class CFBSConfig(CFBSJson):
 
         before = {m["name"] for m in self.get("build", [])}
 
-        if to_add[0].endswith(SUPPORTED_ARCHIVES) or to_add[0].startswith(
-            ("https://", "git://", "ssh://")
-        ):
+        if to_add[0].startswith(SUPPORTED_URI_SCHEMES):
             self._add_using_url(
                 url=to_add[0],
                 to_add=to_add[1:],
@@ -395,6 +394,12 @@ class CFBSConfig(CFBSJson):
                 checksum=checksum,
             )
         else:
+            # for this `if` to be valid, module names containing `://` should be illegal
+            if "://" in to_add[0]:
+                user_error(
+                    "URI scheme not supported. The supported URI schemes are: "
+                    + ", ".join(SUPPORTED_URI_SCHEMES)
+                )
             self._add_modules(to_add, added_by, checksum)
 
         added = {m["name"] for m in self["build"]}.difference(before)
