@@ -1,5 +1,5 @@
 import copy
-from cfbs.commands import update_input_data, InputDataUpdateFailed
+from cfbs.updates import update_input_data, InputDataUpdateFailed
 
 module = {
     "name": "superhero-module",
