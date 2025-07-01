@@ -1,4 +1,4 @@
-.TH CFBS "1" "2025\-04\-03" "cfbs" "CFEngine Build System manual"
+.TH CFBS "1" "2025\-07\-01" "cfbs" "CFEngine Build System manual"
 .SH NAME
 cfbs \- combines multiple modules into 1 policy set to deploy on your infrastructure. Modules can be custom promise types, JSON files which enable certain functionality, or reusable CFEngine policy. The modules you use can be written by the CFEngine team, others in the community, your colleagues, or yourself.
 .SH SYNOPSIS
@@ -9,8 +9,8 @@ CFEngine Build System.
 
 .TP
 \fBcmd\fR
-The command to perform (pretty, init, status, search, add, remove, clean, update, validate, download, build, install, help, info, show,
-analyse, analyze, input, set\-input, get\-input, generate\-release\-information)
+The command to perform (pretty, init, status, search, add, remove, clean, update, validate, download, build, install, help,
+info, show, analyse, analyze, input, set\-input, get\-input, generate\-release\-information)
 
 .TP
 \fBargs\fR
@@ -99,7 +99,8 @@ If the path given to 'cfbs analyze' contains a masterfiles subdirectory, specify
 
 .TP
 \fB\-\-ignored\-path\-components\fR \fI\,[IGNORED_PATH_COMPONENTS ...]\/\fR
-Specify path components which should be ignored during 'cfbs analyze' (the components should be passed separately, delimited by spaces)
+Specify path components which should be ignored during 'cfbs analyze' (the components should be passed separately, delimited by
+spaces)
 
 .TP
 \fB\-\-offline\fR
@@ -107,7 +108,8 @@ Do not connect to the Internet to download the latest version of MPF release inf
 
 .TP
 \fB\-\-masterfiles\fR \fI\,MASTERFILES\/\fR
-Add masterfiles on cfbs init choose between
+Specify masterfiles version to add during "cfbs init". This can be a branch, a full version number, or `no` to not add
+masterfiles at all.
 
 .br
 Binary packages may be downloaded from https://cfengine.com/download/.
