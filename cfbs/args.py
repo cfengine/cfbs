@@ -141,6 +141,7 @@ def get_arg_parser():
         action="store_true",
     )
     parser.add_argument(
-        "--masterfiles", help="Add masterfiles on cfbs init choose between"
+        "--masterfiles",
+        help='Specify masterfiles version to add during "cfbs init". This can be a branch, a full version number, or `no` to not add masterfiles at all.',
     )
     return parser
