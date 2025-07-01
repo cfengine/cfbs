@@ -13,6 +13,8 @@ from collections import OrderedDict
 from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
 
+from cfbs.cfbs_json import CFBSJson
+from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     FetchError,
     cfbs_dir,
@@ -44,6 +46,7 @@ from cfbs.build import (
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import validate_config
 from cfbs.internal_file_management import (
+    clone_url_repo,
     SUPPORTED_URI_SCHEMES,
     fetch_archive,
     get_download_path,
@@ -64,12 +67,6 @@ from cfbs.git_magic import Result, commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 from cfbs.module import Module, is_module_added_manually
 from cfbs.masterfiles.generate_release_information import generate_release_information
-
-
-class InputDataUpdateFailed(Exception):
-    def __init__(self, message):
-        super().__init__(message)
-
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
 
@@ -563,108 +560,6 @@ def _clean_unused_modules(config=None):
     return 0
 
 
-def update_input_data(module, input_data) -> bool:
-    """
-    Update input data from module definition
-
-    :param module: Module with updated input definition
-    :param input_data: Input data to update
-    :return: True if changes are made
-    """
-    module_name = module["name"]
-    input_def = module["input"]
-
-    if len(input_def) != len(input_data):
-        raise InputDataUpdateFailed(
-            "Failed to update input data for module '%s': " % module_name
-            + "Input definition has %d variables, " % len(input_def)
-            + "while current input data has %d variables." % len(input_data)
-        )
-
-    def _update_keys(input_def, input_data, keys):
-        """
-        Update keys that can be safily updated in input data.
-        """
-        changes_made = False
-        for key in keys:
-            new = input_def.get(key)
-            old = input_data.get(key)
-            if new != old:
-                # Make sure that one of the keys are not 'None'
-                if new is None or old is None:
-                    raise InputDataUpdateFailed(
-                        "Failed to update input data for module '%s': " % module_name
-                        + "Missing matching attribute '%s'." % key
-                    )
-                input_data[key] = input_def[key]
-                changes_made = True
-                log.warning(
-                    "Updated attribute '%s' from '%s' to '%s' in module '%s'."
-                    % (key, old, new, module_name)
-                )
-        return changes_made
-
-    def _check_keys(input_def, input_data, keys):
-        """
-        Compare keys that cannot safily be updated for equality.
-        """
-        for key in keys:
-            new = input_def.get(key)
-            old = input_data.get(key)
-            if new != old:
-                raise InputDataUpdateFailed(
-                    "Failed to update input data for module '%s': " % module_name
-                    + "Updating attribute '%s' from '%s' to '%s'," % (key, old, new)
-                    + "may cause module to break."
-                )
-
-    def _update_variable(input_def, input_data):
-        _check_keys(input_def, input_data, ("type", "namespace", "bundle", "variable"))
-        changes_made = _update_keys(
-            input_def, input_data, ("label", "comment", "question", "while", "default")
-        )
-
-        if input_def["type"] == "list":
-            def_subtype = input_def["subtype"]
-            data_subtype = input_data["subtype"]
-            if type(def_subtype) != type(data_subtype):
-                raise InputDataUpdateFailed(
-                    "Failed to update input data for module '%s': " % module_name
-                    + "Different subtypes in list ('%s' != '%s')."
-                    % (type(def_subtype).__name__, type(data_subtype).__name__)
-                )
-            if isinstance(def_subtype, list):
-                if len(def_subtype) != len(data_subtype):
-                    raise InputDataUpdateFailed(
-                        "Failed to update input data for module '%s': " % module_name
-                        + "Different amount of elements in list ('%s' != '%s')."
-                        % (len(def_subtype), len(data_subtype))
-                    )
-                for i in range(len(def_subtype)):
-                    _check_keys(def_subtype[i], data_subtype[i], ("key", "type"))
-                    changes_made |= _update_keys(
-                        def_subtype[i],
-                        data_subtype[i],
-                        ("label", "question", "default"),
-                    )
-            elif isinstance(def_subtype, dict):
-                _check_keys(def_subtype, data_subtype, ("type",))
-                changes_made |= _update_keys(
-                    def_subtype, data_subtype, ("label", "question", "default")
-                )
-            else:
-                user_error(
-                    "Unsupported subtype '%s' in input definition for module '%s'."
-                    % (type(def_subtype).__name__, module_name)
-                )
-        return changes_made
-
-    changes_made = False
-    for i in range(len(input_def)):
-        changes_made |= _update_variable(input_def[i], input_data[i])
-    return changes_made
-
-
 @cfbs_command("update")
 @commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update) -> Result:
@@ -679,173 +574,117 @@ def update_command(to_update) -> Result:
         else [Module(m["name"]) for m in build]
     )
 
-    new_deps = []
-    new_deps_added_by = dict()
-    changes_made = False
-    msg = ""
-    files = []
     updated = []
+    module_updates = ModuleUpdates(config)
 
     for update in to_update:
-        module = config.get_module_from_build(update.name)
+        old_module = config.get_module_from_build(update.name)
 
-        custom_index = module is not None and "index" in module
-        index = Index(module["index"]) if custom_index else config.index
+        custom_index = old_module is not None and "index" in old_module
+        index = Index(old_module["index"]) if custom_index else config.index
 
-        if not module:
+        if not old_module:
             index.translate_alias(update)
-            module = config.get_module_from_build(update.name)
+            old_module = config.get_module_from_build(update.name)
 
-        if not module:
+        if not old_module:
+            log.warning(
+                "old_Module '%s' not in build. Skipping its update." % update.name
+            )
+            continue
+
+        custom_index = old_module is not None and "index" in old_module
+        index = Index(old_module["index"]) if custom_index else config.index
+
+        if not old_module:
+            index.translate_alias(update)
+            old_module = config.get_module_from_build(update.name)
+
+        if not old_module:
             log.warning("Module '%s' not in build. Skipping its update." % update.name)
             continue
 
-        custom_index = module is not None and "index" in module
-        index = Index(module["index"]) if custom_index else config.index
-
-        if not module:
-            index.translate_alias(update)
-            module = config.get_module_from_build(update.name)
-
-        if not module:
-            log.warning("Module '%s' not in build. Skipping its update." % update.name)
-            continue
-
-        if "version" not in module:
-            log.warning(
-                "Module '%s' not updatable. Skipping its update." % module["name"]
+        if "url" in old_module:
+            path, commit = clone_url_repo(old_module["url"])
+            remote_config = CFBSJson(
+                path=path, url=old_module["url"], url_commit=commit
             )
-            log.debug("Module '%s' has no version attribute." % module["name"])
-            continue
-        old_version = module["version"]
 
-        index_info = index.get_module_object(update.name)
-        if not index_info:
-            log.warning(
-                "Module '%s' not present in the index, cannot update it."
-                % module["name"]
-            )
-            continue
+            module_name = old_module["name"]
+            provides = remote_config.get_provides()
 
-        local_ver = [
-            int(version_number)
-            for version_number in re.split(r"[-\.]", module["version"])
-        ]
-        index_ver = [
-            int(version_number)
-            for version_number in re.split(r"[-\.]", index_info["version"])
-        ]
-        if local_ver == index_ver:
-            print("Module '%s' already up to date" % module["name"])
-            continue
-        elif local_ver > index_ver:
-            log.warning(
-                "The requested version of module '%s' is older than current version (%s < %s)."
-                " Skipping its update."
-                % (module["name"], index_info["version"], module["version"])
-            )
-            continue
-
-        commit_differs = module["commit"] != index_info["commit"]
-        for key in module.keys():
-            if key not in index_info or module[key] == index_info[key]:
+            if not module_name or module_name not in provides:
                 continue
-            if key == "steps":
-                # same commit => user modifications, don't revert them
-                if commit_differs:
-                    ans = prompt_user(
-                        config.non_interactive,
-                        "Module %s has different build steps now\n" % module["name"]
-                        + "old steps: %s\n" % module["steps"]
-                        + "new steps: %s\n" % index_info["steps"]
-                        + "Do you want to use the new build steps?",
-                        choices=YES_NO_CHOICES,
-                        default="yes",
-                    )
-                    if ans.lower() in ["y", "yes"]:
-                        module["steps"] = index_info["steps"]
-                        changes_made = True
-                    else:
-                        print(
-                            "Please make sure the old build steps work"
-                            + " with the new version of the module"
-                        )
-            elif key == "input":
-                if commit_differs:
-                    module["input"] = index_info["input"]
 
-                    input_path = os.path.join(".", module["name"], "input.json")
-                    input_data = read_json(input_path)
-                    if input_data == None:
-                        log.debug(
-                            "Skipping input update for module '%s': " % module["name"]
-                            + "No input found in '%s'" % input_path
-                        )
-                    else:
-                        try:
-                            changes_made |= update_input_data(module, input_data)
-                        except InputDataUpdateFailed as e:
-                            log.warning(e)
-                            if prompt_user(
-                                config.non_interactive,
-                                "Input for module '%s' has changed " % module["name"]
-                                + "and may no longer be compatible. "
-                                + "Do you want to re-enter input now?",
-                                YES_NO_CHOICES,
-                                "no",
-                            ).lower() in ("no", "n"):
-                                continue
-                            input_data = copy.deepcopy(module["input"])
-                            config.input_command(module["name"], input_data)
-                            changes_made = True
+            new_module = provides[module_name]
+        else:
 
-                    if changes_made:
-                        write_json(input_path, input_data)
-                        files.append(input_path)
-            else:
-                if key == "dependencies":
-                    extra = set(index_info["dependencies"]) - set(
-                        module["dependencies"]
-                    )
-                    new_deps.extend(extra)
-                    new_deps_added_by.update({item: module["name"] for item in extra})
+            if "version" not in old_module:
+                log.warning(
+                    "Module '%s' not updatable. Skipping its update."
+                    % old_module["name"]
+                )
+                log.debug("Module '%s' has no version attribute." % old_module["name"])
+                continue
 
-                module[key] = index_info[key]
-                changes_made = True
+            index_info = index.get_module_object(update.name)
+            if not index_info:
+                log.warning(
+                    "Module '%s' not present in the index, cannot update it."
+                    % old_module["name"]
+                )
+                continue
+
+            local_ver = [
+                int(version_number)
+                for version_number in re.split(r"[-\.]", old_module["version"])
+            ]
+            index_ver = [
+                int(version_number)
+                for version_number in re.split(r"[-\.]", index_info["version"])
+            ]
+            if local_ver == index_ver:
+                print("Module '%s' already up to date" % old_module["name"])
+                continue
+            elif local_ver > index_ver:
+                log.warning(
+                    "The requested version of module '%s' is older than current version (%s < %s)."
+                    " Skipping its update."
+                    % (old_module["name"], index_info["version"], old_module["version"])
+                )
+                continue
+
+            new_module = index_info
+
+        update_module(old_module, new_module, module_updates, update)
 
         # add new items
-        for key in set(index_info.keys()) - set(module.keys()):
-            module[key] = index_info[key]
-            if key == "dependencies":
-                extra = index_info["dependencies"]
-                new_deps.extend(extra)
-                new_deps_added_by.update({item: module["name"] for item in extra})
 
-        if not update.version:
-            update.version = index_info["version"]
         updated.append(update)
-        msg += "\n - Updated module '%s' from version %s to version %s" % (
-            update.name,
-            old_version,
-            update.version,
-        )
 
-    if new_deps:
-        objects = [index.get_module_object(d, new_deps_added_by[d]) for d in new_deps]
+    if module_updates.new_deps:
+        objects = [
+            index.get_module_object(d, module_updates.new_deps_added_by[d])
+            for d in module_updates.new_deps
+        ]
         config.add_with_dependencies(objects)
     config.save()
 
-    if changes_made:
+    if module_updates.changes_made:
         if len(updated) > 1:
-            msg = "Updated %d modules\n" % len(updated) + msg
+            module_updates.msg = (
+                "Updated %d modules\n" % len(updated) + module_updates.msg
+            )
         else:
             # Remove the '\n - ' part of the message
-            msg = msg[len("\n - ") :]
-        print("%s\n" % msg)
+            module_updates.msg = module_updates.msg[len("\n - ") :]
+        print("%s\n" % module_updates.msg)
     else:
         print("Modules are already up to date")
 
-    return Result(0, changes_made, msg, files)
+    return Result(
+        0, module_updates.changes_made, module_updates.msg, module_updates.files
+    )
 
 
 @cfbs_command("validate")

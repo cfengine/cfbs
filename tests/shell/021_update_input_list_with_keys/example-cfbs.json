@@ -44,7 +44,6 @@
     {
       "name": "example-module",
       "description": "Example module",
-      "url": "https://github.com/example-user/example-modules.git",
       "commit": "0000000000000000000000000000000000000000",
       "by": "https://github.com/example-user",
       "version": "1.0.0",
