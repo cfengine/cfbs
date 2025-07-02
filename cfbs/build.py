@@ -1,5 +1,6 @@
 import os
 import logging as log
+import shutil
 from typing import List, Tuple
 from cfbs.utils import (
     canonify,
@@ -298,6 +299,8 @@ def perform_build(config) -> int:
     for module in config.get("build", []):
         for step in module["steps"]:
             _perform_build_step(module, step, module_name_length)
+    assert os.path.isdir("./out/masterfiles/")
+    shutil.copyfile("./cfbs.json", "./out/masterfiles/cfbs.json")
     if os.path.isfile("out/masterfiles/def.json"):
         pretty_file("out/masterfiles/def.json")
     print("")
