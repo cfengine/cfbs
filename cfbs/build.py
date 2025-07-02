@@ -260,7 +260,7 @@ def _perform_build_step(module, step, max_length):
         write_json(path, merged)
 
 
-def perform_build_steps(config) -> int:
+def perform_build(config) -> int:
     if not config.get("build"):
         user_error("No 'build' key found in the configuration")
 

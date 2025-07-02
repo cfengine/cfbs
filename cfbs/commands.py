@@ -41,7 +41,7 @@ from cfbs.pretty import (
 )
 from cfbs.build import (
     init_out_folder,
-    perform_build_steps,
+    perform_build,
 )
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import validate_config
@@ -803,7 +803,7 @@ def build_command(ignore_versions=False) -> int:
         # so we try building anyway and don't return error(s)
     init_out_folder()
     _download_dependencies(config, prefer_offline=True, ignore_versions=ignore_versions)
-    r = perform_build_steps(config)
+    r = perform_build(config)
     return r
 
 
