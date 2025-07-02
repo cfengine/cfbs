@@ -264,6 +264,9 @@ In `cfbs.json`'s `"steps"`, the build step name must be separated from the rest 
   - Converts the input data for a module into the augments format and merges it with the target augments file.
   - Source is relative to module directory and target is relative to `out/masterfiles`.
     - In most cases, the build step should be: `input ./input.json def.json`
+- `replace_version <to_replace> <filename>`
+  - Replace the string inside the file with the version number of that module.
+  - The module must have a version and the string must occur exactly once in the file.
 
 When `def.json` is modified during a `json`, `input`, `directory`, `bundles`, or `policy_files` build step, the values of some lists of strings are deduplicated, when this does not make any difference in behavior.
 These cases are:
