@@ -27,7 +27,7 @@ from typing import List, Tuple
 
 from cfbs.utils import (
     is_a_commit_hash,
-    user_error,
+    UserError,
 )
 from cfbs.pretty import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig
@@ -603,12 +603,12 @@ def _validate_module_object(context, name, module, config):
 def _validate_config_for_build_field(config, empty_build_list_ok=False):
     """Validate that neccessary fields are in the config for the build/download commands to work"""
     if not "build" in config:
-        user_error(
+        raise UserError(
             'A "build" field is missing in ./cfbs.json'
             + " - The 'cfbs build' command loops through all modules in this list to find build steps to perform"
         )
     if type(config["build"]) is not list:
-        user_error(
+        raise UserError(
             'The "build" field in ./cfbs.json must be a list (of modules involved in the build)'
         )
     if len(config["build"]) > 0:
@@ -617,7 +617,7 @@ def _validate_config_for_build_field(config, empty_build_list_ok=False):
             name = module["name"] if "name" in module else index
             _validate_module_object("build", name, module, config)
     elif not empty_build_list_ok:
-        user_error(
+        raise UserError(
             "The \"build\" field in ./cfbs.json is empty - add modules with 'cfbs add'"
         )
 

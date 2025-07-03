@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from cfbs.masterfiles.analyze import version_as_comparable_list
-from cfbs.utils import dict_diff, read_json, user_error, write_json
+from cfbs.utils import dict_diff, read_json, UserError, write_json
 
 
 def check_download_matches_git(versions):
@@ -78,7 +78,7 @@ def check_download_matches_git(versions):
     write_json("differences.json", diffs_dict)
 
     if len(nonmatching_versions) > 0:
-        user_error(
+        raise UserError(
             "The masterfiles downloaded from github.com and cfengine.com do not match - found "
             + str(extraneous_count)
             + " extraneous file"

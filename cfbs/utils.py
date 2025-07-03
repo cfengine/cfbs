@@ -20,6 +20,10 @@ class ProgrammerError(RuntimeError):
     pass
 
 
+class UserError(Exception):
+    pass
+
+
 def _sh(cmd: str):
     # print(cmd)
     try:
@@ -31,7 +35,7 @@ def _sh(cmd: str):
             stderr=subprocess.STDOUT,
         )
     except subprocess.CalledProcessError as e:
-        user_error("Command failed - %s\n%s" % (cmd, e.stdout.decode("utf-8")))
+        raise UserError("Command failed - %s\n%s" % (cmd, e.stdout.decode("utf-8")))
 
 
 def sh(cmd: str, directory=None):
@@ -83,10 +87,6 @@ def pad_left(s, n):
 
 def pad_right(s, n):
     return s.ljust(n)
-
-
-def user_error(msg: str):
-    sys.exit("Error: " + msg)
 
 
 def get_json(url: str) -> OrderedDict:

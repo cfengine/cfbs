@@ -1,11 +1,11 @@
 import os
-from utils import user_error
+from utils import UserError
 from args import get_arg_parser
 
 try:
     from build_manpages.manpage import Manpage
 except ImportError:
-    user_error(
+    raise UserError(
         "Missing dependency, install from PyPI: 'pip install argparse-manpage setuptools'"
     )
 
