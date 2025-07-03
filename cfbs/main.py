@@ -6,6 +6,7 @@ __copyright__ = ["Northern.tech AS"]
 import logging as log
 import sys
 
+from cfbs.validate import CFBSValidationError
 from cfbs.version import string as version
 from cfbs.utils import user_error, is_cfbs_repo, ProgrammerError
 from cfbs.cfbs_config import CFBSConfig
@@ -37,7 +38,16 @@ def does_log_info(level):
     return level == "info" or level == "debug"
 
 
-def main() -> int:
+def _main() -> int:
+    """Actual body of main function.
+
+    Mainly for getting command line arguments and calling the appropriate
+    functions based on command line arguments.
+
+    Actual logic should be implemented elsewhere (primarily in commands.py).
+
+    This function is wrapped by main() which catches exceptions.
+    """
     args = get_args()
     init_logging(args.loglevel)
     if args.manual:
@@ -223,3 +233,16 @@ def main() -> int:
     raise ProgrammerError(
         "Command '%s' not handled appropriately by the code above" % args.command
     )
+
+
+def main() -> int:
+    """Entry point
+
+    The only thing we want to do here is call _main() and handle exceptions (errors).
+    """
+    try:
+        return _main()
+    except CFBSValidationError as e:
+        print("Error: " + str(e))
+    # TODO: Handle other exceptions
+    return 1
