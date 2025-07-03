@@ -95,11 +95,11 @@ def _perform_replace_step(n, a, b, filename):
         user_error(
             "'%s' must not contain '%s' (could lead to recursive replacing)" % (a, b)
         )
-    if not os.path.isfile(filename):
-        user_error("No such file '%s' in replace build step" % (filename,))
     try:
         with open(filename, "r") as f:
             content = f.read()
+    except FileNotFoundError:
+        user_error("No such file '%s' in replace build step" % (filename,))
     except:
         user_error("Could not open/read '%s' in replace build step" % (filename,))
     new_content = previous_content = content
@@ -128,19 +128,13 @@ def _perform_replace_step(n, a, b, filename):
 
 
 def _perform_replace_version(to_replace, filename, version):
-    if not os.path.isfile(filename):
-        user_error(
-            "No such file '%s' in replace_version for module '%s"
-            % (file, module["name"])
-        )
     try:
         with open(filename, "r") as f:
             content = f.read()
+    except FileNotFoundError:
+        user_error("No such file '%s' in replace build step" % (filename,))
     except:
-        user_error(
-            "Could not open/read '%s' in replace_version for module '%s"
-            % (filename, module["name"])
-        )
+        user_error("Could not open/read '%s' in replace_version" % (filename,))
     new_content = content.replace(to_replace, version, 1)
     if new_content == content:
         user_error(
