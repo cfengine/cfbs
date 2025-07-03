@@ -35,6 +35,7 @@ from cfbs.validate import (
     MAX_REPLACEMENTS,
     step_has_valid_arg_count,
     split_build_step,
+    validate_build_step,
 )
 
 
@@ -79,22 +80,14 @@ def _generate_augment(module_name, input_data):
 
 
 def _perform_replace_step(n, a, b, filename):
+    assert n and a and b and filename
+    assert a not in b
+
     or_more = False
     if n.endswith("+"):
         n = n[0:-1]
         or_more = True
     n = int(n)
-    if n <= 0:
-        user_error("replace build step cannot replace something %s times" % (n))
-    if n > MAX_REPLACEMENTS or n == MAX_REPLACEMENTS and or_more:
-        user_error(
-            "replace build step cannot replace something more than %s times"
-            % (MAX_REPLACEMENTS)
-        )
-    if a in b and (n >= 2 or or_more):
-        user_error(
-            "'%s' must not contain '%s' (could lead to recursive replacing)" % (a, b)
-        )
     try:
         with open(filename, "r") as f:
             content = f.read()
@@ -153,13 +146,14 @@ def _perform_replace_version(to_replace, filename, version):
         user_error("Failed to write to '%s'" % (filename,))
 
 
-def _perform_build_step(module, step, max_length):
+def _perform_build_step(module, i, step, max_length):
     operation, args = split_build_step(step)
+    name = module["name"]
     source = module["_directory"]
     counter = module["_counter"]
     destination = "out/masterfiles"
 
-    prefix = "%03d %s :" % (counter, pad_right(module["name"], max_length))
+    prefix = "%03d %s :" % (counter, pad_right(name, max_length))
 
     assert operation in AVAILABLE_BUILD_STEPS  # Should already be validated
     if operation == "copy":
@@ -241,14 +235,14 @@ def _perform_build_step(module, step, max_length):
         if dst in [".", "./"]:
             dst = ""
         print("%s input '%s' 'masterfiles/%s'" % (prefix, src, dst))
-        if src.startswith(module["name"] + "/"):
+        if src.startswith(name + "/"):
             log.warning(
                 "Deprecated 'input' build step behavior - it should be: 'input ./input.json def.json'"
             )
             # We'll translate it to what it should be
             # TODO: Consider removing this behavior for cfbs 4?
-            src = "." + src[len(module["name"]) :]
-        src = os.path.join(module["name"], src)
+            src = "." + src[len(name) :]
+        src = os.path.join(name, src)
         dst = os.path.join(destination, dst)
         if not os.path.isfile(os.path.join(src)):
             log.warning(
@@ -257,7 +251,7 @@ def _perform_build_step(module, step, max_length):
             )
             return
         extras, original = read_json(src), read_json(dst)
-        extras = _generate_augment(module["name"], extras)
+        extras = _generate_augment(name, extras)
         log.debug("Generated augment: %s", pretty(extras))
         if not extras:
             user_error(
@@ -319,11 +313,15 @@ def _perform_build_step(module, step, max_length):
     elif operation == "replace":
         assert len(args) == 4
         print("%s replace '%s'" % (prefix, "' '".join(args)))
+        # New build step so let's be a bit strict about validating it:
+        validate_build_step(module, i, operation, args, strict=True)
         n, a, b, file = args
         file = os.path.join(destination, file)
         _perform_replace_step(n, a, b, file)
     elif operation == "replace_version":
         assert len(args) == 2
+        # New build step so let's be a bit strict about validating it:
+        validate_build_step(module, i, operation, args, strict=True)
         print("%s replace_version '%s'" % (prefix, "' '".join(args)))
         to_replace = args[0]
         filename = os.path.join(destination, args[1])
@@ -367,8 +365,8 @@ def perform_build(config) -> int:
     print("\nSteps:")
     module_name_length = config.longest_module_key_length("name")
     for module in config.get("build", []):
-        for step in module["steps"]:
-            _perform_build_step(module, step, module_name_length)
+        for i, step in enumerate(module["steps"]):
+            _perform_build_step(module, i, step, module_name_length)
     assert os.path.isdir("./out/masterfiles/")
     shutil.copyfile("./cfbs.json", "./out/masterfiles/cfbs.json")
     if os.path.isfile("out/masterfiles/def.json"):

@@ -190,7 +190,8 @@ def validate_config(config, empty_build_list_ok=False):
         return 1
 
 
-def validate_build_step(name, i, operation, args):
+def validate_build_step(module, i, operation, args, strict=False):
+    name = module["name"]
     if not operation in AVAILABLE_BUILD_STEPS:
         raise CFBSValidationError(
             name,
@@ -213,6 +214,53 @@ def validate_build_step(name, i, operation, args):
                 "The %s build step expects %d or more arguments, %d were given"
                 % (operation, expected, actual),
             )
+    if not strict:
+        return
+    if operation == "replace":
+        assert len(args) == 4
+        n, a, b, filename = args
+        assert type(a) is str and a != ""
+        assert type(b) is str and b != ""
+        assert type(filename) is str and filename != ""
+        or_more = False
+        if n.endswith("+"):
+            n = n[0:-1]
+            or_more = True
+        try:
+            n = int(n)
+            assert n >= 1
+        except:
+            raise CFBSValidationError(
+                "replace build step cannot replace something '%s' times" % (args[0],)
+            )
+        if n > MAX_REPLACEMENTS or n == MAX_REPLACEMENTS and or_more:
+            raise CFBSValidationError(
+                "replace build step cannot replace something more than %s times"
+                % (MAX_REPLACEMENTS)
+            )
+        if a in b:
+            raise CFBSValidationError(
+                "'%s' must not contain '%s' in replace build step (could lead to recursive replacing)"
+                % (a, b)
+            )
+    elif operation == "replace_version":
+        assert len(args) == 2
+        to_replace, filename = args
+
+        # These should be guaranteed by the build step splitting logic:
+        assert type(to_replace) is str and to_replace != ""
+        assert type(filename) is str and filename != ""
+
+        # replace_version requires the module to have a version field:
+        if not "version" in module:
+            raise CFBSValidationError(
+                name,
+                "Module '%s' missing \"version\" field for replace_version build step"
+                % (name,),
+            )
+    else:
+        # TODO: Add more validation of other build steps.
+        pass
 
 
 def _validate_module_object(context, name, module, config):
@@ -354,7 +402,7 @@ def _validate_module_object(context, name, module, config):
                     name, '"steps" must be a list of non-empty / non-whitespace strings'
                 )
             operation, args = split_build_step(step)
-            validate_build_step(name, i, operation, args)
+            validate_build_step(module, i, operation, args)
 
     def validate_url_field(name, module, field):
         assert field in module
