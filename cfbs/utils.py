@@ -234,8 +234,8 @@ def deduplicate_def_json(d):
     return d
 
 
-def deduplicate_list(l):
-    return list(OrderedDict.fromkeys(l))
+def deduplicate_list(original):
+    return list(OrderedDict.fromkeys(original))
 
 
 def dict_sorted_by_key(the_dict):
@@ -274,21 +274,17 @@ def is_cfbs_repo() -> bool:
 
 
 def immediate_subdirectories(path):
-    l = [f.name for f in os.scandir(path) if f.is_dir()]
+    foldernames = [f.name for f in os.scandir(path) if f.is_dir()]
 
     # `os.scandir` returns the entries in arbitrary order, so sort for determinism
-    l = sorted(l)
-
-    return l
+    return sorted(foldernames)
 
 
 def immediate_files(path):
-    l = [f.name for f in os.scandir(path) if not f.is_dir()]
+    filenames = [f.name for f in os.scandir(path) if not f.is_dir()]
 
     # `os.scandir` returns the entries in arbitrary order, so sort for determinism
-    l = sorted(l)
-
-    return l
+    return sorted(filenames)
 
 
 def path_append(dir, subdir):

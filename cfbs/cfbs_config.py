@@ -330,7 +330,7 @@ class CFBSConfig(CFBSJson):
             assert name not in (m["name"] for m in self["build"])
             if "subdirectory" in module and module["subdirectory"] == "":
                 del module["subdirectory"]
-            if self.index.custom_index != None:
+            if self.index.custom_index is not None:
                 module["index"] = self.index.custom_index
             self["build"].append(module)
             self._handle_local_module(module)

@@ -25,15 +25,15 @@ def versions_checksums_files(
                 versions_dict["versions"][version] = {}
             versions_dict["versions"][version][tarball_relpath] = file_checksum
 
-            if not file_checksum in checksums_dict["checksums"]:
+            if file_checksum not in checksums_dict["checksums"]:
                 checksums_dict["checksums"][file_checksum] = {}
-            if not tarball_relpath in checksums_dict["checksums"][file_checksum]:
+            if tarball_relpath not in checksums_dict["checksums"][file_checksum]:
                 checksums_dict["checksums"][file_checksum][tarball_relpath] = []
             checksums_dict["checksums"][file_checksum][tarball_relpath].append(version)
 
-            if not tarball_relpath in files_dict["files"]:
+            if tarball_relpath not in files_dict["files"]:
                 files_dict["files"][tarball_relpath] = {}
-            if not file_checksum in files_dict["files"][tarball_relpath]:
+            if file_checksum not in files_dict["files"][tarball_relpath]:
                 files_dict["files"][tarball_relpath][file_checksum] = []
             files_dict["files"][tarball_relpath][file_checksum].append(version)
 

@@ -86,7 +86,7 @@ def update_input_data(module, input_data) -> bool:
         if input_def["type"] == "list":
             def_subtype = input_def["subtype"]
             data_subtype = input_data["subtype"]
-            if type(def_subtype) != type(data_subtype):
+            if type(def_subtype) is not type(data_subtype):
                 raise InputDataUpdateFailed(
                     "Failed to update input data for module '%s': " % module_name
                     + "Different subtypes in list ('%s' != '%s')."
@@ -157,7 +157,7 @@ def update_module(old_module, new_module, module_updates, update):
 
                 input_path = os.path.join(".", old_module["name"], "input.json")
                 input_data = read_json(input_path)
-                if input_data == None:
+                if input_data is None:
                     log.debug(
                         "Skipping input update for module '%s': " % old_module["name"]
                         + "No input found in '%s'" % input_path

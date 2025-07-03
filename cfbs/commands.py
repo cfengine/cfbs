@@ -402,7 +402,7 @@ def add_command(
 def remove_command(to_remove: list):
     config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
-    if not "build" in config:
+    if "build" not in config:
         raise GenericExitError(
             'Cannot remove any modules because the "build" key is missing from cfbs.json'
         )
@@ -530,7 +530,7 @@ def _clean_unused_modules(config=None):
         if ("added_by" not in this) or is_module_added_manually(this["added_by"]):
             return True
         for other in modules:
-            if not "dependencies" in other:
+            if "dependencies" not in other:
                 continue
             if this["name"] in other["dependencies"]:
                 return _someone_needs_me(other)
@@ -1068,7 +1068,7 @@ def set_input_command(name, infile):
         if len(a) != len(b):
             return False
         for x, y in zip(a, b):
-            if type(x) != type(y):
+            if type(x) is not type(y):
                 return False
             if isinstance(x, dict):
                 if not _compare_dict(x, y):

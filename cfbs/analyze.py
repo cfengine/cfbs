@@ -87,11 +87,11 @@ def checksums_files(
             if contains_ignored_components(full_relpath, ignored_path_components):
                 continue
 
-            if not file_checksum in checksums_dict["checksums"]:
+            if file_checksum not in checksums_dict["checksums"]:
                 checksums_dict["checksums"][file_checksum] = set()
             checksums_dict["checksums"][file_checksum].add(tarball_relpath)
 
-            if not tarball_relpath in files_dict["files"]:
+            if tarball_relpath not in files_dict["files"]:
                 files_dict["files"][tarball_relpath] = set()
             files_dict["files"][tarball_relpath].add(file_checksum)
 
@@ -108,7 +108,10 @@ def mpf_vcf_dicts(offline=False):
     RI_SUBDIRS = "downloads/github.com/" + REPO_OWNERNAME + "/archive/refs/tags/"
 
     if offline:
-        ERROR_MESSAGE = "Masterfiles Policy Framework release information not found. Provide the release information, for example by running 'cfbs analyze' without '--offline'."
+        ERROR_MESSAGE = (
+            "Masterfiles Policy Framework release information not found. "
+            + "Provide the release information, for example by running 'cfbs analyze' without '--offline'."
+        )
 
         cfbs_ri_dir = os.path.join(cfbs_dir(), RI_SUBDIRS)
         if not os.path.exists(cfbs_ri_dir):
@@ -204,10 +207,10 @@ def filepaths_display(filepaths):
         print("└──", filepaths[-1])
 
 
-def list_or_single(l):
-    if len(l) == 1:
-        return l[0]
-    return l
+def list_or_single(elements):
+    if len(elements) == 1:
+        return elements[0]
+    return elements
 
 
 def filepaths_display_moved(filepaths):
@@ -275,7 +278,9 @@ class VersionsCounter:
         return highest_version(versions_with_highest_count)
 
     def sorted_list(self):
-        """Returns a sorted list of key-value pairs `(version, count)`. The sorting is in descending order. In case of a count tie, the higher version's pair is considered greater."""
+        """Returns a sorted list of key-value pairs `(version, count)`.
+        The sorting is in descending order. In case of a count tie,
+        the higher version's pair is considered greater."""
         return sorted(
             self._versions_counts.items(),
             key=lambda item: (item[1], version_as_comparable_list(item[0])),
@@ -503,9 +508,15 @@ def analyze_policyset(
     ignored_path_components=None,
     offline=False,
 ):
-    """`path` should be either a masterfiles-path (containing masterfiles files directly), or a parent-path (containing `masterfiles_dir` and "modules" folders). `is_parentpath` should specify which of the two it is.
+    """`path` should be either a masterfiles-path (containing masterfiles files directly),
+    or a parent-path (containing `masterfiles_dir` and "modules" folders). `is_parentpath`
+    should specify which of the two it is.
 
-    The analysis ignores policyset (not MPF release information) files whose filepaths contain any of the path components specified in `ignored_path_components`. Components in `ignored_path_components` should end with a `/` if the component represents a directory (also on operating systems using a different separator e.g. a backslash), and should not end with a `/` if it represents a file.
+    The analysis ignores policyset (not MPF release information) files whose filepaths
+    contain any of the path components specified in `ignored_path_components`.
+    Components in `ignored_path_components` should end with a `/` if the component
+    represents a directory (also on operating systems using a different separator
+    e.g. a backslash), and should not end with a `/` if it represents a file.
     """
     if ignored_path_components is None:
         ignored_path_components = DEFAULT_IGNORED_PATH_COMPONENTS
@@ -578,7 +589,8 @@ def analyze_policyset(
     if reference_version is None:
         reference_version = versions_data.version_counter.most_common_version()
 
-    # if not a single file in the analyzed policyset has an MPF-known (checksum, filepath), and a specific `reference_version` was not given, `reference_version` will still be `None`
+    # if not a single file in the analyzed policyset has an MPF-known (checksum, filepath),
+    # and a specific `reference_version` was not given, `reference_version` will still be `None`
     if reference_version is None:
         # try to detect whether the user provided a wrong policy set path
         # gather all possible policy set paths, by detecting promises.cf or update.cf

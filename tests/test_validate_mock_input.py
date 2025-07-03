@@ -22,7 +22,9 @@ INDEX = {
     "type": "index",
     "index": {
         "delete-files": {
-            "description": "Allows you to specify a list of files you want deleted on hosts in your infrastructure. When this module is deployed as part of your policy set, every time CFEngine runs, it will check if those files exist, and delete them if they do.",
+            "description": "Allows you to specify a list of files you want deleted on hosts in your infrastructure. "
+            + "When this module is deployed as part of your policy set, every time CFEngine runs, it will check if "
+            + "those files exist, and delete them if they do.",
             "tags": ["supported", "management"],
             "repo": "https://github.com/nickanderson/cfengine-delete-files",
             "by": "https://github.com/nickanderson",

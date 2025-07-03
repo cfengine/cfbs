@@ -9,9 +9,11 @@ from cfbs.masterfiles.analyze import (
 
 
 def generate_vcf_download(dir_path, downloaded_versions):
-    """`dir_path`: the path of the directory containing masterfiles versions subdirectories in the form `dir_path/x.y.z/tarball/`
+    """`dir_path`: the path of the directory containing masterfiles versions
+                   subdirectories in the form `dir_path/x.y.z/tarball/`
 
-    The `tarball` folder should contain the `masterfiles` folder (older tarballs also have a `modules` folder alongside the `masterfiles` folder).
+    The `tarball` folder should contain the `masterfiles` folder (older
+    tarballs also have a `modules` folder alongside the `masterfiles` folder).
     """
     versions_dict, checksums_dict, files_dict = initialize_vcf()
 

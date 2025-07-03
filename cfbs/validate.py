@@ -205,7 +205,7 @@ def validate_build_step(name, module, i, operation, args, strict=False):
                 "%s build step in '%s' is too long" % (operation, name)
             )
 
-    if not operation in AVAILABLE_BUILD_STEPS:
+    if operation not in AVAILABLE_BUILD_STEPS:
         raise CFBSValidationError(
             name,
             'Unknown operation "%s" in "steps", must be one of: %s (build step %s in module "%s")'
@@ -294,7 +294,7 @@ def validate_build_step(name, module, i, operation, args, strict=False):
         assert type(filename) is str and filename != ""
 
         # replace_version requires the module to have a version field:
-        if not "version" in module:
+        if "version" not in module:
             raise CFBSValidationError(
                 name,
                 "Module '%s' missing \"version\" field for replace_version build step"
@@ -325,7 +325,7 @@ def _validate_module_object(context, name, module, config):
             raise CFBSValidationError(
                 name, '"alias" cannot be used with other attributes'
             )
-        if type(module["alias"]) != str:
+        if type(module["alias"]) is not str:
             raise CFBSValidationError(name, '"alias" must be of type string')
         if not module["alias"]:
             raise CFBSValidationError(name, '"alias" must be non-empty')
@@ -339,36 +339,36 @@ def _validate_module_object(context, name, module, config):
     def validate_name(name, module):
         assert "name" in module
         assert name == module["name"]
-        if type(module["name"]) != str:
+        if type(module["name"]) is not str:
             raise CFBSValidationError(name, '"name" must be of type string')
         if not module["name"]:
             raise CFBSValidationError(name, '"name" must be non-empty')
 
     def validate_description(name, module):
         assert "description" in module
-        if type(module["description"]) != str:
+        if type(module["description"]) is not str:
             raise CFBSValidationError(name, '"description" must be of type string')
         if not module["description"]:
             raise CFBSValidationError(name, '"description" must be non-empty')
 
     def validate_tags(name, module):
         assert "tags" in module
-        if type(module["tags"]) != list:
+        if type(module["tags"]) is not list:
             raise CFBSValidationError(name, '"tags" must be of type list')
         for tag in module["tags"]:
-            if type(tag) != str:
+            if type(tag) is not str:
                 raise CFBSValidationError(name, '"tags" must be a list of strings')
 
     def validate_repo(name, module):
         assert "repo" in module
-        if type(module["repo"]) != str:
+        if type(module["repo"]) is not str:
             raise CFBSValidationError(name, '"repo" must be of type string')
         if not module["repo"]:
             raise CFBSValidationError(name, '"repo" must be non-empty')
 
     def validate_by(name, module):
         assert "by" in module
-        if type(module["by"]) != str:
+        if type(module["by"]) is not str:
             raise CFBSValidationError(name, '"by" must be of type string')
         if not module["by"]:
             raise CFBSValidationError(name, '"by" must be non-empty')
@@ -382,12 +382,12 @@ def _validate_module_object(context, name, module, config):
             assert context == "index"
             search_in = ("index",)
         assert "dependencies" in module
-        if type(module["dependencies"]) != list:
+        if type(module["dependencies"]) is not list:
             raise CFBSValidationError(
                 name, 'Value of attribute "dependencies" must be of type list'
             )
         for dependency in module["dependencies"]:
-            if type(dependency) != str:
+            if type(dependency) is not str:
                 raise CFBSValidationError(
                     name, '"dependencies" must be a list of strings'
                 )
@@ -404,23 +404,23 @@ def _validate_module_object(context, name, module, config):
 
     def validate_version(name, module):
         assert "version" in module
-        if type(module["version"]) != str:
+        if type(module["version"]) is not str:
             raise CFBSValidationError(name, '"version" must be of type string')
         regex = r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9]+))?"
-        if re.fullmatch(regex, module["version"]) == None:
+        if re.fullmatch(regex, module["version"]) is None:
             raise CFBSValidationError(name, '"version" must match regex %s' % regex)
 
     def validate_commit(name, module):
         assert "commit" in module
         commit = module["commit"]
-        if type(commit) != str:
+        if type(commit) is not str:
             raise CFBSValidationError(name, '"commit" must be of type string')
         if not is_a_commit_hash(commit):
             raise CFBSValidationError(name, '"commit" must be a commit reference')
 
     def validate_subdirectory(name, module):
         assert "subdirectory" in module
-        if type(module["subdirectory"]) != str:
+        if type(module["subdirectory"]) is not str:
             raise CFBSValidationError(name, '"subdirectory" must be of type string')
         if not module["subdirectory"]:
             raise CFBSValidationError(name, '"subdirectory" must be non-empty')
@@ -437,12 +437,12 @@ def _validate_module_object(context, name, module, config):
 
     def validate_steps(name, module):
         assert "steps" in module
-        if type(module["steps"]) != list:
+        if type(module["steps"]) is not list:
             raise CFBSValidationError(name, '"steps" must be of type list')
         if not module["steps"]:
             raise CFBSValidationError(name, '"steps" must be non-empty')
         for i, step in enumerate(module["steps"]):
-            if type(step) != str:
+            if type(step) is not str:
                 raise CFBSValidationError(name, '"steps" must be a list of strings')
             if not step or step.strip() == "":
                 raise CFBSValidationError(
@@ -516,7 +516,7 @@ def _validate_module_object(context, name, module, config):
                 )
 
             if input_element["type"] == "list":
-                if not "while" in input_element:
+                if "while" not in input_element:
                     raise CFBSValidationError(
                         name, 'For a "list" input element, a "while" prompt is required'
                     )
@@ -528,7 +528,7 @@ def _validate_module_object(context, name, module, config):
                         name,
                         'The "while" prompt in an input "list" element must be a non-empty / non-whitespace string',
                     )
-                if not "subtype" in input_element:
+                if "subtype" not in input_element:
                     raise CFBSValidationError(
                         name, 'For a "list" input element, a "subtype" is required'
                     )
@@ -643,7 +643,7 @@ def _validate_module_object(context, name, module, config):
 
 def _validate_config_for_build_field(config, empty_build_list_ok=False):
     """Validate that neccessary fields are in the config for the build/download commands to work"""
-    if not "build" in config:
+    if "build" not in config:
         raise GenericExitError(
             'A "build" field is missing in ./cfbs.json'
             + " - The 'cfbs build' command loops through all modules in this list to find build steps to perform"

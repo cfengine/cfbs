@@ -238,9 +238,9 @@ def test_deduplicate_def_json():
 
 
 def test_deduplicate_list():
-    l = [1, 2, 3, 3, 1, 4]
+    nums = [1, 2, 3, 3, 1, 4]
 
-    assert deduplicate_list(l) == [1, 2, 3, 4]
+    assert deduplicate_list(nums) == [1, 2, 3, 4]
 
     assert deduplicate_list([1, 1, 2, 3]) == [1, 2, 3]
     assert deduplicate_list([1, 2, 3, 3]) == [1, 2, 3]
@@ -298,8 +298,8 @@ def test_are_paths_equal():
 
     assert are_paths_equal(".", os.getcwd())
 
-    assert are_paths_equal("a", "b") == False
-    assert are_paths_equal("a", "") == False
+    assert are_paths_equal("a", "b") is False
+    assert are_paths_equal("a", "") is False
 
 
 def test_string_sha256():
@@ -317,12 +317,12 @@ def test_file_sha256():
 
 
 def test_is_a_commit_hash():
-    assert is_a_commit_hash("304d123ac7ff50714a1eb57077acf159f923c941") == True
+    assert is_a_commit_hash("304d123ac7ff50714a1eb57077acf159f923c941") is True
     sha256_hash = "98142d6fa7e2e5f0942b0a215c1c4b976e7ae2ee5edb61cef974f1ba6756cbbc"
-    assert is_a_commit_hash(sha256_hash) == True
+    assert is_a_commit_hash(sha256_hash) is True
     # at least currently, commit cannot be a shortened hash
-    assert is_a_commit_hash("4738c43") == False
-    assert is_a_commit_hash("") == False
+    assert is_a_commit_hash("4738c43") is False
+    assert is_a_commit_hash("") is False
 
 
 def test_canonify():

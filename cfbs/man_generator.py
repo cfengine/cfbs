@@ -13,7 +13,11 @@ except ImportError:
 def generate_man_page():
     manpage = Manpage(get_arg_parser())
     manpage.manual = "CFEngine Build System manual"
-    manpage.description = "combines multiple modules into 1 policy set to deploy on your infrastructure. Modules can be custom promise types, JSON files which enable certain functionality, or reusable CFEngine policy. The modules you use can be written by the CFEngine team, others in the community, your colleagues, or yourself."
+    manpage.description = (
+        "combines multiple modules into 1 policy set to deploy on your infrastructure. "
+        + "Modules can be custom promise types, JSON files which enable certain functionality, or reusable CFEngine policy. "
+        + "The modules you use can be written by the CFEngine team, others in the community, your colleagues, or yourself."
+    )
     body = (
         str(manpage)
         + """
