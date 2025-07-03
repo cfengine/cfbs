@@ -1,7 +1,6 @@
 import os
 import logging as log
 import shutil
-from typing import List, Tuple
 from cfbs.utils import (
     canonify,
     cp,
@@ -19,20 +18,11 @@ from cfbs.utils import (
     write_json,
 )
 from cfbs.pretty import pretty, pretty_file
-
-AVAILABLE_BUILD_STEPS = {
-    "copy": 2,
-    "run": "1+",
-    "delete": "1+",
-    "json": 2,
-    "append": 2,
-    "directory": 2,
-    "input": 2,
-    "policy_files": "1+",
-    "bundles": "1+",
-    "replace": 4,  # n, a, b, filename
-    "replace_version": 2,  # string to replace and filename
-}
+from cfbs.validate import (
+    AVAILABLE_BUILD_STEPS,
+    step_has_valid_arg_count,
+    split_build_step,
+)
 
 
 def init_out_folder():
@@ -73,29 +63,6 @@ def _generate_augment(module_name, input_data):
         }
 
     return augment
-
-
-def split_build_step(command) -> Tuple[str, List[str]]:
-    terms = command.split(" ")
-    operation, args = terms[0], terms[1:]
-    return operation, args
-
-
-def step_has_valid_arg_count(args, expected):
-    actual = len(args)
-
-    if type(expected) is int:
-        if actual != expected:
-            return False
-
-    else:
-        # Only other option is a string of 1+, 2+ or similar:
-        assert type(expected) is str and expected.endswith("+")
-        expected = int(expected[0:-1])
-        if actual < expected:
-            return False
-
-    return True
 
 
 def _perform_replace_step(n, a, b, filename):

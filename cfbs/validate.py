@@ -2,6 +2,7 @@ import argparse
 import sys
 import re
 from collections import OrderedDict
+from typing import List, Tuple
 
 from cfbs.utils import (
     is_a_commit_hash,
@@ -9,7 +10,43 @@ from cfbs.utils import (
 )
 from cfbs.pretty import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig
-from cfbs.build import AVAILABLE_BUILD_STEPS, step_has_valid_arg_count, split_build_step
+
+AVAILABLE_BUILD_STEPS = {
+    "copy": 2,
+    "run": "1+",
+    "delete": "1+",
+    "json": 2,
+    "append": 2,
+    "directory": 2,
+    "input": 2,
+    "policy_files": "1+",
+    "bundles": "1+",
+    "replace": 4,  # n, a, b, filename
+    "replace_version": 2,  # string to replace and filename
+}
+
+
+def split_build_step(command) -> Tuple[str, List[str]]:
+    terms = command.split(" ")
+    operation, args = terms[0], terms[1:]
+    return operation, args
+
+
+def step_has_valid_arg_count(args, expected):
+    actual = len(args)
+
+    if type(expected) is int:
+        if actual != expected:
+            return False
+
+    else:
+        # Only other option is a string of 1+, 2+ or similar:
+        assert type(expected) is str and expected.endswith("+")
+        expected = int(expected[0:-1])
+        if actual < expected:
+            return False
+
+    return True
 
 
 class CFBSValidationError(Exception):
