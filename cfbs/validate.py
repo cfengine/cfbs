@@ -46,7 +46,11 @@ AVAILABLE_BUILD_STEPS = {
     "replace_version": 3,  # n, string to replace, filename
 }
 
+# Constants / regexes / limits for validating build steps:
 MAX_REPLACEMENTS = 1000
+FILENAME_RE = r"[-_/a-zA-Z0-9\.]+"
+MAX_FILENAME_LENGTH = 128
+MAX_BUILD_STEP_LENGTH = 256
 
 
 def split_build_step(command) -> Tuple[str, List[str]]:
@@ -194,6 +198,14 @@ def validate_build_step(name, module, i, operation, args, strict=False):
     assert type(name) is str
     assert type(module) is not str
     assert type(i) is int
+
+    if strict:
+        step = operation + " " + " ".join(args)
+        if len(step) > MAX_FILENAME_LENGTH:
+            raise CFBSValidationError(
+                "%s build step in '%s' is too long" % (operation, name)
+            )
+
     if not operation in AVAILABLE_BUILD_STEPS:
         raise CFBSValidationError(
             name,
@@ -245,6 +257,34 @@ def validate_build_step(name, module, i, operation, args, strict=False):
                 "'%s' must not contain '%s' in replace build step (could lead to recursive replacing)"
                 % (a, b)
             )
+        if filename == "." or filename.endswith(("/", "/.")):
+            raise CFBSValidationError(
+                "replace build step works on files, not '%s'" % (filename,)
+            )
+        if filename.startswith("/"):
+            raise CFBSValidationError(
+                "replace build step works on relative file paths, not '%s'"
+                % (filename,)
+            )
+        if filename.startswith("./"):
+            raise CFBSValidationError(
+                "replace file paths are always relative, drop the ./ in '%s'"
+                % (filename,)
+            )
+        if ".." in filename:
+            raise CFBSValidationError(
+                ".. not allowed in replace file path ('%s')" % (filename,)
+            )
+        if "/./" in filename:
+            raise CFBSValidationError(
+                "/./ not allowed in replace file path ('%s')" % (filename,)
+            )
+        if not re.fullmatch(FILENAME_RE, filename):
+            raise CFBSValidationError(
+                "filename in replace build step contains illegal characters ('%s')"
+                % (filename,)
+            )
+
     elif operation == "replace_version":
         assert len(args) == 3
         n, to_replace, filename = args
