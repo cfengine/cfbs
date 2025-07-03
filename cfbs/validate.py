@@ -130,6 +130,31 @@ def validate_config(config, empty_build_list_ok=False):
         return 1
 
 
+def validate_build_step(name, i, operation, args):
+    if not operation in AVAILABLE_BUILD_STEPS:
+        raise CFBSValidationError(
+            name,
+            'Unknown operation "%s" in "steps", must be one of: %s (build step %s in module "%s")'
+            % (operation, ", ".join(AVAILABLE_BUILD_STEPS), i, name),
+        )
+    expected = AVAILABLE_BUILD_STEPS[operation]
+    actual = len(args)
+    if not step_has_valid_arg_count(args, expected):
+        if type(expected) is int:
+            raise CFBSValidationError(
+                name,
+                "The %s build step expects %d arguments, %d were given (build step "
+                % (operation, expected, actual),
+            )
+        else:
+            expected = int(expected[0:-1])
+            raise CFBSValidationError(
+                name,
+                "The %s build step expects %d or more arguments, %d were given"
+                % (operation, expected, actual),
+            )
+
+
 def _validate_module_object(context, name, module, config):
     def validate_alias(name, module, context):
         if context == "index":
@@ -261,7 +286,7 @@ def _validate_module_object(context, name, module, config):
             raise CFBSValidationError(name, '"steps" must be of type list')
         if not module["steps"]:
             raise CFBSValidationError(name, '"steps" must be non-empty')
-        for step in module["steps"]:
+        for i, step in enumerate(module["steps"]):
             if type(step) != str:
                 raise CFBSValidationError(name, '"steps" must be a list of strings')
             if not step or step.strip() == "":
@@ -269,29 +294,7 @@ def _validate_module_object(context, name, module, config):
                     name, '"steps" must be a list of non-empty / non-whitespace strings'
                 )
             operation, args = split_build_step(step)
-            if not operation in AVAILABLE_BUILD_STEPS:
-                x = ", ".join(AVAILABLE_BUILD_STEPS)
-                raise CFBSValidationError(
-                    name,
-                    'Unknown operation "%s" in "steps", must be one of: (%s)'
-                    % (operation, x),
-                )
-            expected = AVAILABLE_BUILD_STEPS[operation]
-            actual = len(args)
-            if not step_has_valid_arg_count(args, expected):
-                if type(expected) is int:
-                    raise CFBSValidationError(
-                        name,
-                        "The %s build step expects %d arguments, %d were given"
-                        % (operation, expected, actual),
-                    )
-                else:
-                    expected = int(expected[0:-1])
-                    raise CFBSValidationError(
-                        name,
-                        "The %s build step expects %d or more arguments, %d were given"
-                        % (operation, expected, actual),
-                    )
+            validate_build_step(name, i, operation, args)
 
     def validate_url_field(name, module, field):
         assert field in module
