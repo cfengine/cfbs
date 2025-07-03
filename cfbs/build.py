@@ -30,6 +30,7 @@ AVAILABLE_BUILD_STEPS = {
     "input": 2,
     "policy_files": "1+",
     "bundles": "1+",
+    "replace": 4,  # n, a, b, filename
     "replace_version": 2,  # string to replace and filename
 }
 
@@ -95,6 +96,50 @@ def step_has_valid_arg_count(args, expected):
             return False
 
     return True
+
+
+def _perform_replace_step(n, a, b, filename):
+    or_more = False
+    if n.endswith("+"):
+        n = n[0:-1]
+        or_more = True
+    n = int(n)
+    if n <= 0 or n > 1000:
+        user_error("replace build step cannot replace something %s times" % (n))
+    if a in b and (n >= 2 or or_more):
+        user_error(
+            "'%s' must not contain '%s' (could lead to recursive replacing)" % (a, b)
+        )
+    if not os.path.isfile(filename):
+        user_error("No such file '%s' in replace build step" % (filename,))
+    try:
+        with open(filename, "r") as f:
+            content = f.read()
+    except:
+        user_error("Could not open/read '%s' in replace build step" % (filename,))
+    new_content = previous_content = content
+    for i in range(0, n):
+        previous_content = new_content
+        new_content = previous_content.replace(a, b, 1)
+        if new_content == previous_content:
+            user_error(
+                "replace build step could only replace '%s' in '%s' %s times, not %s times (required)"
+                % (a, filename, i, n)
+            )
+
+    if or_more:
+        for i in range(n, 1000):
+            previous_content = new_content
+            new_content = previous_content.replace(a, b, 1)
+            if new_content == previous_content:
+                break
+    if a in new_content:
+        user_error("too many occurences of '%s' in '%s'" % (a, filename))
+    try:
+        with open(filename, "w") as f:
+            f.write(new_content)
+    except:
+        user_error("Failed to write to '%s'" % (filename,))
 
 
 def _perform_build_step(module, step, max_length):
@@ -260,6 +305,12 @@ def _perform_build_step(module, step, max_length):
             merged = augment
         log.debug("Merged def.json: %s", pretty(merged))
         write_json(path, merged)
+    elif operation == "replace":
+        assert len(args) == 4
+        print("%s replace '%s'" % (prefix, "' '".join(args)))
+        n, a, b, file = args
+        file = os.path.join(destination, file)
+        _perform_replace_step(n, a, b, file)
     elif operation == "replace_version":
         assert len(args) == 2
         print("%s replace_version '%s'" % (prefix, "' '".join(args)))

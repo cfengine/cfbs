@@ -264,6 +264,12 @@ In `cfbs.json`'s `"steps"`, the build step name must be separated from the rest 
   - Converts the input data for a module into the augments format and merges it with the target augments file.
   - Source is relative to module directory and target is relative to `out/masterfiles`.
     - In most cases, the build step should be: `input ./input.json def.json`
+- `replace <n> <a> <b> <filename>`
+  - Replace string `<a>` with string `<b>`, exactly `<n>` times, in file `filename`.
+  - The number of occurences is strict: It will error if the string cannot be found, cannot be replaced exactly `<n>` times, or can still be found after replacements are done.
+    (This is to try to catch mistakes).
+  - `n` must be an integer, greater than 0, and may optionally have a trailing `+` to signify "or more".
+  - string `<b>` must not contain string `<a>`, as that could lead to confusing / recursive replacement situations.
 - `replace_version <to_replace> <filename>`
   - Replace the string inside the file with the version number of that module.
   - The module must have a version and the string must occur exactly once in the file.

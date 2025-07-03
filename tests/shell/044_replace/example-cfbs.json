@@ -1,0 +1,19 @@
+{
+  "name": "Example project",
+  "description": "Example description",
+  "type": "policy-set",
+  "git": true,
+  "build": [
+    {
+      "name": "./subdir/",
+      "description": "Local subdirectory added using cfbs command line",
+      "added_by": "cfbs add",
+      "steps": [
+        "copy example.py services/cfbs/subdir/example.py",
+        "replace 1 foo bar services/cfbs/subdir/example.py",
+        "replace 2 alice bob services/cfbs/subdir/example.py",
+        "replace 1+ lorem ipsum services/cfbs/subdir/example.py"
+      ]
+    }
+  ]
+}
