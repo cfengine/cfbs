@@ -46,6 +46,8 @@ AVAILABLE_BUILD_STEPS = {
     "replace_version": 2,  # string to replace and filename
 }
 
+MAX_REPLACEMENTS = 1000
+
 
 def split_build_step(command) -> Tuple[str, List[str]]:
     terms = command.split(" ")

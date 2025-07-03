@@ -32,6 +32,7 @@ from cfbs.utils import (
 from cfbs.pretty import pretty, pretty_file
 from cfbs.validate import (
     AVAILABLE_BUILD_STEPS,
+    MAX_REPLACEMENTS,
     step_has_valid_arg_count,
     split_build_step,
 )
@@ -83,8 +84,13 @@ def _perform_replace_step(n, a, b, filename):
         n = n[0:-1]
         or_more = True
     n = int(n)
-    if n <= 0 or n > 1000:
+    if n <= 0:
         user_error("replace build step cannot replace something %s times" % (n))
+    if n > MAX_REPLACEMENTS or n == MAX_REPLACEMENTS and or_more:
+        user_error(
+            "replace build step cannot replace something more than %s times"
+            % (MAX_REPLACEMENTS)
+        )
     if a in b and (n >= 2 or or_more):
         user_error(
             "'%s' must not contain '%s' (could lead to recursive replacing)" % (a, b)
@@ -107,7 +113,7 @@ def _perform_replace_step(n, a, b, filename):
             )
 
     if or_more:
-        for i in range(n, 1000):
+        for i in range(n, MAX_REPLACEMENTS):
             previous_content = new_content
             new_content = previous_content.replace(a, b, 1)
             if new_content == previous_content:
