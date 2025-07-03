@@ -128,6 +128,24 @@ def strip_left(string, beginning):
     return string[len(beginning) :]
 
 
+def strip_right_any(string, suffixes: tuple):
+    if not string.endswith(suffixes):
+        return string
+
+    for suffix in suffixes:
+        if string.endswith(suffix):
+            return string[0 : -len(suffix)]
+
+
+def strip_left_any(string, prefixes: tuple):
+    if not string.startswith(prefixes):
+        return string
+
+    for prefix in prefixes:
+        if string.startswith(prefix):
+            return string[len(prefix) :]
+
+
 def read_file(path):
     try:
         with open(path, "r") as f:

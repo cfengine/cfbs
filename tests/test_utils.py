@@ -23,7 +23,9 @@ from cfbs.utils import (
     read_json,
     string_sha256,
     strip_left,
+    strip_left_any,
     strip_right,
+    strip_right_any,
 )
 
 
@@ -53,6 +55,28 @@ def test_strip_left():
 
     assert strip_left(s, "ab") == "ab"
     assert strip_left(s, "b") == "abab"
+
+
+def test_strip_right_any():
+    s = "a.b.c"
+
+    assert strip_right_any(s, (".b", ".c")) == "a.b"
+    assert strip_right_any(s, (".c", ".b")) == "a.b"
+
+    s = "a.b.b"
+
+    assert strip_right_any(s, (".b", ".b")) == "a.b"
+
+
+def test_strip_left_any():
+    s = "a.b.c"
+
+    assert strip_left_any(s, ("a.", "b.")) == "b.c"
+    assert strip_left_any(s, ("b.", "a.")) == "b.c"
+
+    s = "a.a.b"
+
+    assert strip_left_any(s, ("a.", "a.")) == "a.b"
 
 
 def test_read_file():
