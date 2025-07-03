@@ -2,7 +2,7 @@ import argparse
 import os
 
 from cfbs import commands
-from cfbs.utils import cache, UserError
+from cfbs.utils import cache, GenericExitError
 
 
 def get_args():
@@ -23,13 +23,13 @@ def get_manual():
             with open(file_path, "r", encoding="utf-8") as man_file:
                 man = man_file.read()
                 if not man:
-                    raise UserError("Manual file is empty")
+                    raise GenericExitError("Manual file is empty")
                 else:
                     return man
         except OSError:
-            raise UserError("Error reading manual file " + file_path)
+            raise GenericExitError("Error reading manual file " + file_path)
     else:
-        raise UserError("Manual file does not exist")
+        raise GenericExitError("Manual file does not exist")
 
 
 @cache

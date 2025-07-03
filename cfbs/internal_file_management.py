@@ -23,7 +23,7 @@ from cfbs.utils import (
     rm,
     sh,
     strip_right,
-    UserError,
+    GenericExitError,
 )
 
 _SUPPORTED_TAR_TYPES = (".tar.gz", ".tgz")
@@ -38,11 +38,13 @@ def local_module_name(module_path):
     if module.endswith((".cf", ".json", "/")) and not module.startswith("./"):
         module = "./" + module
     if not module.startswith("./"):
-        raise UserError("Please prepend local files or folders with './' to avoid ambiguity")
+        raise GenericExitError(
+            "Please prepend local files or folders with './' to avoid ambiguity"
+        )
 
     for illegal in ["//", "..", " ", "\n", "\t", " "]:
         if illegal in module:
-            raise UserError("Module path cannot contain %s" % repr(illegal))
+            raise GenericExitError("Module path cannot contain %s" % repr(illegal))
 
     if os.path.isdir(module) and not module.endswith("/"):
         module = module + "/"
@@ -52,10 +54,10 @@ def local_module_name(module_path):
     assert os.path.exists(module)
     if os.path.isfile(module):
         if not module.endswith((".cf", ".json")):
-            raise UserError("Only .cf and .json files supported currently")
+            raise GenericExitError("Only .cf and .json files supported currently")
     else:
         if not os.path.isdir(module):
-            raise UserError("'%s' must be either a directory or a file" % module)
+            raise GenericExitError("'%s' must be either a directory or a file" % module)
 
     return module
 
@@ -65,7 +67,7 @@ def get_download_path(module) -> str:
 
     commit = module["commit"]
     if not is_a_commit_hash(commit):
-        raise UserError("'%s' is not a commit reference" % commit)
+        raise GenericExitError("'%s' is not a commit reference" % commit)
 
     url = module.get("url") or module["repo"]
     if url.endswith(SUPPORTED_ARCHIVES):
@@ -92,9 +94,9 @@ def _prettify_name(name):
 def local_module_copy(module, counter, max_length):
     name = module["name"]
     if not name.startswith("./"):
-        raise UserError("module %s must start with ./" % name)
+        raise GenericExitError("module %s must start with ./" % name)
     if not os.path.isfile(name) and not os.path.isdir(name):
-        raise UserError("module %s does not exist" % name)
+        raise GenericExitError("module %s does not exist" % name)
     pretty_name = _prettify_name(name)
     target = "out/steps/%03d_%s_local/" % (counter, pretty_name)
     module["_directory"] = target
@@ -116,7 +118,7 @@ def local_module_copy(module, counter, max_length):
 def _get_path_from_url(url):
     if not url.startswith(SUPPORTED_URI_SCHEMES):
         if "://" in url:
-            return raise UserError("Unsupported URL protocol in '%s'" % url)
+            return raise GenericExitError("Unsupported URL protocol in '%s'" % url)
         else:
             # It's a path already, just remove trailing slashes (if any).
             return url.rstrip("/")
@@ -161,7 +163,7 @@ def clone_url_repo(repo_url):
         # commit specified in the url
         repo_url, commit = repo_url.rsplit("@", 1)
         if not is_a_commit_hash(commit):
-            raise UserError("'%s' is not a commit reference" % commit)
+            raise GenericExitError("'%s' is not a commit reference" % commit)
 
     downloads = os.path.join(cfbs_dir(), "downloads")
 
@@ -188,7 +190,7 @@ def clone_url_repo(repo_url):
     if os.path.exists(json_path):
         return (json_path, commit)
     else:
-        raise UserError(
+        raise GenericExitError(
             "Repository '%s' doesn't contain a valid cfbs.json index file" % repo_url
         )
 
@@ -207,7 +209,7 @@ def fetch_archive(
             archive_type = ext
             break
     else:
-        raise UserError("Unsupported archive type: '%s'" % url)
+        raise GenericExitError("Unsupported archive type: '%s'" % url)
 
     archive_name = strip_right(archive_filename, archive_type)
     downloads = os.path.join(cfbs_dir(), "downloads")
@@ -220,7 +222,7 @@ def fetch_archive(
     try:
         archive_checksum = fetch_url(url, archive_path, checksum)
     except FetchError as e:
-        raise UserError(str(e))
+        raise GenericExitError(str(e))
 
     content_dir = os.path.join(downloads, archive_dir, archive_checksum)
     if extract_to_directory:
@@ -238,12 +240,16 @@ def fetch_archive(
         if shutil.which("tar"):
             sh("cd %s; tar -xf %s" % (content_dir, archive_path))
         else:
-            raise UserError("Working with .tar archives requires the 'tar' utility")
+            raise GenericExitError(
+                "Working with .tar archives requires the 'tar' utility"
+            )
     elif archive_type == (".zip"):
         if shutil.which("unzip"):
             sh("cd %s; unzip %s" % (content_dir, archive_path))
         else:
-            raise UserError("Working with .zip archives requires the 'unzip' utility")
+            raise GenericExitError(
+                "Working with .zip archives requires the 'unzip' utility"
+            )
     else:
         raise RuntimeError(
             "Unhandled archive type: '%s'. Please report this at %s."
@@ -270,7 +276,7 @@ def fetch_archive(
         if os.path.exists(index_path):
             return (index_path, archive_checksum)
         else:
-            raise UserError(
+            raise GenericExitError(
                 "Archive '%s' doesn't contain a valid cfbs.json index file" % url
             )
     else:

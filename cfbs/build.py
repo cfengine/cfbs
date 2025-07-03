@@ -26,7 +26,7 @@ from cfbs.utils import (
     sh,
     strip_left,
     touch,
-    UserError,
+    GenericExitError,
     write_json,
 )
 from cfbs.pretty import pretty, pretty_file
@@ -92,15 +92,17 @@ def _perform_replace_step(n, a, b, filename):
         with open(filename, "r") as f:
             content = f.read()
     except FileNotFoundError:
-        raise UserError("No such file '%s' in replace build step" % (filename,))
+        raise GenericExitError("No such file '%s' in replace build step" % (filename,))
     except:
-        raise UserError("Could not open/read '%s' in replace build step" % (filename,))
+        raise GenericExitError(
+            "Could not open/read '%s' in replace build step" % (filename,)
+        )
     new_content = previous_content = content
     for i in range(0, n):
         previous_content = new_content
         new_content = previous_content.replace(a, b, 1)
         if new_content == previous_content:
-            raise UserError(
+            raise GenericExitError(
                 "replace build step could only replace '%s' in '%s' %s times, not %s times (required)"
                 % (a, filename, i, n)
             )
@@ -112,12 +114,12 @@ def _perform_replace_step(n, a, b, filename):
             if new_content == previous_content:
                 break
     if a in new_content:
-        raise UserError("too many occurences of '%s' in '%s'" % (a, filename))
+        raise GenericExitError("too many occurences of '%s' in '%s'" % (a, filename))
     try:
         with open(filename, "w") as f:
             f.write(new_content)
     except:
-        raise UserError("Failed to write to '%s'" % (filename,))
+        raise GenericExitError("Failed to write to '%s'" % (filename,))
 
 
 def _perform_build_step(module, i, step, max_length):
@@ -158,7 +160,7 @@ def _perform_build_step(module, i, step, max_length):
             dst = ""
         print("%s json '%s' 'masterfiles/%s'" % (prefix, src, dst))
         if not os.path.isfile(os.path.join(source, src)):
-            raise UserError("'%s' is not a file" % src)
+            raise GenericExitError("'%s' is not a file" % src)
         src, dst = os.path.join(source, src), os.path.join(destination, dst)
         extras, original = read_json(src), read_json(dst)
         if not extras:
@@ -228,7 +230,7 @@ def _perform_build_step(module, i, step, max_length):
         extras = _generate_augment(name, extras)
         log.debug("Generated augment: %s", pretty(extras))
         if not extras:
-            raise UserError(
+            raise GenericExitError(
                 "Input data '%s' is incomplete: Skipping build step."
                 % os.path.basename(src)
             )
@@ -251,7 +253,7 @@ def _perform_build_step(module, i, step, max_length):
                 cf_files = find("out/masterfiles/" + file, extension=".cf")
                 files += (strip_left(f, "out/masterfiles/") for f in cf_files)
             else:
-                raise UserError(
+                raise GenericExitError(
                     "Unsupported filetype '%s' for build step '%s': "
                     % (file, operation)
                     + "Expected directory (*/) of policy file (*.cf)"
@@ -306,7 +308,7 @@ def _perform_build_step(module, i, step, max_length):
 
 def perform_build(config) -> int:
     if not config.get("build"):
-        raise UserError("No 'build' key found in the configuration")
+        raise GenericExitError("No 'build' key found in the configuration")
 
     # mini-validation
     for module in config.get("build", []):
@@ -314,25 +316,25 @@ def perform_build(config) -> int:
             operation, args = split_build_step(step)
 
             if step.split() != [operation] + args:
-                raise UserError(
+                raise GenericExitError(
                     "Incorrect whitespace in the `%s` build step - singular spaces are required"
                     % step
                 )
 
             if operation not in AVAILABLE_BUILD_STEPS:
-                raise UserError("Unknown build step operation: %s" % operation)
+                raise GenericExitError("Unknown build step operation: %s" % operation)
 
             expected = AVAILABLE_BUILD_STEPS[operation]
             actual = len(args)
             if not step_has_valid_arg_count(args, expected):
                 if type(expected) is int:
-                    raise UserError(
+                    raise GenericExitError(
                         "The `%s` build step expects %d arguments, %d were given"
                         % (step, expected, actual)
                     )
                 else:
                     expected = int(expected[0:-1])
-                    raise UserError(
+                    raise GenericExitError(
                         "The `%s` build step expects %d or more arguments, %d were given"
                         % (step, expected, actual)
                     )

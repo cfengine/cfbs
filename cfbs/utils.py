@@ -20,7 +20,7 @@ class ProgrammerError(RuntimeError):
     pass
 
 
-class UserError(Exception):
+class GenericExitError(Exception):
     pass
 
 
@@ -35,7 +35,9 @@ def _sh(cmd: str):
             stderr=subprocess.STDOUT,
         )
     except subprocess.CalledProcessError as e:
-        raise UserError("Command failed - %s\n%s" % (cmd, e.stdout.decode("utf-8")))
+        raise GenericExitError(
+            "Command failed - %s\n%s" % (cmd, e.stdout.decode("utf-8"))
+        )
 
 
 def sh(cmd: str, directory=None):

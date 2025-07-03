@@ -21,7 +21,7 @@ from cfbs.utils import (
     cfbs_filename,
     is_cfbs_repo,
     read_json,
-    UserError,
+    GenericExitError,
     strip_right,
     pad_right,
     ProgrammerError,
@@ -96,13 +96,13 @@ def get_command_names():
 @cfbs_command("pretty")
 def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
     if not filenames:
-        raise UserError("Filenames missing for cfbs pretty command")
+        raise GenericExitError("Filenames missing for cfbs pretty command")
 
     sorting_rules = CFBS_DEFAULT_SORTING_RULES if keep_order else None
     num_files = 0
     for f in filenames:
         if not f or not f.endswith(".json"):
-            raise UserError(
+            raise GenericExitError(
                 "cfbs pretty command can only be used with .json files, not '%s'"
                 % os.path.basename(f)
             )
@@ -114,9 +114,9 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
             else:
                 pretty_file(f, sorting_rules)
         except FileNotFoundError:
-            raise UserError("File '%s' not found" % f)
+            raise GenericExitError("File '%s' not found" % f)
         except json.decoder.JSONDecodeError as ex:
-            raise UserError("Error reading json file '{}': {}".format(f, ex))
+            raise GenericExitError("Error reading json file '{}': {}".format(f, ex))
     if check:
         print("Would reformat %d file(s)" % num_files)
         return 1 if num_files > 0 else 0
@@ -126,7 +126,7 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
 @cfbs_command("init")
 def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     if is_cfbs_repo():
-        raise UserError("Already initialized - look at %s" % cfbs_filename())
+        raise GenericExitError("Already initialized - look at %s" % cfbs_filename())
 
     name = prompt_user(
         non_interactive,
@@ -274,7 +274,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
         remote = "https://github.com/cfengine/masterfiles"
         commit = ls_remote(remote, branch)
         if commit is None:
-            raise UserError(
+            raise GenericExitError(
                 "Failed to find branch or tag %s at remote %s" % (branch, remote)
             )
         log.debug("Current commit for masterfiles branch %s is %s" % (branch, commit))
@@ -398,7 +398,7 @@ def remove_command(to_remove: list):
     config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
     if not "build" in config:
-        raise UserError(
+        raise GenericExitError(
             'Cannot remove any modules because the "build" key is missing from cfbs.json'
         )
     modules = config["build"]
@@ -456,7 +456,7 @@ def remove_command(to_remove: list):
         if name.startswith(SUPPORTED_URI_SCHEMES):
             matches = _get_modules_by_url(name)
             if not matches:
-                raise UserError("Could not find module with URL '%s'" % name)
+                raise GenericExitError("Could not find module with URL '%s'" % name)
             for module in matches:
                 answer = _remove_module_user_prompt(module)
                 if answer.lower() in ("yes", "y"):
@@ -710,10 +710,10 @@ def _download_dependencies(
             counter += 1
             continue
         if "commit" not in module:
-            raise UserError("module %s must have a commit property" % name)
+            raise GenericExitError("module %s must have a commit property" % name)
         commit = module["commit"]
         if not is_a_commit_hash(commit):
-            raise UserError("'%s' is not a commit reference" % commit)
+            raise GenericExitError("'%s' is not a commit reference" % commit)
 
         url = module.get("url") or module["repo"]
         url = strip_right(url, ".git")
@@ -727,7 +727,7 @@ def _download_dependencies(
         if not os.path.exists(module_dir):
             if url.endswith(SUPPORTED_ARCHIVES):
                 if os.path.exists(commit_dir) and "subdirectory" in module:
-                    raise UserError(
+                    raise GenericExitError(
                         "Subdirectory '%s' for module '%s' was not found in fetched archive '%s': "
                         % (module["subdirectory"], name, url)
                         + "Please check cfbs.json for possible typos."
@@ -738,7 +738,7 @@ def _download_dependencies(
             # - added by URL instead of name (no version property in module data)
             elif "index" in module or "url" in module or ignore_versions:
                 if os.path.exists(commit_dir) and "subdirectory" in module:
-                    raise UserError(
+                    raise GenericExitError(
                         "Subdirectory '%s' for module '%s' was not found in cloned repository '%s': "
                         % (module["subdirectory"], name, url)
                         + "Please check cfbs.json for possible typos."
@@ -749,13 +749,15 @@ def _download_dependencies(
                 try:
                     versions = get_json(_VERSION_INDEX)
                 except FetchError as e:
-                    raise UserError(
+                    raise GenericExitError(
                         "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
                     )
                 try:
                     checksum = versions[name][module["version"]]["archive_sha256"]
                 except KeyError:
-                    raise UserError("Cannot verify checksum of the '%s' module" % name)
+                    raise GenericExitError(
+                        "Cannot verify checksum of the '%s' module" % name
+                    )
                 module_archive_url = os.path.join(
                     _MODULES_URL, name, commit + ".tar.gz"
                 )
@@ -810,7 +812,7 @@ def build_command(ignore_versions=False) -> int:
 @cfbs_command("install")
 def install_command(args) -> int:
     if len(args) > 1:
-        raise UserError(
+        raise GenericExitError(
             "Only one destination is allowed for command: cfbs install [destination]"
         )
     if not os.path.exists("out/masterfiles"):
@@ -867,7 +869,7 @@ def _print_module_info(data):
 @cfbs_command("info")
 def info_command(modules):
     if not modules:
-        raise UserError(
+        raise GenericExitError(
             "info/show command requires one or more module names as arguments"
         )
     config = CFBSConfig.get_instance()
@@ -936,7 +938,7 @@ def analyze_command(
             )
 
     if not os.path.isdir(path):
-        raise UserError("the provided policy set path is not a directory")
+        raise GenericExitError("the provided policy set path is not a directory")
 
     if masterfiles_dir is None:
         masterfiles_dir = "masterfiles"

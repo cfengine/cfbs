@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 from cfbs.result import Result
 from cfbs.utils import (
-    UserError,
+    GenericExitError,
     read_file,
     write_json,
     load_bundlenames,
@@ -100,7 +100,7 @@ class CFBSConfig(CFBSJson):
             module_str = module
             module = (remote_config or self).get_module_for_build(module, str_added_by)
         if not module:
-            raise UserError("Module '%s' not found" % module_str)
+            raise GenericExitError("Module '%s' not found" % module_str)
         assert "name" in module
         name = module["name"]
         assert "steps" in module
@@ -148,7 +148,7 @@ class CFBSConfig(CFBSJson):
         if len(to_add) == 0:
             modules = list(provides.values())
             if not any(modules):
-                raise UserError("no modules available, nothing to do")
+                raise GenericExitError("no modules available, nothing to do")
             print("Found %d modules in '%s':" % (len(modules), url))
             for m in modules:
                 deps = m.get("dependencies", [])
@@ -166,7 +166,7 @@ class CFBSConfig(CFBSJson):
         else:
             missing = [k for k in to_add if k not in provides]
             if missing:
-                raise UserError("Missing modules: " + ", ".join(missing))
+                raise GenericExitError("Missing modules: " + ", ".join(missing))
             modules = [provides[k] for k in to_add]
 
         for i, module in enumerate(modules, start=1):
@@ -382,7 +382,7 @@ class CFBSConfig(CFBSJson):
         checksum=None,
     ) -> int:
         if not to_add:
-            raise UserError("Must specify at least one module to add")
+            raise GenericExitError("Must specify at least one module to add")
 
         before = {m["name"] for m in self.get("build", [])}
 
@@ -396,7 +396,7 @@ class CFBSConfig(CFBSJson):
         else:
             # for this `if` to be valid, module names containing `://` should be illegal
             if "://" in to_add[0]:
-                raise UserError(
+                raise GenericExitError(
                     "URI scheme not supported. The supported URI schemes are: "
                     + ", ".join(SUPPORTED_URI_SCHEMES)
                 )
@@ -450,7 +450,7 @@ class CFBSConfig(CFBSJson):
         def _check_keys(keys, input_data):
             for key in keys:
                 if key not in input_data:
-                    raise UserError(
+                    raise GenericExitError(
                         "Expected attribute '%s' in input definition: %s"
                         % (key, pretty(input_data))
                     )
@@ -469,7 +469,7 @@ class CFBSConfig(CFBSJson):
             for element in subtype:
                 _check_keys(["type", "label", "question", "key"], element)
                 if element["type"] != "string":
-                    raise UserError(
+                    raise GenericExitError(
                         "Subtype of type '%s' not supported for type list"
                         % element["type"]
                     )
@@ -496,7 +496,7 @@ class CFBSConfig(CFBSJson):
             elif isinstance(subtype, dict):
                 _check_keys(["type", "label", "question"], subtype)
                 if subtype["type"] != "string":
-                    raise UserError(
+                    raise GenericExitError(
                         "Subtype of type '%s' not supported for type list"
                         % subtype["type"]
                     )
@@ -509,7 +509,7 @@ class CFBSConfig(CFBSJson):
                 ).lower() in ("yes", "y"):
                     result.append(_input_string(subtype))
                 return result
-            raise UserError(
+            raise GenericExitError(
                 "Expected the value of attribute 'subtype' to be a JSON list or object, not: %s"
                 % pretty(input_data["subtype"])
             )
@@ -523,7 +523,9 @@ class CFBSConfig(CFBSJson):
             elif definition["type"] == "list":
                 definition["response"] = _input_list(definition)
             else:
-                raise UserError("Unsupported input type '%s'" % definition["type"])
+                raise GenericExitError(
+                    "Unsupported input type '%s'" % definition["type"]
+                )
 
     def _get_all_module_names(self, search_in=("build", "provides", "index")):
         modules = []

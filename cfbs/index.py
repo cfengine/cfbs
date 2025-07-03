@@ -2,7 +2,7 @@ import sys, os
 from collections import OrderedDict
 
 from cfbs.module import Module
-from cfbs.utils import FetchError, get_or_read_json, UserError, get_json
+from cfbs.utils import FetchError, get_or_read_json, GenericExitError, get_json
 from cfbs.internal_file_management import local_module_name
 
 _DEFAULT_INDEX = (
@@ -90,7 +90,7 @@ class Index:
         try:
             self._data = get_or_read_json(index)
         except FetchError as e:
-            raise UserError(
+            raise GenericExitError(
                 "Downloading index '%s' failed - check your Wi-Fi / network settings."
                 % index
             )
@@ -130,7 +130,7 @@ class Index:
         try:
             versions = get_json(_VERSION_INDEX)
         except FetchError as e:
-            raise UserError(
+            raise GenericExitError(
                 "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
             )
 
@@ -140,7 +140,7 @@ class Index:
         for module in modules:
             assert isinstance(module, Module)
             if not self.exists(module):
-                raise UserError(
+                raise GenericExitError(
                     "Module '%s'%s does not exist"
                     % (
                         module.name,
@@ -177,7 +177,7 @@ class Index:
                 try:
                     versions = get_json(_VERSION_INDEX)
                 except FetchError as e:
-                    raise UserError(
+                    raise GenericExitError(
                         "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
                     )
                 new_values = versions[name][version]
