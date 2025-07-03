@@ -1,3 +1,24 @@
+"""
+Functions for performing the core part of 'cfbs validate'
+
+Iterate over the JSON structure from cfbs.json, and check
+the contents against validation rules.
+
+Currently, we are not very strict with validation in other
+commands, when you run something like 'cfbs build',
+many things only produce warnings. This is for backwards
+compatibility and we might choose to turn those warnings
+into errors in the future.
+
+Be careful about introducing dependencies to other parts
+of the codebase, such as build.py - We want validate.py
+to be relatively easy to reuse in various places without
+accidentally introducing circular dependencies.
+Thus, for example, the common parts needed by both build.py
+and validate.py, should be in utils.py or validate.py,
+not in build.py.
+"""
+
 import argparse
 import sys
 import re

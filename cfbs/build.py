@@ -1,3 +1,15 @@
+"""
+Functions for performing the core part of 'cfbs build'
+
+This module contains the code for performing the actual build,
+converting a project into a ready to deploy policy set.
+To achieve this, we iterate over all the build steps in all
+the modules running the appropriate file and shell operations.
+
+There are some preliminary parts of 'cfbs build' implemented
+elsewhere, like validation and downloading modules.
+"""
+
 import os
 import logging as log
 import shutil
