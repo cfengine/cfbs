@@ -29,7 +29,7 @@ class GenericExitError(Exception):
 def _sh(cmd: str):
     # print(cmd)
     try:
-        r = subprocess.run(
+        subprocess.run(
             cmd,
             shell=True,
             check=True,

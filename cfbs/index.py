@@ -132,7 +132,7 @@ class Index:
             return name in self
         try:
             versions = get_json(_VERSION_INDEX)
-        except FetchError as e:
+        except FetchError:
             raise GenericExitError(
                 "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
             )
