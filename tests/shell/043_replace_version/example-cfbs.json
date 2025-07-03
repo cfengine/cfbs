@@ -11,7 +11,7 @@
       "version": "1.2.3",
       "steps": [
         "copy example.py services/cfbs/subdir/example.py",
-        "replace_version 0.0.0 services/cfbs/subdir/example.py"
+        "replace_version 1 0.0.0 services/cfbs/subdir/example.py"
       ]
     }
   ]

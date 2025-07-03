@@ -43,7 +43,7 @@ AVAILABLE_BUILD_STEPS = {
     "policy_files": "1+",
     "bundles": "1+",
     "replace": 4,  # n, a, b, filename
-    "replace_version": 2,  # string to replace and filename
+    "replace_version": 3,  # n, string to replace, filename
 }
 
 MAX_REPLACEMENTS = 1000
@@ -244,10 +244,11 @@ def validate_build_step(module, i, operation, args, strict=False):
                 % (a, b)
             )
     elif operation == "replace_version":
-        assert len(args) == 2
-        to_replace, filename = args
+        assert len(args) == 3
+        n, to_replace, filename = args
 
         # These should be guaranteed by the build step splitting logic:
+        assert type(n) is str and n != ""
         assert type(to_replace) is str and to_replace != ""
         assert type(filename) is str and filename != ""
 
@@ -258,6 +259,11 @@ def validate_build_step(module, i, operation, args, strict=False):
                 "Module '%s' missing \"version\" field for replace_version build step"
                 % (name,),
             )
+        version = module["version"]
+        # Reuse validation logic for replace:
+        validate_build_step(
+            name, module, i, "replace", [n, to_replace, version, filename], strict
+        )
     else:
         # TODO: Add more validation of other build steps.
         pass

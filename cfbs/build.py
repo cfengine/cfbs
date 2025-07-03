@@ -120,32 +120,6 @@ def _perform_replace_step(n, a, b, filename):
         user_error("Failed to write to '%s'" % (filename,))
 
 
-def _perform_replace_version(to_replace, filename, version):
-    try:
-        with open(filename, "r") as f:
-            content = f.read()
-    except FileNotFoundError:
-        user_error("No such file '%s' in replace build step" % (filename,))
-    except:
-        user_error("Could not open/read '%s' in replace_version" % (filename,))
-    new_content = content.replace(to_replace, version, 1)
-    if new_content == content:
-        user_error(
-            "replace_version requires that '%s' has exactly 1 occurence of '%s' - 0 found"
-            % (filename, to_replace)
-        )
-    if to_replace in new_content:
-        user_error(
-            "replace_version requires that '%s' has exactly 1 occurence of '%s' - more than 1 found"
-            % (filename, to_replace)
-        )
-    try:
-        with open(filename, "w") as f:
-            f.write(new_content)
-    except:
-        user_error("Failed to write to '%s'" % (filename,))
-
-
 def _perform_build_step(module, i, step, max_length):
     operation, args = split_build_step(step)
     name = module["name"]
@@ -319,14 +293,15 @@ def _perform_build_step(module, i, step, max_length):
         file = os.path.join(destination, file)
         _perform_replace_step(n, a, b, file)
     elif operation == "replace_version":
-        assert len(args) == 2
+        assert len(args) == 3
         # New build step so let's be a bit strict about validating it:
         validate_build_step(module, i, operation, args, strict=True)
         print("%s replace_version '%s'" % (prefix, "' '".join(args)))
-        to_replace = args[0]
-        filename = os.path.join(destination, args[1])
+        n = args[0]
+        to_replace = args[1]
+        filename = os.path.join(destination, args[2])
         version = module["version"]
-        _perform_replace_version(to_replace, filename, version)
+        _perform_replace_step(n, to_replace, version, filename)
 
 
 def perform_build(config) -> int:
