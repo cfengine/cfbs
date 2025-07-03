@@ -3,7 +3,7 @@ from utils import GenericExitError
 from args import get_arg_parser
 
 try:
-    from build_manpages.manpage import Manpage
+    from build_manpages.manpage import Manpage  # type: ignore
 except ImportError:
     raise GenericExitError(
         "Missing dependency, install from PyPI: 'pip install argparse-manpage setuptools'"

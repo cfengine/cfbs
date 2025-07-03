@@ -5,7 +5,9 @@ __copyright__ = ["Northern.tech AS"]
 
 import logging as log
 import sys
+from typing import Union
 
+from cfbs.result import Result
 from cfbs.validate import CFBSValidationError
 from cfbs.version import string as version
 from cfbs.utils import GenericExitError, is_cfbs_repo, ProgrammerError
@@ -38,7 +40,7 @@ def does_log_info(level):
     return level == "info" or level == "debug"
 
 
-def _main() -> int:
+def _main() -> Union[int, Result]:
     """Actual body of main function.
 
     Mainly for getting command line arguments and calling the appropriate
@@ -245,7 +247,11 @@ def main() -> int:
     The only thing we want to do here is call _main() and handle exceptions (errors).
     """
     try:
-        return _main()
+        r = _main()
+        # TODO: I'm not exactly sure when the commands
+        # would actually return result and what that really means.
+        assert type(r) is int
+        return r
     except CFBSValidationError as e:
         print("Error: " + str(e))
     except GenericExitError as e:

@@ -211,7 +211,6 @@ def fetch_archive(
     else:
         raise GenericExitError("Unsupported archive type: '%s'" % url)
 
-    archive_name = strip_right(archive_filename, archive_type)
     downloads = os.path.join(cfbs_dir(), "downloads")
 
     archive_dir = os.path.join(downloads, archive_dirname)
@@ -226,6 +225,7 @@ def fetch_archive(
 
     content_dir = os.path.join(downloads, archive_dir, archive_checksum)
     if extract_to_directory:
+        assert directory is not None
         content_dir = directory
     index_path = os.path.join(content_dir, "cfbs.json")
     if with_index and os.path.exists(index_path):

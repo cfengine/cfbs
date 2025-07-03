@@ -108,12 +108,14 @@ def version_as_comparable_list(version: str):
             version += "|0.0"
     version = version.replace("x", "99999").replace("-", "|1.").replace("b", "|-1.")
     versionpair = version.split("|")
-    versionlist = [versionpair[0].split("."), versionpair[1].split(".")]
+    versions_str = [versionpair[0].split("."), versionpair[1].split(".")]
 
-    versionlist[0] = [int(s) for s in versionlist[0]]
-    versionlist[1] = [int(s) for s in versionlist[1]]
+    versions_int = [
+        [int(s) for s in versions_str[0]],
+        [int(s) for s in versions_str[1]],
+    ]
 
-    return versionlist
+    return versions_int
 
 
 def version_as_comparable_list_negated(version):

@@ -455,7 +455,7 @@ def _validate_module_object(context, name, module, config):
         assert field in module
         url = module.get(field)
         if url and not url.startswith("https://"):
-            raise CFBSValidationError(name, '"%" must be an HTTPS URL' % field)
+            raise CFBSValidationError(name, '"%s" must be an HTTPS URL' % field)
 
     def validate_module_input(name, module):
         assert "input" in module

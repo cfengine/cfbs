@@ -39,7 +39,7 @@ class Module:
 
     def __getattr__(self, name: str):
         try:
-            return super().__getattr__(name)
+            return super().__getattribute__(name)
         except AttributeError as e:
             if name in Module.attributes():
                 return None

@@ -133,7 +133,7 @@ def mpf_vcf_dicts(offline=False):
 
         try:
             latest_release_data = get_json(LATEST_RELEASE_API_URL)
-        except FetchError as e:
+        except FetchError:
             raise GenericExitError(
                 "Downloading CFEngine release information failed - check your Wi-Fi / network settings."
             )
@@ -175,13 +175,16 @@ def mpf_vcf_dicts(offline=False):
     mpf_files_json_path = os.path.join(mpf_vcf_path, "files.json")
 
     mpf_versions_dict = read_json(mpf_versions_json_path)
+    assert mpf_versions_dict is not None
 
     mpf_versions_dict = mpf_versions_dict["versions"]
 
     mpf_checksums_dict = read_json(mpf_checkfiles_json_path)
+    assert mpf_checksums_dict is not None
     mpf_checksums_dict = mpf_checksums_dict["checksums"]
 
     mpf_files_dict = read_json(mpf_files_json_path)
+    assert mpf_files_dict is not None
     mpf_files_dict = mpf_files_dict["files"]
 
     return mpf_versions_dict, mpf_checksums_dict, mpf_files_dict
@@ -350,6 +353,7 @@ class AnalyzedFiles:
         self.different_moved_or_renamed = []
         self.not_from_any = []
 
+    @staticmethod
     def _denormalize_origin(origin, is_parentpath, masterfiles_dir):
         return [
             (mpf_denormalized_path(filepath, is_parentpath, masterfiles_dir), versions)

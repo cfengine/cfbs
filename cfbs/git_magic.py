@@ -4,6 +4,7 @@ Here it's okay to depend on other parts of the CFBS codebase,
 do prompts, etc.
 """
 
+from typing import Iterable, Union
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.git import (
@@ -22,7 +23,9 @@ from functools import partial
 first_commit = True
 
 
-def git_commit_maybe_prompt(commit_msg, non_interactive, scope="all"):
+def git_commit_maybe_prompt(
+    commit_msg, non_interactive, scope: Union[str, Iterable[str]] = "all"
+):
     edit_commit_msg = False
     args = get_args()
 
@@ -136,4 +139,6 @@ def with_git_commit(
     return decorator
 
 
-commit_after_command = partial(with_git_commit, (0,), ("cfbs.json",), failed_return=1)
+commit_after_command = partial(
+    with_git_commit, (0,), ("cfbs.json",), failed_return=True
+)

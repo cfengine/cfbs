@@ -7,8 +7,10 @@ import subprocess
 import hashlib
 import urllib
 import urllib.request  # needed on some platforms
+import urllib.error
 from collections import OrderedDict
 from shutil import rmtree
+from typing import Union
 
 from cfbs.pretty import pretty
 
@@ -100,7 +102,7 @@ def get_json(url: str) -> OrderedDict:
         raise FetchError("Failed to get JSON from '%s'" % url) from e
 
 
-def get_or_read_json(path: str) -> OrderedDict:
+def get_or_read_json(path: str) -> Union[OrderedDict, None]:
     if path.startswith("https://"):
         return get_json(path)
     return read_json(path)
@@ -163,7 +165,7 @@ def save_file(path, data):
         f.write(data)
 
 
-def read_json(path) -> OrderedDict:
+def read_json(path) -> Union[OrderedDict, None]:
     try:
         with open(path, "r") as f:
             return json.loads(f.read(), object_pairs_hook=OrderedDict)

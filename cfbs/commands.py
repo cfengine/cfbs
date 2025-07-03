@@ -9,6 +9,7 @@ import copy
 import logging as log
 import json
 import functools
+from typing import Union
 from collections import OrderedDict
 from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
@@ -17,7 +18,6 @@ from cfbs.cfbs_json import CFBSJson
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     FetchError,
-    cfbs_dir,
     cfbs_filename,
     is_cfbs_repo,
     read_json,
@@ -280,9 +280,13 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
         log.debug("Current commit for masterfiles branch %s is %s" % (branch, commit))
         to_add = ["%s@%s" % (remote, commit), "masterfiles"]
     if to_add:
-        ret = add_command(to_add, added_by="cfbs init")
-        if ret != 0:
-            return ret
+        result = add_command(to_add, added_by="cfbs init")
+        assert not isinstance(
+            result, Result
+        ), "Our git decorators are confusing the type checkers"
+        if result != 0:
+            return result
+        # TODO: Do we need to make commits here?
 
     return 0
 
@@ -297,6 +301,7 @@ def status_command() -> int:
     print("Description: %s" % config["description"])
     print("File:        %s" % cfbs_filename())
     if "index" in config:
+        assert config.raw_data is not None
         index = config.raw_data["index"]
 
         if type(index) is str:
@@ -384,7 +389,7 @@ def add_command(
     to_add: list,
     added_by="cfbs add",
     checksum=None,
-) -> int:
+) -> Union[Result, int]:
     config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
     r = config.add_command(to_add, added_by, checksum)
@@ -418,7 +423,7 @@ def remove_command(to_remove: list):
 
         return functools.reduce(reduce_dependencies, modules)
 
-    def _get_module_by_name(name) -> dict:
+    def _get_module_by_name(name) -> Union[dict, None]:
         if not name.startswith("./") and name.endswith(".cf") and os.path.exists(name):
             name = "./" + name
 
@@ -576,9 +581,13 @@ def update_command(to_update) -> Result:
 
     updated = []
     module_updates = ModuleUpdates(config)
+    index = None
 
     for update in to_update:
         old_module = config.get_module_from_build(update.name)
+        assert (
+            old_module is not None
+        ), 'We\'ve already checked that modules are in config["build"]'
 
         custom_index = old_module is not None and "index" in old_module
         index = Index(old_module["index"]) if custom_index else config.index
@@ -663,6 +672,7 @@ def update_command(to_update) -> Result:
         updated.append(update)
 
     if module_updates.new_deps:
+        assert index is not None
         objects = [
             index.get_module_object(d, module_updates.new_deps_added_by[d])
             for d in module_updates.new_deps
@@ -702,7 +712,6 @@ def _download_dependencies(
     print("\nModules:")
     counter = 1
     max_length = config.longest_module_key_length("name")
-    downloads = os.path.join(cfbs_dir(), "downloads")
     for module in config.get("build", []):
         name = module["name"]
         if name.startswith("./"):
@@ -748,7 +757,7 @@ def _download_dependencies(
             else:
                 try:
                     versions = get_json(_VERSION_INDEX)
-                except FetchError as e:
+                except FetchError:
                     raise GenericExitError(
                         "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
                     )
@@ -779,7 +788,7 @@ def _download_dependencies(
 
 
 @cfbs_command("download")
-def download_command(force, ignore_versions=False):
+def download_command(force, ignore_versions=False) -> int:
     config = CFBSConfig.get_instance()
     r = validate_config(config)
     if r != 0:
@@ -789,6 +798,7 @@ def download_command(force, ignore_versions=False):
             + "\nIf not fixed, these errors will cause your project to not build in future cfbs versions."
         )
     _download_dependencies(config, redownload=force, ignore_versions=ignore_versions)
+    return 0
 
 
 @cfbs_command("build")
@@ -876,7 +886,8 @@ def info_command(modules):
     config.warn_about_unknown_keys()
     index = config.index
 
-    build = config.get("build", {})
+    build = config.get("build", [])
+    assert isinstance(build, list)
 
     alias = None
 
@@ -1066,8 +1077,8 @@ def set_input_command(name, infile):
                 if not _compare_list(x, y):
                     return False
             else:
-                assert isinstance(
-                    x, (int, float, str, bool, None)
+                assert x is None or isinstance(
+                    x, (int, float, str, bool)
                 ), "Illegal value type"
                 if x != y:
                     return False
@@ -1138,3 +1149,4 @@ def generate_release_information_command(
     omit_download=False, check=False, min_version=None
 ):
     generate_release_information(omit_download, check, min_version)
+    return 0

@@ -1,5 +1,7 @@
-import sys, os
+import sys
+import os
 from collections import OrderedDict
+from typing import Union
 
 from cfbs.module import Module
 from cfbs.utils import FetchError, get_or_read_json, GenericExitError, get_json
@@ -89,7 +91,7 @@ class Index:
 
         try:
             self._data = get_or_read_json(index)
-        except FetchError as e:
+        except FetchError:
             raise GenericExitError(
                 "Downloading index '%s' failed - check your Wi-Fi / network settings."
                 % index
@@ -104,10 +106,11 @@ class Index:
     def data(self) -> dict:
         if not self._data:
             self._expand_index()
+        assert self._data, "_expand_index() should have set _data"
         return self._data
 
     @property
-    def custom_index(self) -> str:
+    def custom_index(self) -> Union[str, None]:
         # Index can be initialized with a dict or OrderedDict instead of a url string
         # in which case there would not be an index url to check against the default
         if type(self._unexpanded) is str and self._unexpanded != _DEFAULT_INDEX:
@@ -176,7 +179,7 @@ class Index:
             if version:
                 try:
                     versions = get_json(_VERSION_INDEX)
-                except FetchError as e:
+                except FetchError:
                     raise GenericExitError(
                         "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
                     )
@@ -186,6 +189,8 @@ class Index:
                 }
                 object.update(specifics)
                 object["version"] = version
+
+        assert object is not None
         module.update(object)
         if added_by:
             module["added_by"] = added_by
