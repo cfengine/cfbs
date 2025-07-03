@@ -120,7 +120,6 @@ def _validate_top_level_keys(config):
     if config["type"] == "index" and type(config["index"]) not in (dict, OrderedDict):
         raise CFBSValidationError(
             'For a cfbs.json with "index" as type, the "index" field must be an object / dictionary'
-            % field
         )
 
     # Further check types / values of those required fields:
