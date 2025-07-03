@@ -118,7 +118,7 @@ def local_module_copy(module, counter, max_length):
 def _get_path_from_url(url):
     if not url.startswith(SUPPORTED_URI_SCHEMES):
         if "://" in url:
-            return raise GenericExitError("Unsupported URL protocol in '%s'" % url)
+            raise GenericExitError("Unsupported URL protocol in '%s'" % url)
         else:
             # It's a path already, just remove trailing slashes (if any).
             return url.rstrip("/")
