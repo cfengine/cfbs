@@ -30,6 +30,7 @@ AVAILABLE_BUILD_STEPS = {
     "input": 2,
     "policy_files": "1+",
     "bundles": "1+",
+    "replace_version": 2,  # string to replace and filename
 }
 
 
@@ -259,6 +260,41 @@ def _perform_build_step(module, step, max_length):
             merged = augment
         log.debug("Merged def.json: %s", pretty(merged))
         write_json(path, merged)
+    elif operation == "replace_version":
+        assert len(args) == 2
+        print("%s replace_version '%s'" % (prefix, "' '".join(args)))
+        file = os.path.join(destination, args[1])
+        if not os.path.isfile(file):
+            user_error(
+                "No such file '%s' in replace_version for module '%s"
+                % (file, module["name"])
+            )
+        try:
+            with open(file, "r") as f:
+                content = f.read()
+        except:
+            user_error(
+                "Could not open/read '%s' in replace_version for module '%s"
+                % (file, module["name"])
+            )
+        to_replace = args[0]
+        version = module["version"]
+        new_content = content.replace(to_replace, version, 1)
+        if new_content == content:
+            user_error(
+                "replace_version requires that '%s' has exactly 1 occurence of '%s' - 0 found"
+                % (file, to_replace)
+            )
+        if to_replace in new_content:
+            user_error(
+                "replace_version requires that '%s' has exactly 1 occurence of '%s' - more than 1 found"
+                % (file, to_replace)
+            )
+        try:
+            with open(file, "w") as f:
+                f.write(new_content)
+        except:
+            user_error("Failed to write to '%s'" % (file,))
 
 
 def perform_build(config) -> int:
