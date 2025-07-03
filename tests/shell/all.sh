@@ -47,5 +47,6 @@ bash tests/shell/040_add_added_by_field_update_2.sh
 bash tests/shell/041_add_multidep.sh
 bash tests/shell/042_update_from_url.sh
 bash tests/shell/043_replace_version.sh
+bash tests/shell/044_replace.sh
 
 echo "All cfbs shell tests completed successfully!"

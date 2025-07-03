@@ -1,7 +1,18 @@
+"""
+Functions for performing the core part of 'cfbs build'
+
+This module contains the code for performing the actual build,
+converting a project into a ready to deploy policy set.
+To achieve this, we iterate over all the build steps in all
+the modules running the appropriate file and shell operations.
+
+There are some preliminary parts of 'cfbs build' implemented
+elsewhere, like validation and downloading modules.
+"""
+
 import os
 import logging as log
 import shutil
-from typing import List, Tuple
 from cfbs.utils import (
     canonify,
     cp,
@@ -19,19 +30,12 @@ from cfbs.utils import (
     write_json,
 )
 from cfbs.pretty import pretty, pretty_file
-
-AVAILABLE_BUILD_STEPS = {
-    "copy": 2,
-    "run": "1+",
-    "delete": "1+",
-    "json": 2,
-    "append": 2,
-    "directory": 2,
-    "input": 2,
-    "policy_files": "1+",
-    "bundles": "1+",
-    "replace_version": 2,  # string to replace and filename
-}
+from cfbs.validate import (
+    AVAILABLE_BUILD_STEPS,
+    MAX_REPLACEMENTS,
+    step_has_valid_arg_count,
+    split_build_step,
+)
 
 
 def init_out_folder():
@@ -74,27 +78,53 @@ def _generate_augment(module_name, input_data):
     return augment
 
 
-def split_build_step(command) -> Tuple[str, List[str]]:
-    terms = command.split(" ")
-    operation, args = terms[0], terms[1:]
-    return operation, args
+def _perform_replace_step(n, a, b, filename):
+    or_more = False
+    if n.endswith("+"):
+        n = n[0:-1]
+        or_more = True
+    n = int(n)
+    if n <= 0:
+        user_error("replace build step cannot replace something %s times" % (n))
+    if n > MAX_REPLACEMENTS or n == MAX_REPLACEMENTS and or_more:
+        user_error(
+            "replace build step cannot replace something more than %s times"
+            % (MAX_REPLACEMENTS)
+        )
+    if a in b and (n >= 2 or or_more):
+        user_error(
+            "'%s' must not contain '%s' (could lead to recursive replacing)" % (a, b)
+        )
+    if not os.path.isfile(filename):
+        user_error("No such file '%s' in replace build step" % (filename,))
+    try:
+        with open(filename, "r") as f:
+            content = f.read()
+    except:
+        user_error("Could not open/read '%s' in replace build step" % (filename,))
+    new_content = previous_content = content
+    for i in range(0, n):
+        previous_content = new_content
+        new_content = previous_content.replace(a, b, 1)
+        if new_content == previous_content:
+            user_error(
+                "replace build step could only replace '%s' in '%s' %s times, not %s times (required)"
+                % (a, filename, i, n)
+            )
 
-
-def step_has_valid_arg_count(args, expected):
-    actual = len(args)
-
-    if type(expected) is int:
-        if actual != expected:
-            return False
-
-    else:
-        # Only other option is a string of 1+, 2+ or similar:
-        assert type(expected) is str and expected.endswith("+")
-        expected = int(expected[0:-1])
-        if actual < expected:
-            return False
-
-    return True
+    if or_more:
+        for i in range(n, MAX_REPLACEMENTS):
+            previous_content = new_content
+            new_content = previous_content.replace(a, b, 1)
+            if new_content == previous_content:
+                break
+    if a in new_content:
+        user_error("too many occurences of '%s' in '%s'" % (a, filename))
+    try:
+        with open(filename, "w") as f:
+            f.write(new_content)
+    except:
+        user_error("Failed to write to '%s'" % (filename,))
 
 
 def _perform_build_step(module, step, max_length):
@@ -260,6 +290,12 @@ def _perform_build_step(module, step, max_length):
             merged = augment
         log.debug("Merged def.json: %s", pretty(merged))
         write_json(path, merged)
+    elif operation == "replace":
+        assert len(args) == 4
+        print("%s replace '%s'" % (prefix, "' '".join(args)))
+        n, a, b, file = args
+        file = os.path.join(destination, file)
+        _perform_replace_step(n, a, b, file)
     elif operation == "replace_version":
         assert len(args) == 2
         print("%s replace_version '%s'" % (prefix, "' '".join(args)))
