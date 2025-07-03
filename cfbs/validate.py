@@ -190,8 +190,10 @@ def validate_config(config, empty_build_list_ok=False):
         return 1
 
 
-def validate_build_step(module, i, operation, args, strict=False):
-    name = module["name"]
+def validate_build_step(name, module, i, operation, args, strict=False):
+    assert type(name) is str
+    assert type(module) is not str
+    assert type(i) is int
     if not operation in AVAILABLE_BUILD_STEPS:
         raise CFBSValidationError(
             name,
@@ -408,7 +410,7 @@ def _validate_module_object(context, name, module, config):
                     name, '"steps" must be a list of non-empty / non-whitespace strings'
                 )
             operation, args = split_build_step(step)
-            validate_build_step(module, i, operation, args)
+            validate_build_step(name, module, i, operation, args)
 
     def validate_url_field(name, module, field):
         assert field in module
