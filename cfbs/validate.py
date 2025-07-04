@@ -20,13 +20,17 @@ not in build.py.
 """
 
 import argparse
+import logging as log
 import sys
 import re
 from collections import OrderedDict
 from typing import List, Tuple
 
+from cfbs.module import is_module_local
 from cfbs.utils import (
     is_a_commit_hash,
+    strip_left,
+    strip_right_any,
     GenericExitError,
 )
 from cfbs.pretty import TOP_LEVEL_KEYS, MODULE_KEYS
@@ -166,6 +170,43 @@ def _validate_top_level_keys(config):
             )
 
 
+def validate_module_name_content(name):
+    MAX_MODULE_NAME_LENGTH = 64
+
+    if len(name) > MAX_MODULE_NAME_LENGTH:
+        raise CFBSValidationError(
+            name,
+            "Module name is too long (over "
+            + str(MAX_MODULE_NAME_LENGTH)
+            + " characters)",
+        )
+
+    # lowercase ASCII alphanumericals, starting with a letter, and possible singular dashes in the middle
+    r = "[a-z][a-z0-9]*(-[a-z0-9]+)*"
+    proper_name = name
+
+    if is_module_local(name):
+        if not name.startswith("./"):
+            raise CFBSValidationError(name, "Local module names should begin with `./`")
+
+        if not name.endswith((".cf", ".json", "/")):
+            raise CFBSValidationError(
+                name,
+                "Local module names should end with `/` (for directories) or `.json` or `.cf` (for files).",
+            )
+
+        proper_name = strip_left(proper_name, "./")
+        proper_name = strip_right_any(proper_name, ("/", ".cf", ".json"))
+
+    if not re.fullmatch(r, proper_name):
+        raise CFBSValidationError(
+            name,
+            "Module name contains illegal characters (only lowercase ASCII alphanumeric characters are legal)",
+        )
+
+    log.debug("Validated name of module %s" % name)
+
+
 def _validate_config(config, empty_build_list_ok=False):
     # First validate the config i.e. the user's cfbs.json
     config.warn_about_unknown_keys()
@@ -182,6 +223,9 @@ def _validate_config(config, empty_build_list_ok=False):
     if "provides" in raw_data:
         for name, module in raw_data["provides"].items():
             _validate_module_object("provides", name, module, config)
+
+    if config["type"] == "module":
+        validate_module_name_content(config["name"])
 
 
 def validate_config(config, empty_build_list_ok=False):
@@ -329,6 +373,7 @@ def _validate_module_object(context, name, module, config):
             raise CFBSValidationError(name, '"alias" must be of type string')
         if not module["alias"]:
             raise CFBSValidationError(name, '"alias" must be non-empty')
+        validate_module_name_content(name)
         if not config.can_reach_dependency(module["alias"], search_in):
             raise CFBSValidationError(
                 name, '"alias" must reference another module in the index'
@@ -343,6 +388,8 @@ def _validate_module_object(context, name, module, config):
             raise CFBSValidationError(name, '"name" must be of type string')
         if not module["name"]:
             raise CFBSValidationError(name, '"name" must be non-empty')
+
+        validate_module_name_content(name)
 
     def validate_description(name, module):
         assert "description" in module
@@ -639,6 +686,12 @@ def _validate_module_object(context, name, module, config):
         validate_url_field(name, module, "documentation")
     if "input" in module:
         validate_module_input(name, module)
+
+    # Step 4 - Additional validation checks:
+
+    # Validate module name content also when there's no explicit "name" field (for "index" and "provides" project types)
+    if "name" not in module:
+        validate_module_name_content(name)
 
 
 def _validate_config_for_build_field(config, empty_build_list_ok=False):

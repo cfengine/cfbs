@@ -7,6 +7,12 @@ def is_module_added_manually(added_by: str):
     return added_by in ("cfbs add", "cfbs init")
 
 
+def is_module_local(name: str):
+    # a module might contain `"local"` in its `"tags"` but this is not required
+    # the source of truth for whether the module is local is whether it starts with `./`
+    return name.startswith("./")
+
+
 class Module:
     """Class representing a module in cfbs.json"""
 
