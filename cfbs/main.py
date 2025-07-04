@@ -5,6 +5,7 @@ __copyright__ = ["Northern.tech AS"]
 
 import logging as log
 import sys
+import os
 from typing import Union
 
 from cfbs.result import Result
@@ -246,6 +247,10 @@ def main() -> int:
 
     The only thing we want to do here is call _main() and handle exceptions (errors).
     """
+    if os.getenv("CFBACKTRACE") == "1":
+        r = _main()
+        assert type(r) is int
+        return r
     try:
         r = _main()
         # TODO: I'm not exactly sure when the commands
@@ -256,5 +261,13 @@ def main() -> int:
         print("Error: " + str(e))
     except GenericExitError as e:
         print("Error: " + str(e))
+    except (AssertionError, ProgrammerError) as e:
+        print("Error: " + str(e))
+        print(
+            "This is an unexpected error indicating a bug, please create a ticket at:"
+        )
+        print("https://northerntech.atlassian.net/")
+    print("(Rerun with CFBACKTRACE=1 in front of your command to show backtraces)")
+
     # TODO: Handle other exceptions
     return 1
