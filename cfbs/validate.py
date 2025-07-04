@@ -249,7 +249,7 @@ def validate_build_step(name, module, i, operation, args, strict=False):
         if n > MAX_REPLACEMENTS or n == MAX_REPLACEMENTS and or_more:
             raise CFBSValidationError(
                 "replace build step cannot replace something more than %s times"
-                % (MAX_REPLACEMENTS)
+                % (MAX_REPLACEMENTS,)
             )
         if a in b:
             raise CFBSValidationError(
