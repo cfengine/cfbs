@@ -58,25 +58,17 @@ def test_strip_left():
 
 
 def test_strip_right_any():
-    s = "a.b.c"
+    assert strip_right_any("a.b.c", (".b", ".c")) == "a.b"
+    assert strip_right_any("a.b.c", (".c", ".b")) == "a.b"
 
-    assert strip_right_any(s, (".b", ".c")) == "a.b"
-    assert strip_right_any(s, (".c", ".b")) == "a.b"
-
-    s = "a.b.b"
-
-    assert strip_right_any(s, (".b", ".b")) == "a.b"
+    assert strip_right_any("a.b.b", (".b", ".b")) == "a.b"
 
 
 def test_strip_left_any():
-    s = "a.b.c"
+    assert strip_left_any("a.b.c", ("a.", "b.")) == "b.c"
+    assert strip_left_any("a.b.c", ("b.", "a.")) == "b.c"
 
-    assert strip_left_any(s, ("a.", "b.")) == "b.c"
-    assert strip_left_any(s, ("b.", "a.")) == "b.c"
-
-    s = "a.a.b"
-
-    assert strip_left_any(s, ("a.", "a.")) == "a.b"
+    assert strip_left_any("a.a.b", ("a.", "a.")) == "a.b"
 
 
 def test_read_file():
