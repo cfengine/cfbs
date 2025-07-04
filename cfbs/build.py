@@ -26,7 +26,7 @@ from cfbs.utils import (
     sh,
     strip_left,
     touch,
-    user_error,
+    GenericExitError,
     write_json,
 )
 from cfbs.pretty import pretty, pretty_file
@@ -35,6 +35,7 @@ from cfbs.validate import (
     MAX_REPLACEMENTS,
     step_has_valid_arg_count,
     split_build_step,
+    validate_build_step,
 )
 
 
@@ -79,35 +80,29 @@ def _generate_augment(module_name, input_data):
 
 
 def _perform_replace_step(n, a, b, filename):
+    assert n and a and b and filename
+    assert a not in b
+
     or_more = False
     if n.endswith("+"):
         n = n[0:-1]
         or_more = True
     n = int(n)
-    if n <= 0:
-        user_error("replace build step cannot replace something %s times" % (n))
-    if n > MAX_REPLACEMENTS or n == MAX_REPLACEMENTS and or_more:
-        user_error(
-            "replace build step cannot replace something more than %s times"
-            % (MAX_REPLACEMENTS)
-        )
-    if a in b and (n >= 2 or or_more):
-        user_error(
-            "'%s' must not contain '%s' (could lead to recursive replacing)" % (a, b)
-        )
-    if not os.path.isfile(filename):
-        user_error("No such file '%s' in replace build step" % (filename,))
     try:
         with open(filename, "r") as f:
             content = f.read()
+    except FileNotFoundError:
+        raise GenericExitError("No such file '%s' in replace build step" % (filename,))
     except:
-        user_error("Could not open/read '%s' in replace build step" % (filename,))
+        raise GenericExitError(
+            "Could not open/read '%s' in replace build step" % (filename,)
+        )
     new_content = previous_content = content
     for i in range(0, n):
         previous_content = new_content
         new_content = previous_content.replace(a, b, 1)
         if new_content == previous_content:
-            user_error(
+            raise GenericExitError(
                 "replace build step could only replace '%s' in '%s' %s times, not %s times (required)"
                 % (a, filename, i, n)
             )
@@ -119,21 +114,22 @@ def _perform_replace_step(n, a, b, filename):
             if new_content == previous_content:
                 break
     if a in new_content:
-        user_error("too many occurences of '%s' in '%s'" % (a, filename))
+        raise GenericExitError("too many occurences of '%s' in '%s'" % (a, filename))
     try:
         with open(filename, "w") as f:
             f.write(new_content)
     except:
-        user_error("Failed to write to '%s'" % (filename,))
+        raise GenericExitError("Failed to write to '%s'" % (filename,))
 
 
-def _perform_build_step(module, step, max_length):
+def _perform_build_step(module, i, step, max_length):
     operation, args = split_build_step(step)
+    name = module["name"]
     source = module["_directory"]
     counter = module["_counter"]
     destination = "out/masterfiles"
 
-    prefix = "%03d %s :" % (counter, pad_right(module["name"], max_length))
+    prefix = "%03d %s :" % (counter, pad_right(name, max_length))
 
     assert operation in AVAILABLE_BUILD_STEPS  # Should already be validated
     if operation == "copy":
@@ -164,7 +160,7 @@ def _perform_build_step(module, step, max_length):
             dst = ""
         print("%s json '%s' 'masterfiles/%s'" % (prefix, src, dst))
         if not os.path.isfile(os.path.join(source, src)):
-            user_error("'%s' is not a file" % src)
+            raise GenericExitError("'%s' is not a file" % src)
         src, dst = os.path.join(source, src), os.path.join(destination, dst)
         extras, original = read_json(src), read_json(dst)
         if not extras:
@@ -215,14 +211,14 @@ def _perform_build_step(module, step, max_length):
         if dst in [".", "./"]:
             dst = ""
         print("%s input '%s' 'masterfiles/%s'" % (prefix, src, dst))
-        if src.startswith(module["name"] + "/"):
+        if src.startswith(name + "/"):
             log.warning(
                 "Deprecated 'input' build step behavior - it should be: 'input ./input.json def.json'"
             )
             # We'll translate it to what it should be
             # TODO: Consider removing this behavior for cfbs 4?
-            src = "." + src[len(module["name"]) :]
-        src = os.path.join(module["name"], src)
+            src = "." + src[len(name) :]
+        src = os.path.join(name, src)
         dst = os.path.join(destination, dst)
         if not os.path.isfile(os.path.join(src)):
             log.warning(
@@ -231,10 +227,10 @@ def _perform_build_step(module, step, max_length):
             )
             return
         extras, original = read_json(src), read_json(dst)
-        extras = _generate_augment(module["name"], extras)
+        extras = _generate_augment(name, extras)
         log.debug("Generated augment: %s", pretty(extras))
         if not extras:
-            user_error(
+            raise GenericExitError(
                 "Input data '%s' is incomplete: Skipping build step."
                 % os.path.basename(src)
             )
@@ -257,7 +253,7 @@ def _perform_build_step(module, step, max_length):
                 cf_files = find("out/masterfiles/" + file, extension=".cf")
                 files += (strip_left(f, "out/masterfiles/") for f in cf_files)
             else:
-                user_error(
+                raise GenericExitError(
                     "Unsupported filetype '%s' for build step '%s': "
                     % (file, operation)
                     + "Expected directory (*/) of policy file (*.cf)"
@@ -293,49 +289,26 @@ def _perform_build_step(module, step, max_length):
     elif operation == "replace":
         assert len(args) == 4
         print("%s replace '%s'" % (prefix, "' '".join(args)))
+        # New build step so let's be a bit strict about validating it:
+        validate_build_step(name, module, i, operation, args, strict=True)
         n, a, b, file = args
         file = os.path.join(destination, file)
         _perform_replace_step(n, a, b, file)
     elif operation == "replace_version":
-        assert len(args) == 2
+        assert len(args) == 3
+        # New build step so let's be a bit strict about validating it:
+        validate_build_step(name, module, i, operation, args, strict=True)
         print("%s replace_version '%s'" % (prefix, "' '".join(args)))
-        file = os.path.join(destination, args[1])
-        if not os.path.isfile(file):
-            user_error(
-                "No such file '%s' in replace_version for module '%s"
-                % (file, module["name"])
-            )
-        try:
-            with open(file, "r") as f:
-                content = f.read()
-        except:
-            user_error(
-                "Could not open/read '%s' in replace_version for module '%s"
-                % (file, module["name"])
-            )
-        to_replace = args[0]
+        n = args[0]
+        to_replace = args[1]
+        filename = os.path.join(destination, args[2])
         version = module["version"]
-        new_content = content.replace(to_replace, version, 1)
-        if new_content == content:
-            user_error(
-                "replace_version requires that '%s' has exactly 1 occurence of '%s' - 0 found"
-                % (file, to_replace)
-            )
-        if to_replace in new_content:
-            user_error(
-                "replace_version requires that '%s' has exactly 1 occurence of '%s' - more than 1 found"
-                % (file, to_replace)
-            )
-        try:
-            with open(file, "w") as f:
-                f.write(new_content)
-        except:
-            user_error("Failed to write to '%s'" % (file,))
+        _perform_replace_step(n, to_replace, version, filename)
 
 
 def perform_build(config) -> int:
     if not config.get("build"):
-        user_error("No 'build' key found in the configuration")
+        raise GenericExitError("No 'build' key found in the configuration")
 
     # mini-validation
     for module in config.get("build", []):
@@ -343,25 +316,25 @@ def perform_build(config) -> int:
             operation, args = split_build_step(step)
 
             if step.split() != [operation] + args:
-                user_error(
+                raise GenericExitError(
                     "Incorrect whitespace in the `%s` build step - singular spaces are required"
                     % step
                 )
 
             if operation not in AVAILABLE_BUILD_STEPS:
-                user_error("Unknown build step operation: %s" % operation)
+                raise GenericExitError("Unknown build step operation: %s" % operation)
 
             expected = AVAILABLE_BUILD_STEPS[operation]
             actual = len(args)
             if not step_has_valid_arg_count(args, expected):
                 if type(expected) is int:
-                    user_error(
+                    raise GenericExitError(
                         "The `%s` build step expects %d arguments, %d were given"
                         % (step, expected, actual)
                     )
                 else:
                     expected = int(expected[0:-1])
-                    user_error(
+                    raise GenericExitError(
                         "The `%s` build step expects %d or more arguments, %d were given"
                         % (step, expected, actual)
                     )
@@ -369,8 +342,8 @@ def perform_build(config) -> int:
     print("\nSteps:")
     module_name_length = config.longest_module_key_length("name")
     for module in config.get("build", []):
-        for step in module["steps"]:
-            _perform_build_step(module, step, module_name_length)
+        for i, step in enumerate(module["steps"]):
+            _perform_build_step(module, i, step, module_name_length)
     assert os.path.isdir("./out/masterfiles/")
     shutil.copyfile("./cfbs.json", "./out/masterfiles/cfbs.json")
     if os.path.isfile("out/masterfiles/def.json"):

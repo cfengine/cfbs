@@ -27,7 +27,7 @@ from typing import List, Tuple
 
 from cfbs.utils import (
     is_a_commit_hash,
-    user_error,
+    GenericExitError,
 )
 from cfbs.pretty import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig
@@ -43,10 +43,14 @@ AVAILABLE_BUILD_STEPS = {
     "policy_files": "1+",
     "bundles": "1+",
     "replace": 4,  # n, a, b, filename
-    "replace_version": 2,  # string to replace and filename
+    "replace_version": 3,  # n, string to replace, filename
 }
 
+# Constants / regexes / limits for validating build steps:
 MAX_REPLACEMENTS = 1000
+FILENAME_RE = r"[-_/a-zA-Z0-9\.]+"
+MAX_FILENAME_LENGTH = 128
+MAX_BUILD_STEP_LENGTH = 256
 
 
 def split_build_step(command) -> Tuple[str, List[str]]:
@@ -116,7 +120,6 @@ def _validate_top_level_keys(config):
     if config["type"] == "index" and type(config["index"]) not in (dict, OrderedDict):
         raise CFBSValidationError(
             'For a cfbs.json with "index" as type, the "index" field must be an object / dictionary'
-            % field
         )
 
     # Further check types / values of those required fields:
@@ -190,7 +193,18 @@ def validate_config(config, empty_build_list_ok=False):
         return 1
 
 
-def validate_build_step(name, i, operation, args):
+def validate_build_step(name, module, i, operation, args, strict=False):
+    assert type(name) is str
+    assert type(module) is not str
+    assert type(i) is int
+
+    if strict:
+        step = operation + " " + " ".join(args)
+        if len(step) > MAX_FILENAME_LENGTH:
+            raise CFBSValidationError(
+                "%s build step in '%s' is too long" % (operation, name)
+            )
+
     if not operation in AVAILABLE_BUILD_STEPS:
         raise CFBSValidationError(
             name,
@@ -213,6 +227,87 @@ def validate_build_step(name, i, operation, args):
                 "The %s build step expects %d or more arguments, %d were given"
                 % (operation, expected, actual),
             )
+    if not strict:
+        return
+    if operation == "replace":
+        assert len(args) == 4
+        n, a, b, filename = args
+        assert type(a) is str and a != ""
+        assert type(b) is str and b != ""
+        assert type(filename) is str and filename != ""
+        or_more = False
+        if n.endswith("+"):
+            n = n[0:-1]
+            or_more = True
+        try:
+            n = int(n)
+            assert n >= 1
+        except:
+            raise CFBSValidationError(
+                "replace build step cannot replace something '%s' times" % (args[0],)
+            )
+        if n > MAX_REPLACEMENTS or n == MAX_REPLACEMENTS and or_more:
+            raise CFBSValidationError(
+                "replace build step cannot replace something more than %s times"
+                % (MAX_REPLACEMENTS)
+            )
+        if a in b:
+            raise CFBSValidationError(
+                "'%s' must not contain '%s' in replace build step (could lead to recursive replacing)"
+                % (a, b)
+            )
+        if filename == "." or filename.endswith(("/", "/.")):
+            raise CFBSValidationError(
+                "replace build step works on files, not '%s'" % (filename,)
+            )
+        if filename.startswith("/"):
+            raise CFBSValidationError(
+                "replace build step works on relative file paths, not '%s'"
+                % (filename,)
+            )
+        if filename.startswith("./"):
+            raise CFBSValidationError(
+                "replace file paths are always relative, drop the ./ in '%s'"
+                % (filename,)
+            )
+        if ".." in filename:
+            raise CFBSValidationError(
+                ".. not allowed in replace file path ('%s')" % (filename,)
+            )
+        if "/./" in filename:
+            raise CFBSValidationError(
+                "/./ not allowed in replace file path ('%s')" % (filename,)
+            )
+        if not re.fullmatch(FILENAME_RE, filename):
+            raise CFBSValidationError(
+                "filename in replace build step contains illegal characters ('%s')"
+                % (filename,)
+            )
+
+    elif operation == "replace_version":
+        assert len(args) == 3
+        n, to_replace, filename = args
+
+        # These should be guaranteed by the build step splitting logic:
+        assert type(n) is str and n != ""
+        assert type(to_replace) is str and to_replace != ""
+        assert type(filename) is str and filename != ""
+
+        # replace_version requires the module to have a version field:
+        if not "version" in module:
+            raise CFBSValidationError(
+                name,
+                "Module '%s' missing \"version\" field for replace_version build step"
+                % (name,),
+            )
+        version = module["version"]
+        # Reuse validation logic for replace:
+        validate_build_step(
+            name, module, i, "replace", [n, to_replace, version, filename], strict
+        )
+    else:
+        # TODO: Add more validation of other build steps.
+        pass
 
 
 def _validate_module_object(context, name, module, config):
@@ -354,7 +449,7 @@ def _validate_module_object(context, name, module, config):
                     name, '"steps" must be a list of non-empty / non-whitespace strings'
                 )
             operation, args = split_build_step(step)
-            validate_build_step(name, i, operation, args)
+            validate_build_step(name, module, i, operation, args)
 
     def validate_url_field(name, module, field):
         assert field in module
@@ -549,12 +644,12 @@ def _validate_module_object(context, name, module, config):
 def _validate_config_for_build_field(config, empty_build_list_ok=False):
     """Validate that neccessary fields are in the config for the build/download commands to work"""
     if not "build" in config:
-        user_error(
+        raise GenericExitError(
             'A "build" field is missing in ./cfbs.json'
             + " - The 'cfbs build' command loops through all modules in this list to find build steps to perform"
         )
     if type(config["build"]) is not list:
-        user_error(
+        raise GenericExitError(
             'The "build" field in ./cfbs.json must be a list (of modules involved in the build)'
         )
     if len(config["build"]) > 0:
@@ -563,7 +658,7 @@ def _validate_config_for_build_field(config, empty_build_list_ok=False):
             name = module["name"] if "name" in module else index
             _validate_module_object("build", name, module, config)
     elif not empty_build_list_ok:
-        user_error(
+        raise GenericExitError(
             "The \"build\" field in ./cfbs.json is empty - add modules with 'cfbs add'"
         )
 

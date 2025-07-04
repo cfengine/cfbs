@@ -6,8 +6,9 @@ __copyright__ = ["Northern.tech AS"]
 import logging as log
 import sys
 
+from cfbs.validate import CFBSValidationError
 from cfbs.version import string as version
-from cfbs.utils import user_error, is_cfbs_repo, ProgrammerError
+from cfbs.utils import GenericExitError, is_cfbs_repo, ProgrammerError
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
 from cfbs.args import get_args, print_help, get_manual
@@ -37,7 +38,16 @@ def does_log_info(level):
     return level == "info" or level == "debug"
 
 
-def main() -> int:
+def _main() -> int:
+    """Actual body of main function.
+
+    Mainly for getting command line arguments and calling the appropriate
+    functions based on command line arguments.
+
+    Actual logic should be implemented elsewhere (primarily in commands.py).
+
+    This function is wrapped by main() which catches exceptions.
+    """
     args = get_args()
     init_logging(args.loglevel)
     if args.manual:
@@ -50,62 +60,62 @@ def main() -> int:
     if not args.command:
         print_help()
         print("")
-        user_error("No command given")
+        raise GenericExitError("No command given")
 
     if args.command not in commands.get_command_names():
         print_help()
-        user_error("Command '%s' not found" % args.command)
+        raise GenericExitError("Command '%s' not found" % args.command)
 
     if args.masterfiles and args.command != "init":
-        user_error(
+        raise GenericExitError(
             "The option --masterfiles is only for 'cfbs init', not 'cfbs %s'"
             % args.command
         )
 
     if args.omit_download and args.command != "generate-release-information":
-        user_error(
+        raise GenericExitError(
             "The option --omit-download is only for 'cfbs generate-release-information', not 'cfbs %s'"
             % args.command
         )
 
     if args.check_against_git and args.command != "generate-release-information":
-        user_error(
+        raise GenericExitError(
             "The option --check-against-git is only for 'cfbs generate-release-information', not 'cfbs %s'"
             % args.command
         )
 
     if args.minimum_version and args.command != "generate-release-information":
-        user_error(
+        raise GenericExitError(
             "The option --from is only for 'cfbs generate-release-information', not 'cfbs %s'"
             % args.command
         )
 
     if args.masterfiles_dir and args.command not in ("analyze", "analyse"):
-        user_error(
+        raise GenericExitError(
             "The option --masterfiles-dir is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.reference_version and args.command not in ("analyze", "analyse"):
-        user_error(
+        raise GenericExitError(
             "The option --reference-version is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.to_json and args.command not in ("analyze", "analyse"):
-        user_error(
+        raise GenericExitError(
             "The option --to-json is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.ignored_path_components and args.command not in ("analyze", "analyse"):
-        user_error(
+        raise GenericExitError(
             "The option --ignored-path-components is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.offline and args.command not in ("analyze", "analyse"):
-        user_error(
+        raise GenericExitError(
             "The option --offline is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
@@ -118,7 +128,9 @@ def main() -> int:
         "update",
         "input",
     ):
-        user_error("The option --non-interactive is not for cfbs %s" % (args.command))
+        raise GenericExitError(
+            "The option --non-interactive is not for cfbs %s" % (args.command)
+        )
 
     # Commands you can run outside a cfbs repo:
     if args.command == "help":
@@ -162,7 +174,9 @@ def main() -> int:
         )
 
     if not is_cfbs_repo():
-        user_error("This is not a cfbs repo, to get started, type: cfbs init")
+        raise GenericExitError(
+            "This is not a cfbs repo, to get started, type: cfbs init"
+        )
 
     if args.command == "status":
         return commands.status_command()
@@ -223,3 +237,18 @@ def main() -> int:
     raise ProgrammerError(
         "Command '%s' not handled appropriately by the code above" % args.command
     )
+
+
+def main() -> int:
+    """Entry point
+
+    The only thing we want to do here is call _main() and handle exceptions (errors).
+    """
+    try:
+        return _main()
+    except CFBSValidationError as e:
+        print("Error: " + str(e))
+    except GenericExitError as e:
+        print("Error: " + str(e))
+    # TODO: Handle other exceptions
+    return 1

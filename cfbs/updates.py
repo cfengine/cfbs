@@ -3,7 +3,7 @@ import os
 import logging as log
 
 from cfbs.prompts import YES_NO_CHOICES, prompt_user
-from cfbs.utils import read_json, user_error, write_json
+from cfbs.utils import read_json, GenericExitError, write_json
 
 
 class ModuleUpdates:
@@ -112,7 +112,7 @@ def update_input_data(module, input_data) -> bool:
                     def_subtype, data_subtype, ("label", "question", "default")
                 )
             else:
-                user_error(
+                raise GenericExitError(
                     "Unsupported subtype '%s' in input definition for module '%s'."
                     % (type(def_subtype).__name__, module_name)
                 )
