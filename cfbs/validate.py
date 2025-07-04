@@ -198,6 +198,9 @@ def validate_module_name_content(name):
         proper_name = strip_left(proper_name, "./")
         proper_name = strip_right_any(proper_name, ("/", ".cf", ".json"))
 
+        # allow underscores, only for local modules
+        proper_name = proper_name.replace("_", "-")
+
     if not re.fullmatch(r, proper_name):
         raise CFBSValidationError(
             name,

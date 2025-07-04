@@ -176,6 +176,7 @@ The modules inside `build`, `provides`, and `index` use these fields:
   Local modules (files and folders in same directory as `cfbs.json`), must start with `./`, and end with `/` if it's a directory.
   Module names should not be longer than 64 characters.
   Module names (not including adfixes `./`, `/`, `.cf`, `.json` for local modules) should only contain lowercase ASCII alphanumeric characters possibly separated by dashes, and should start with a letter.
+  Local module names can contain underscores instead of dashes.
 - `description` (string): Human readable description of what this module does.
 - `tags` (array of strings): Mostly used for information / finding modules on [build.cfengine.com](https://build.cfengine.com).
   Some common examples include `supported`, `experimental`, `security`, `library`, `promise-type`.
