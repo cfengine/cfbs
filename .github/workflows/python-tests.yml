@@ -12,6 +12,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -51,6 +53,8 @@ jobs:
           UNSAFE_TESTS=1 bash tests/shell/all.sh
   test-legacy:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     env:
       # Temporary workaround for Python 3.5 failures - May 2024, see CFE-4395
       PIP_TRUSTED_HOST: "pypi.python.org pypi.org files.pythonhosted.org"
