@@ -12,6 +12,7 @@ import os
 import itertools
 import tempfile
 from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProcessError
+from typing import Iterable, Union
 
 from cfbs.utils import are_paths_equal
 
@@ -115,7 +116,11 @@ def git_init(user_name=None, user_email=None, description=None, initial_branch="
 
 
 def git_commit(
-    commit_msg, edit_commit_msg=False, user_name=None, user_email=None, scope="all"
+    commit_msg,
+    edit_commit_msg=False,
+    user_name=None,
+    user_email=None,
+    scope: Union[str, Iterable[str]] = "all",
 ):
     """Create a commit in the CWD Git repository
 

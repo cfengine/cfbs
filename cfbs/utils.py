@@ -7,8 +7,10 @@ import subprocess
 import hashlib
 import urllib
 import urllib.request  # needed on some platforms
+import urllib.error
 from collections import OrderedDict
 from shutil import rmtree
+from typing import Union
 
 from cfbs.pretty import pretty
 
@@ -27,7 +29,7 @@ class GenericExitError(Exception):
 def _sh(cmd: str):
     # print(cmd)
     try:
-        r = subprocess.run(
+        subprocess.run(
             cmd,
             shell=True,
             check=True,
@@ -100,7 +102,7 @@ def get_json(url: str) -> OrderedDict:
         raise FetchError("Failed to get JSON from '%s'" % url) from e
 
 
-def get_or_read_json(path: str) -> OrderedDict:
+def get_or_read_json(path: str) -> Union[OrderedDict, None]:
     if path.startswith("https://"):
         return get_json(path)
     return read_json(path)
@@ -161,7 +163,7 @@ def save_file(path, data):
         f.write(data)
 
 
-def read_json(path) -> OrderedDict:
+def read_json(path) -> Union[OrderedDict, None]:
     try:
         with open(path, "r") as f:
             return json.loads(f.read(), object_pairs_hook=OrderedDict)
@@ -230,8 +232,8 @@ def deduplicate_def_json(d):
     return d
 
 
-def deduplicate_list(l):
-    return list(OrderedDict.fromkeys(l))
+def deduplicate_list(original):
+    return list(OrderedDict.fromkeys(original))
 
 
 def dict_sorted_by_key(the_dict):
@@ -270,21 +272,17 @@ def is_cfbs_repo() -> bool:
 
 
 def immediate_subdirectories(path):
-    l = [f.name for f in os.scandir(path) if f.is_dir()]
+    foldernames = [f.name for f in os.scandir(path) if f.is_dir()]
 
     # `os.scandir` returns the entries in arbitrary order, so sort for determinism
-    l = sorted(l)
-
-    return l
+    return sorted(foldernames)
 
 
 def immediate_files(path):
-    l = [f.name for f in os.scandir(path) if not f.is_dir()]
+    filenames = [f.name for f in os.scandir(path) if not f.is_dir()]
 
     # `os.scandir` returns the entries in arbitrary order, so sort for determinism
-    l = sorted(l)
-
-    return l
+    return sorted(filenames)
 
 
 def path_append(dir, subdir):

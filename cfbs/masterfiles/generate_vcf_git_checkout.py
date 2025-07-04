@@ -61,7 +61,9 @@ def generate_vcf_git_checkout(checkout_tags):
         )
 
         # build masterfiles from git as they are in the tarball packages
-        # for the files of this version to be reproducible, the `EXPLICIT_RELEASE` environment variable needs to be set to what it was when the downloadable files were built
+        # for the files of this version to be reproducible, the `EXPLICIT_RELEASE`
+        # environment variable needs to be set to what it was when the downloadable
+        # files were built
         if tag == "3.18.3":
             release_number = "2"
         else:

@@ -1,6 +1,4 @@
 import os
-from collections import OrderedDict
-from copy import deepcopy
 
 from cfbs.pretty import pretty
 from cfbs.validate import validate_config

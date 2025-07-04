@@ -10,7 +10,7 @@ def test_init():
 
     module = Module("groups")
     assert module.name == "groups"
-    assert module.version == None
+    assert module.version is None
 
 
 def test_type_constraints():

@@ -32,7 +32,8 @@ def generate_release_information(omit_download=False, check=False, min_version=N
 
     if check:
         print(
-            "Downloading releases of masterfiles from git (github.com) and generating additional release information for comparison..."
+            "Downloading releases of masterfiles from git (github.com) and generating "
+            + "additional release information for comparison..."
         )
         generate_vcf_git_checkout(downloaded_versions)
         print("Candidate release information generated.")
@@ -45,5 +46,6 @@ def generate_release_information(omit_download=False, check=False, min_version=N
         print("Release information successfully generated.")
         print("See the results in ./versions.json, ./checksums.json, and ./files.json")
         print(
-            "(Run again with --check-against-git to download and compare with files from git, and generate -git.json files)"
+            "(Run again with --check-against-git to download and compare with files "
+            + "from git, and generate -git.json files)"
         )

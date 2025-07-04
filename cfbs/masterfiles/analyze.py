@@ -25,15 +25,15 @@ def versions_checksums_files(
                 versions_dict["versions"][version] = {}
             versions_dict["versions"][version][tarball_relpath] = file_checksum
 
-            if not file_checksum in checksums_dict["checksums"]:
+            if file_checksum not in checksums_dict["checksums"]:
                 checksums_dict["checksums"][file_checksum] = {}
-            if not tarball_relpath in checksums_dict["checksums"][file_checksum]:
+            if tarball_relpath not in checksums_dict["checksums"][file_checksum]:
                 checksums_dict["checksums"][file_checksum][tarball_relpath] = []
             checksums_dict["checksums"][file_checksum][tarball_relpath].append(version)
 
-            if not tarball_relpath in files_dict["files"]:
+            if tarball_relpath not in files_dict["files"]:
                 files_dict["files"][tarball_relpath] = {}
-            if not file_checksum in files_dict["files"][tarball_relpath]:
+            if file_checksum not in files_dict["files"][tarball_relpath]:
                 files_dict["files"][tarball_relpath][file_checksum] = []
             files_dict["files"][tarball_relpath][file_checksum].append(version)
 
@@ -108,12 +108,14 @@ def version_as_comparable_list(version: str):
             version += "|0.0"
     version = version.replace("x", "99999").replace("-", "|1.").replace("b", "|-1.")
     versionpair = version.split("|")
-    versionlist = [versionpair[0].split("."), versionpair[1].split(".")]
+    versions_str = [versionpair[0].split("."), versionpair[1].split(".")]
 
-    versionlist[0] = [int(s) for s in versionlist[0]]
-    versionlist[1] = [int(s) for s in versionlist[1]]
+    versions_int = [
+        [int(s) for s in versions_str[0]],
+        [int(s) for s in versions_str[1]],
+    ]
 
-    return versionlist
+    return versions_int
 
 
 def version_as_comparable_list_negated(version):

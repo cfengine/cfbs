@@ -15,7 +15,7 @@ def get_download_urls_enterprise(min_version=None):
 
     try:
         data = get_json(ENTERPRISE_RELEASES_URL)
-    except FetchError as e:
+    except FetchError:
         raise GenericExitError(
             "Downloading CFEngine release data failed - check your Wi-Fi / network settings."
         )
@@ -45,7 +45,7 @@ def get_download_urls_enterprise(min_version=None):
         release_url = release_data["URL"]
         try:
             subdata = get_json(release_url)
-        except FetchError as e:
+        except FetchError:
             raise GenericExitError(
                 "Downloading CFEngine release data for version %s failed - check your Wi-Fi / network settings."
                 % version

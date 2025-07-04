@@ -187,7 +187,10 @@ def test_pretty_string():
     assert pretty_string(test) == expected
 
     # Test wrapping based on siblings and length
-    test = '[{ "a": [1, 2], "b": [3, 4] }, { "d": [5, 6], "e": [7, 8, "This is a super duper long string which should cause wrapping due to its length"] }]'
+    test = (
+        '[{ "a": [1, 2], "b": [3, 4] }, { "d": [5, 6], "e": '
+        + '[7, 8, "This is a super duper long string which should cause wrapping due to its length"] }]'
+    )
     expected = """[
   {
     "a": [1, 2],
@@ -209,14 +212,14 @@ def test_pretty_file():
     mkdir("tests/tmp/", exist_ok=True)
     with open("tests/tmp/test_pretty_file.json", "w") as f:
         f.write(" {} \n")
-    assert pretty_file("tests/tmp/test_pretty_file.json") == True
+    assert pretty_file("tests/tmp/test_pretty_file.json") is True
     assert read_file("tests/tmp/test_pretty_file.json") == "{}\n"
-    assert pretty_file("tests/tmp/test_pretty_file.json") == False
+    assert pretty_file("tests/tmp/test_pretty_file.json") is False
 
 
 def test_pretty_check_string():
-    assert pretty_check_string(' "Hello" ') == False
-    assert pretty_check_string('"Hello"') == True
+    assert pretty_check_string(' "Hello" ') is False
+    assert pretty_check_string('"Hello"') is True
     assert (
         pretty_check_string(
             """{
@@ -224,9 +227,9 @@ def test_pretty_check_string():
   "age": 27
 }"""
         )
-        == True
+        is True
     )
-    assert pretty_check_string('{ "name": "lars", "age": 27 }') == False
+    assert pretty_check_string('{ "name": "lars", "age": 27 }') is False
 
 
 def test_pretty_sorting_simple_top_level():

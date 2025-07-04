@@ -33,7 +33,7 @@ class CFBSReturnWithoutCommit(Exception):
 def _has_autorun_tag(filename):
     assert os.path.isfile(filename)
     content = read_file(filename)
-
+    assert content is not None
     return (
         "meta:" in content
         and "tags" in content
@@ -99,8 +99,10 @@ class CFBSConfig(CFBSJson):
         if type(module) is str:
             module_str = module
             module = (remote_config or self).get_module_for_build(module, str_added_by)
+            if not module:
+                raise GenericExitError("Module '%s' not found" % module_str)
         if not module:
-            raise GenericExitError("Module '%s' not found" % module_str)
+            raise GenericExitError("Module '%s' not found" % str(module))
         assert "name" in module
         name = module["name"]
         assert "steps" in module
@@ -111,6 +113,7 @@ class CFBSConfig(CFBSJson):
         if "dependencies" in module:
             for dep in module["dependencies"]:
                 self.add_with_dependencies(dep, remote_config, name)
+        assert self._data is not None
         if "build" not in self._data:
             self._data["build"] = []
         self._data["build"].append(module)
@@ -298,7 +301,9 @@ class CFBSConfig(CFBSJson):
             pattern = "%s/**/*.cf" % name
             policy_files = glob.glob(pattern, recursive=True)
 
-        modules_available = [m.get("name", "") for m in self.get("build", [])]
+        modules_in_build_key = self.get("build", [])
+        assert type(modules_in_build_key) is list
+        modules_available = [m.get("name", "") for m in modules_in_build_key]
         is_autorun_enabled = any(
             m in modules_available for m in ["autorun", "./def.json"]
         )  # only a heuristic
@@ -325,7 +330,7 @@ class CFBSConfig(CFBSJson):
             assert name not in (m["name"] for m in self["build"])
             if "subdirectory" in module and module["subdirectory"] == "":
                 del module["subdirectory"]
-            if self.index.custom_index != None:
+            if self.index.custom_index is not None:
                 module["index"] = self.index.custom_index
             self["build"].append(module)
             self._handle_local_module(module)
@@ -358,7 +363,7 @@ class CFBSConfig(CFBSJson):
         # Filter modules which are already added:
         to_add = self._filter_modules_to_add(modules)
         if not to_add:
-            return  # Everything already added
+            return 0  # Everything already added
 
         # Convert names to objects:
         modules_to_add = [index.get_module_object(m, added_by[m.name]) for m in to_add]
@@ -374,17 +379,20 @@ class CFBSConfig(CFBSJson):
             self._add_without_dependencies(dependencies)
 
         self._add_without_dependencies(modules_to_add)
+        return 0
 
     def add_command(
         self,
         to_add: list,
         added_by="cfbs add",
         checksum=None,
-    ) -> int:
+    ) -> Result:
         if not to_add:
             raise GenericExitError("Must specify at least one module to add")
 
-        before = {m["name"] for m in self.get("build", [])}
+        modules_in_build_key = self.get("build", [])
+        assert type(modules_in_build_key) is list
+        before = {m["name"] for m in modules_in_build_key}
 
         if to_add[0].startswith(SUPPORTED_URI_SCHEMES):
             self._add_using_url(
@@ -414,6 +422,7 @@ class CFBSConfig(CFBSJson):
                 files.append(name)
 
             module = self.get_module_from_build(name)
+            assert module is not None, "All added modules should exist in build"
             input_path = os.path.join(".", name, "input.json")
             if "input" in module:
                 if os.path.isfile(input_path):

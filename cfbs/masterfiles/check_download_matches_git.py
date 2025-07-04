@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 
 from cfbs.masterfiles.analyze import version_as_comparable_list
@@ -11,9 +12,14 @@ def check_download_matches_git(versions):
 
     Generates a `differences-*.txt` file for each version.
     """
+    assert os.path.isfile("versions.json")
+    assert os.path.isfile("versions-git.json")
 
     download_versions_dict = read_json("versions.json")
     git_versions_dict = read_json("versions-git.json")
+
+    assert download_versions_dict is not None
+    assert git_versions_dict is not None
 
     diffs_dict = {"differences": {}}
 

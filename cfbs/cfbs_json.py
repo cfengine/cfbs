@@ -71,6 +71,7 @@ class CFBSJson:
 
     def _find_all_module_objects(self):
         data = self.raw_data
+        assert data is not None
         modules = []
         if "index" in data and type(data["index"]) in (dict, OrderedDict):
             modules += data["index"].values()
@@ -118,6 +119,7 @@ class CFBSJson:
 
     def __getitem__(self, key):
         assert key != "index"
+        assert self._data is not None
         return self._data[key]
 
     def __contains__(self, key):
@@ -125,6 +127,7 @@ class CFBSJson:
 
     def get_provides(self, added_by="cfbs add"):
         modules = OrderedDict()
+        assert self._data is not None
         if "provides" not in self._data:
             raise GenericExitError(
                 "missing required key 'provides' in module definition: %s"
@@ -138,6 +141,7 @@ class CFBSJson:
         return modules
 
     def get_module_for_build(self, name, added_by="cfbs add"):
+        assert self._data is not None
         if "provides" in self._data and name in self._data["provides"]:
             module = self._data["provides"][name]
             return _construct_provided_module(

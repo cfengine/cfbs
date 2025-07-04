@@ -95,7 +95,7 @@ def _children_sort(child: OrderedDict, name, sorting_rules):
     }
     ```
 
-    sorts the child objects in the given top-level (`name == None`) JSON object
+    sorts the child objects in the given top-level (`name is not None`) JSON object
     alphabetically by their name, then only inside the `"modules"` object all
     its (grand)child objects are sorted the same way and inside all (`".*"`)
     those (grand)child objects, their (grand-grand)child objects by the lengths
@@ -183,7 +183,7 @@ def _children_sort(child: OrderedDict, name, sorting_rules):
     child_sorting_rules = rules[1]
     if child_sorting_rules is not None:
         for child_key, child_value in child.items():
-            if type(child_value) == OrderedDict:
+            if type(child_value) is OrderedDict:
                 _children_sort(child_value, child_key, child_sorting_rules)
 
 
