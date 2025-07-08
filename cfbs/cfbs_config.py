@@ -430,7 +430,7 @@ class CFBSConfig(CFBSJson):
                         "There seems to already be input for module '%s'. " % name
                         + "Note that old input may break the module. "
                         + "Please make sure to run 'cfbs input' to re-enter input "
-                        + "before building and depolying/installing your project."
+                        + "before building and deploying/installing your project."
                     )
                 elif prompt_user(
                     self.non_interactive,

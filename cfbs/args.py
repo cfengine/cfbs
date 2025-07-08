@@ -1,13 +1,44 @@
 import argparse
 import os
+from typing import List, Union
 
 from cfbs import commands
 from cfbs.utils import cache, GenericExitError
 
 
+class ArgsTypesNamespace(argparse.Namespace):
+    """Manual type hints to args attributes"""
+
+    command: Union[str, None]
+    args: List[str]
+    loglevel: str
+    manual: bool
+    version: bool
+    force: bool
+    non_interactive: bool
+    index: Union[str, None]
+    check: bool
+    checksum: Union[str, None]
+    keep_order: bool
+    git: Union[str, None]
+    git_user_name: Union[str, None]
+    git_user_email: Union[str, None]
+    git_commit_message: Union[str, None]
+    ignore_versions_json: bool
+    omit_download: bool
+    check_against_git: bool
+    minimum_version: Union[str, None]
+    to_json: Union[str, None]
+    reference_version: Union[str, None]
+    masterfiles_dir: Union[str, None]
+    ignored_path_components: List[str]
+    offline: bool
+    masterfiles: Union[str, None]
+
+
 def get_args():
     parser = get_arg_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(namespace=ArgsTypesNamespace())
     return args
 
 
