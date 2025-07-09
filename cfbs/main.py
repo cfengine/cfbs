@@ -176,6 +176,7 @@ def _main() -> Union[int, Result]:
             min_version=args.minimum_version,
         )
 
+    # Commands you cannot run outside a cfbs repo:
     if not is_cfbs_repo():
         raise GenericExitError(
             "This is not a cfbs repo, to get started, type: cfbs init"

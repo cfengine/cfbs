@@ -9,7 +9,7 @@ import copy
 import logging as log
 import json
 import functools
-from typing import Union
+from typing import List, Union
 from collections import OrderedDict
 from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
@@ -399,7 +399,7 @@ def add_command(
 
 @cfbs_command("remove")
 @commit_after_command("Removed module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
-def remove_command(to_remove: list):
+def remove_command(to_remove: List[str]):
     config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
     if "build" not in config:
