@@ -232,6 +232,7 @@ def _validate_config(config, empty_build_list_ok=False):
 
 
 def validate_config(config, empty_build_list_ok=False):
+    """Returns `0` if there are no validation errors, and `1` otherwise."""
     try:
         _validate_config(config, empty_build_list_ok)
         return 0
