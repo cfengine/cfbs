@@ -17,7 +17,7 @@ from cfbs.args import get_args
 from cfbs.cfbs_json import CFBSJson
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
-    FetchError,
+    NetworkError,
     UserError,
     cfbs_filename,
     is_cfbs_repo,
@@ -805,7 +805,7 @@ def _download_dependencies(
             else:
                 try:
                     versions = get_json(_VERSION_INDEX)
-                except FetchError:
+                except NetworkError:
                     raise GenericExitError(
                         "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
                     )

@@ -16,7 +16,7 @@ from cfbs.utils import (
     cfbs_dir,
     cp,
     fetch_url,
-    FetchError,
+    NetworkError,
     is_a_commit_hash,
     mkdir,
     pad_right,
@@ -220,7 +220,7 @@ def fetch_archive(
     archive_path = os.path.join(downloads, archive_dir, archive_filename)
     try:
         archive_checksum = fetch_url(url, archive_path, checksum)
-    except FetchError as e:
+    except NetworkError as e:
         raise GenericExitError(str(e))
 
     content_dir = os.path.join(downloads, archive_dir, archive_checksum)

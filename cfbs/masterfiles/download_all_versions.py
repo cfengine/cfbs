@@ -2,7 +2,7 @@ import os
 import shutil
 
 from cfbs.masterfiles.analyze import version_is_at_least
-from cfbs.utils import FetchError, fetch_url, get_json, mkdir, GenericExitError
+from cfbs.utils import NetworkError, fetch_url, get_json, mkdir, GenericExitError
 
 ENTERPRISE_RELEASES_URL = "https://cfengine.com/release-data/enterprise/releases.json"
 
@@ -15,7 +15,7 @@ def get_download_urls_enterprise(min_version=None):
 
     try:
         data = get_json(ENTERPRISE_RELEASES_URL)
-    except FetchError:
+    except NetworkError:
         raise GenericExitError(
             "Downloading CFEngine release data failed - check your Wi-Fi / network settings."
         )
@@ -45,7 +45,7 @@ def get_download_urls_enterprise(min_version=None):
         release_url = release_data["URL"]
         try:
             subdata = get_json(release_url)
-        except FetchError:
+        except NetworkError:
             raise GenericExitError(
                 "Downloading CFEngine release data for version %s failed - check your Wi-Fi / network settings."
                 % version
@@ -97,7 +97,7 @@ def download_versions_from_urls(download_path, download_urls, reported_checksums
         checksum = reported_checksums[version]
         try:
             fetch_url(url, tarball_path, checksum)
-        except FetchError as e:
+        except NetworkError as e:
             raise GenericExitError("For version " + version + ": " + str(e))
 
         tarball_dir_path = os.path.join(version_path, "tarball")

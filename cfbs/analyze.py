@@ -8,7 +8,7 @@ from cfbs.masterfiles.analyze import (
     version_as_comparable_list,
 )
 from cfbs.utils import (
-    FetchError,
+    NetworkError,
     cfbs_dir,
     deduplicate_list,
     fetch_url,
@@ -136,7 +136,7 @@ def mpf_vcf_dicts(offline=False):
 
         try:
             latest_release_data = get_json(LATEST_RELEASE_API_URL)
-        except FetchError:
+        except NetworkError:
             raise GenericExitError(
                 "Downloading CFEngine release information failed - check your Wi-Fi / network settings."
             )
@@ -157,7 +157,7 @@ def mpf_vcf_dicts(offline=False):
             archive_checksums_path = ri_version_path + "/checksums.txt"
             try:
                 fetch_url(ri_checksums_url, archive_checksums_path)
-            except FetchError as e:
+            except NetworkError as e:
                 raise GenericExitError(str(e))
 
             with open(archive_checksums_path) as file:
