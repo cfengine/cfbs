@@ -154,7 +154,7 @@ def _main() -> Union[int, Result]:
     if args.command == "pretty":
         return commands.pretty_command(args.args, args.check, args.keep_order)
     if args.command == "validate":
-        return commands.validate_command()
+        return commands.validate_command(args.args, args.index)
     if args.command in ("info", "show"):
         return commands.info_command(args.args)
 

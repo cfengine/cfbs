@@ -8,7 +8,7 @@ from cfbs.utils import read_json, GenericExitError
 
 
 def _construct_provided_module(name, data, url, commit, added_by="cfbs add"):
-    # At this point the @commmit part should be removed from url so:
+    # At this point the @commit part should be removed from url so:
     # either url should not have an @,
     # or the @ should be for user@host.something
     assert "@" not in url or url.rindex(".") > url.rindex("@")
@@ -111,6 +111,31 @@ class CFBSJson:
                         + "Is it a typo? If not, try upgrading cfbs:\n"
                         + "pip3 install --upgrade cfbs"
                     )
+
+    def _get_all_module_names(self, search_in=("build", "provides", "index")):
+        modules = []
+
+        if "build" in search_in and "build" in self:
+            modules.extend((x["name"] for x in self["build"]))
+        if "provides" in search_in and "provides" in self:
+            modules.extend(self["provides"].keys())
+        if "index" in search_in:
+            modules.extend(self.index.keys())
+
+        return modules
+
+    def can_reach_dependency(self, name, search_in=("build", "provides", "index")):
+        return name in self._get_all_module_names(search_in)
+
+    def find_module(self, name, search_in=("build", "provides", "index")):
+        if "build" in search_in and "build" in self:
+            for module in self["build"]:
+                if module["name"] == name:
+                    return module
+        if "provides" in search_in and "provides" in self and name in self["provides"]:
+            return self["provides"][name]
+        if "index" in search_in and name in self.index:
+            return self.index[name]
 
     def get(self, key, default=None):
         if not self._data:  # If the specified JSON file does not exist

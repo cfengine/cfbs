@@ -698,7 +698,55 @@ def update_command(to_update) -> Result:
 
 
 @cfbs_command("validate")
-def validate_command() -> int:
+def validate_command(paths=None, index_arg=None) -> int:
+    if paths:
+        ret_value = 0
+
+        for path in paths:
+            # `path` can be either a directory containing a CFBS project (cfbs.json) or path to cfbs.json
+            if not os.path.basename(path) == "cfbs.json":
+                if path.endswith(".json"):
+                    log.warning(
+                        "Only cfbs.json files can be validated. Skipping validation"
+                    )
+                    # if the user actually has an e.g. directory ending with `.json`,
+                    # they can always specify the path to the cfbs.json in that folder to force the validation
+                    continue
+                # assume the provided path is a project directory
+                path = os.path.join(path, "cfbs.json")
+
+            if not os.path.isfile(path):
+                # either cfbs.json doesn't exist, or it's an e.g. directory
+                if not os.path.exists(path):
+                    log.warning(
+                        "%s is not a valid CFBS project path, skipping validation"
+                        % path
+                    )
+                else:
+                    log.warning(
+                        "A non-file named cfbs.json detected. Skipping validation. "
+                        + "If it is not a mistake that cfbs.json is not a file, specify the full path to the cfbs.json file inside to validate."
+                    )
+                continue
+
+            config = CFBSJson(path=path, index_argument=index_arg)
+
+            r = validate_config(config)
+            if r != 0:
+                log.warning("Validation of project at path %s failed" % path)
+                ret_value = 1
+            else:
+                print("Successfully validated the project at path", path)
+
+        return ret_value
+
+    if not is_cfbs_repo():
+        # TODO change GenericExitError to UserError here
+        raise GenericExitError(
+            "Cannot validate: this is not a CFBS project. "
+            + "Use `cfbs init` to start a new project in this directory, or provide a path to a CFBS project to validate."
+        )
+
     config = CFBSConfig.get_instance()
     return validate_config(config)
 

@@ -169,6 +169,8 @@ def read_json(path) -> Union[OrderedDict, None]:
             return json.loads(f.read(), object_pairs_hook=OrderedDict)
     except FileNotFoundError:
         return None
+    except IsADirectoryError:
+        return None
     except NotADirectoryError:
         return None
     except json.decoder.JSONDecodeError as ex:
