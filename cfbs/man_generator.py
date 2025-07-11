@@ -1,11 +1,11 @@
 import os
-from utils import UserError
+from utils import CFBSUserError
 from args import get_arg_parser
 
 try:
     from build_manpages.manpage import Manpage  # type: ignore
 except ImportError:
-    raise UserError(
+    raise CFBSUserError(
         "Missing dependency, install from PyPI: 'pip install argparse-manpage setuptools'"
     )
 

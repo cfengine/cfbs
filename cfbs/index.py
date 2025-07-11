@@ -4,7 +4,7 @@ from collections import OrderedDict
 from typing import Union
 
 from cfbs.module import Module
-from cfbs.utils import NetworkError, get_or_read_json, GenericExitError, get_json
+from cfbs.utils import CFBSNetworkError, get_or_read_json, CFBSExitError, get_json
 from cfbs.internal_file_management import local_module_name
 
 _DEFAULT_INDEX = (
@@ -91,8 +91,8 @@ class Index:
 
         try:
             self._data = get_or_read_json(index)
-        except NetworkError:
-            raise GenericExitError(
+        except CFBSNetworkError:
+            raise CFBSExitError(
                 "Downloading index '%s' failed - check your Wi-Fi / network settings."
                 % index
             )
@@ -132,8 +132,8 @@ class Index:
             return name in self
         try:
             versions = get_json(_VERSION_INDEX)
-        except NetworkError:
-            raise GenericExitError(
+        except CFBSNetworkError:
+            raise CFBSExitError(
                 "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
             )
 
@@ -143,7 +143,7 @@ class Index:
         for module in modules:
             assert isinstance(module, Module)
             if not self.exists(module):
-                raise GenericExitError(
+                raise CFBSExitError(
                     "Module '%s'%s does not exist"
                     % (
                         module.name,
@@ -179,8 +179,8 @@ class Index:
             if version:
                 try:
                     versions = get_json(_VERSION_INDEX)
-                except NetworkError:
-                    raise GenericExitError(
+                except CFBSNetworkError:
+                    raise CFBSExitError(
                         "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
                     )
                 new_values = versions[name][version]

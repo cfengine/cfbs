@@ -8,7 +8,7 @@ from cfbs.masterfiles.analyze import (
     version_as_comparable_list,
 )
 from cfbs.utils import (
-    NetworkError,
+    CFBSNetworkError,
     cfbs_dir,
     deduplicate_list,
     fetch_url,
@@ -17,7 +17,7 @@ from cfbs.utils import (
     immediate_subdirectories,
     mkdir,
     read_json,
-    GenericExitError,
+    CFBSExitError,
 )
 
 
@@ -115,11 +115,11 @@ def mpf_vcf_dicts(offline=False):
 
         cfbs_ri_dir = os.path.join(cfbs_dir(), RI_SUBDIRS)
         if not os.path.exists(cfbs_ri_dir):
-            raise GenericExitError(ERROR_MESSAGE)
+            raise CFBSExitError(ERROR_MESSAGE)
 
         ri_versions = immediate_subdirectories(cfbs_ri_dir)
         if len(ri_versions) == 0:
-            raise GenericExitError(ERROR_MESSAGE)
+            raise CFBSExitError(ERROR_MESSAGE)
 
         ri_latest_version = max(ri_versions)
         mpf_vcf_path = os.path.join(
@@ -136,8 +136,8 @@ def mpf_vcf_dicts(offline=False):
 
         try:
             latest_release_data = get_json(LATEST_RELEASE_API_URL)
-        except NetworkError:
-            raise GenericExitError(
+        except CFBSNetworkError:
+            raise CFBSExitError(
                 "Downloading CFEngine release information failed - check your Wi-Fi / network settings."
             )
 
@@ -157,8 +157,8 @@ def mpf_vcf_dicts(offline=False):
             archive_checksums_path = ri_version_path + "/checksums.txt"
             try:
                 fetch_url(ri_checksums_url, archive_checksums_path)
-            except NetworkError as e:
-                raise GenericExitError(str(e))
+            except CFBSNetworkError as e:
+                raise CFBSExitError(str(e))
 
             with open(archive_checksums_path) as file:
                 lines = [line.rstrip() for line in file]
@@ -630,7 +630,7 @@ def analyze_policyset(
                     + "\n  ".join(possible_policyset_relpaths)
                     + "\n"
                 )
-            raise GenericExitError(
+            raise CFBSExitError(
                 "There doesn't seem to be a valid policy set in the supplied path.\n       Usage: cfbs analyze path/to/policy-set\n"
                 + extra_error_text
             )

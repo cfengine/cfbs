@@ -7,8 +7,8 @@ from collections import OrderedDict
 
 from cfbs.result import Result
 from cfbs.utils import (
-    GenericExitError,
-    UserError,
+    CFBSExitError,
+    CFBSUserError,
     read_file,
     write_json,
     load_bundlenames,
@@ -101,9 +101,9 @@ class CFBSConfig(CFBSJson):
             module_str = module
             module = (remote_config or self).get_module_for_build(module, str_added_by)
             if not module:
-                raise GenericExitError("Module '%s' not found" % module_str)
+                raise CFBSExitError("Module '%s' not found" % module_str)
         if not module:
-            raise GenericExitError("Module '%s' not found" % str(module))
+            raise CFBSExitError("Module '%s' not found" % str(module))
         assert "name" in module
         name = module["name"]
         assert "steps" in module
@@ -152,7 +152,7 @@ class CFBSConfig(CFBSJson):
         if len(to_add) == 0:
             modules = list(provides.values())
             if not any(modules):
-                raise GenericExitError("no modules available, nothing to do")
+                raise CFBSExitError("no modules available, nothing to do")
             print("Found %d modules in '%s':" % (len(modules), url))
             for m in modules:
                 deps = m.get("dependencies", [])
@@ -170,7 +170,7 @@ class CFBSConfig(CFBSJson):
         else:
             missing = [k for k in to_add if k not in provides]
             if missing:
-                raise GenericExitError("Missing modules: " + ", ".join(missing))
+                raise CFBSExitError("Missing modules: " + ", ".join(missing))
             modules = [provides[k] for k in to_add]
 
         for i, module in enumerate(modules, start=1):
@@ -389,7 +389,7 @@ class CFBSConfig(CFBSJson):
         checksum=None,
     ) -> Result:
         if not to_add:
-            raise UserError("Must specify at least one module to add")
+            raise CFBSUserError("Must specify at least one module to add")
 
         modules_in_build_key = self.get("build", [])
         assert type(modules_in_build_key) is list
@@ -405,7 +405,7 @@ class CFBSConfig(CFBSJson):
         else:
             # for this `if` to be valid, module names containing `://` should be illegal
             if "://" in to_add[0]:
-                raise UserError(
+                raise CFBSUserError(
                     "URI scheme not supported. The supported URI schemes are: "
                     + ", ".join(SUPPORTED_URI_SCHEMES)
                 )
@@ -460,7 +460,7 @@ class CFBSConfig(CFBSJson):
         def _check_keys(keys, input_data):
             for key in keys:
                 if key not in input_data:
-                    raise GenericExitError(
+                    raise CFBSExitError(
                         "Expected attribute '%s' in input definition: %s"
                         % (key, pretty(input_data))
                     )
@@ -479,7 +479,7 @@ class CFBSConfig(CFBSJson):
             for element in subtype:
                 _check_keys(["type", "label", "question", "key"], element)
                 if element["type"] != "string":
-                    raise GenericExitError(
+                    raise CFBSExitError(
                         "Subtype of type '%s' not supported for type list"
                         % element["type"]
                     )
@@ -506,7 +506,7 @@ class CFBSConfig(CFBSJson):
             elif isinstance(subtype, dict):
                 _check_keys(["type", "label", "question"], subtype)
                 if subtype["type"] != "string":
-                    raise GenericExitError(
+                    raise CFBSExitError(
                         "Subtype of type '%s' not supported for type list"
                         % subtype["type"]
                     )
@@ -519,7 +519,7 @@ class CFBSConfig(CFBSJson):
                 ).lower() in ("yes", "y"):
                     result.append(_input_string(subtype))
                 return result
-            raise GenericExitError(
+            raise CFBSExitError(
                 "Expected the value of attribute 'subtype' to be a JSON list or object, not: %s"
                 % pretty(input_data["subtype"])
             )
@@ -533,8 +533,6 @@ class CFBSConfig(CFBSJson):
             elif definition["type"] == "list":
                 definition["response"] = _input_list(definition)
             else:
-                raise GenericExitError(
-                    "Unsupported input type '%s'" % definition["type"]
-                )
+                raise CFBSExitError("Unsupported input type '%s'" % definition["type"])
 
         return None
