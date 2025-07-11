@@ -42,7 +42,7 @@ class CFBSUserError(Exception):
 
 
 class CFBSNetworkError(Exception):
-    """Errors which generally can be attributed to a server our router being offline.
+    """Errors which generally can be attributed to a server or router being offline.
 
     Usually we'll advise the user to check their Wifi / network settings and/or try again later.
     """

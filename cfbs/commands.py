@@ -728,7 +728,7 @@ def validate_command(paths=None, index_arg=None) -> int:
                 path = os.path.join(path, "cfbs.json")
             assert os.path.isfile(path)
 
-            # Actually opeb the file and perform validation:
+            # Actually open the file and perform validation:
             config = CFBSJson(path=path, index_argument=index_arg)
 
             r = validate_config(config)
