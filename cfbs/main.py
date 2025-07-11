@@ -9,9 +9,15 @@ import os
 from typing import Union
 
 from cfbs.result import Result
-from cfbs.validate import CFBSValidationError
 from cfbs.version import string as version
-from cfbs.utils import GenericExitError, is_cfbs_repo, ProgrammerError
+from cfbs.utils import (
+    CFBSValidationError,
+    CFBSExitError,
+    CFBSUserError,
+    is_cfbs_repo,
+    CFBSProgrammerError,
+    CFBSNetworkError,
+)
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
 from cfbs.args import get_args, print_help, get_manual
@@ -63,62 +69,62 @@ def _main() -> Union[int, Result]:
     if not args.command:
         print_help()
         print("")
-        raise GenericExitError("No command given")
+        raise CFBSUserError("No command given")
 
     if args.command not in commands.get_command_names():
         print_help()
-        raise GenericExitError("Command '%s' not found" % args.command)
+        raise CFBSUserError("Command '%s' not found" % args.command)
 
     if args.masterfiles and args.command != "init":
-        raise GenericExitError(
+        raise CFBSUserError(
             "The option --masterfiles is only for 'cfbs init', not 'cfbs %s'"
             % args.command
         )
 
     if args.omit_download and args.command != "generate-release-information":
-        raise GenericExitError(
+        raise CFBSUserError(
             "The option --omit-download is only for 'cfbs generate-release-information', not 'cfbs %s'"
             % args.command
         )
 
     if args.check_against_git and args.command != "generate-release-information":
-        raise GenericExitError(
+        raise CFBSUserError(
             "The option --check-against-git is only for 'cfbs generate-release-information', not 'cfbs %s'"
             % args.command
         )
 
     if args.minimum_version and args.command != "generate-release-information":
-        raise GenericExitError(
+        raise CFBSUserError(
             "The option --from is only for 'cfbs generate-release-information', not 'cfbs %s'"
             % args.command
         )
 
     if args.masterfiles_dir and args.command not in ("analyze", "analyse"):
-        raise GenericExitError(
+        raise CFBSUserError(
             "The option --masterfiles-dir is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.reference_version and args.command not in ("analyze", "analyse"):
-        raise GenericExitError(
+        raise CFBSUserError(
             "The option --reference-version is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.to_json and args.command not in ("analyze", "analyse"):
-        raise GenericExitError(
+        raise CFBSUserError(
             "The option --to-json is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.ignored_path_components and args.command not in ("analyze", "analyse"):
-        raise GenericExitError(
+        raise CFBSUserError(
             "The option --ignored-path-components is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.offline and args.command not in ("analyze", "analyse"):
-        raise GenericExitError(
+        raise CFBSUserError(
             "The option --offline is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
@@ -131,7 +137,7 @@ def _main() -> Union[int, Result]:
         "update",
         "input",
     ):
-        raise GenericExitError(
+        raise CFBSUserError(
             "The option --non-interactive is not for cfbs %s" % (args.command)
         )
 
@@ -178,9 +184,7 @@ def _main() -> Union[int, Result]:
 
     # Commands you cannot run outside a cfbs repo:
     if not is_cfbs_repo():
-        raise GenericExitError(
-            "This is not a cfbs repo, to get started, type: cfbs init"
-        )
+        raise CFBSExitError("This is not a cfbs repo, to get started, type: cfbs init")
 
     if args.command == "status":
         return commands.status_command()
@@ -238,7 +242,7 @@ def _main() -> Union[int, Result]:
         finally:
             file.close()
 
-    raise ProgrammerError(
+    raise CFBSProgrammerError(
         "Command '%s' not handled appropriately by the code above" % args.command
     )
 
@@ -260,9 +264,13 @@ def main() -> int:
         return r
     except CFBSValidationError as e:
         print("Error: " + str(e))
-    except GenericExitError as e:
+    except CFBSExitError as e:
         print("Error: " + str(e))
-    except (AssertionError, ProgrammerError) as e:
+    except CFBSUserError as e:
+        print("Error: " + str(e))
+    except CFBSNetworkError as e:
+        print("Error: " + str(e))
+    except (AssertionError, CFBSProgrammerError) as e:
         print("Error: " + str(e))
         print(
             "This is an unexpected error indicating a bug, please create a ticket at:"

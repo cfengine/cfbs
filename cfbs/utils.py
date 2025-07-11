@@ -18,12 +18,67 @@ SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
-class ProgrammerError(RuntimeError):
+class CFBSProgrammerError(RuntimeError):
+    """Exception to use for cases where we as developers made a mistake.
+
+    Situations which should never happen - similar to assertions.
+    """
+
     pass
 
 
-class GenericExitError(Exception):
+class CFBSExitError(Exception):
+    """Generic errors which make the program exit.
+
+    Most of these should be converted to more specific exception types."""
+
     pass
+
+
+class CFBSUserError(Exception):
+    """Exception for when the user did something wrong, such as specifying a file which does not exist."""
+
+    pass
+
+
+class CFBSNetworkError(Exception):
+    """Errors which generally can be attributed to a server or router being offline.
+
+    Usually we'll advise the user to check their Wifi / network settings and/or try again later.
+    """
+
+    pass
+
+
+class CFBSValidationError(Exception):
+    """Exception for when validation fails.
+
+    Commonly this means some fields / values are wrong in cfbs.json, or that the referenced
+    files / modules don't exist.
+
+    Mostly used by validate.py / cfbs validate command, but can be used in other places for
+    the same purpose.
+
+    For example: If you inside the cfbs build logic want to check that "steps" exists,
+    you can raise a validation error if it doesn't. However, if you believe other
+    validation logic should have already checked this and it's not possible,
+    an assertion or programmer error is more appropriate."""
+
+    def __init__(self, name_or_message, message=None) -> None:
+        assert name_or_message
+        if message:
+            name = name_or_message
+        else:
+            name = None
+            message = name_or_message
+        if name is None:
+            super().__init__("Error in cfbs.json: " + message)
+        elif type(name) is int:
+            super().__init__(
+                "Error in cfbs.json for module at index %d: " % name + message
+            )
+        else:
+            super().__init__("Error in cfbs.json for module '%s': " % name + message)
 
 
 def _sh(cmd: str):
@@ -37,9 +92,7 @@ def _sh(cmd: str):
             stderr=subprocess.STDOUT,
         )
     except subprocess.CalledProcessError as e:
-        raise GenericExitError(
-            "Command failed - %s\n%s" % (cmd, e.stdout.decode("utf-8"))
-        )
+        raise CFBSExitError("Command failed - %s\n%s" % (cmd, e.stdout.decode("utf-8")))
 
 
 def sh(cmd: str, directory=None):
@@ -99,7 +152,7 @@ def get_json(url: str) -> OrderedDict:
             assert r.status >= 200 and r.status < 300
             return json.loads(r.read().decode(), object_pairs_hook=OrderedDict)
     except urllib.error.URLError as e:
-        raise FetchError("Failed to get JSON from '%s'" % url) from e
+        raise CFBSNetworkError("Failed to get JSON from '%s'" % url) from e
 
 
 def get_or_read_json(path: str) -> Union[OrderedDict, None]:
@@ -336,10 +389,6 @@ def file_sha256(file):
     return h.hexdigest()
 
 
-class FetchError(Exception):
-    pass
-
-
 def fetch_url(url, target, checksum=None):
     if checksum is not None:
         if SHA1_RE.match(checksum):
@@ -347,7 +396,7 @@ def fetch_url(url, target, checksum=None):
         elif SHA256_RE.match(checksum):
             sha = hashlib.sha256()
         else:
-            raise FetchError(
+            raise CFBSNetworkError(
                 "Invalid checksum or unsupported checksum algorithm: '%s'" % checksum
             )
     else:
@@ -362,7 +411,7 @@ def fetch_url(url, target, checksum=None):
         with open(target, "wb") as f:
             with urllib.request.urlopen(request) as u:
                 if not (200 <= u.status <= 300):
-                    raise FetchError("Failed to fetch '%s': %s" % (url, u.reason))
+                    raise CFBSNetworkError("Failed to fetch '%s': %s" % (url, u.reason))
                 done = False
                 while not done:
                     chunk = u.read(512 * 1024)  # 512 KiB
@@ -378,7 +427,7 @@ def fetch_url(url, target, checksum=None):
             else:
                 if os.path.exists(target):
                     os.unlink(target)
-                raise FetchError(
+                raise CFBSNetworkError(
                     "Checksum mismatch in fetched '%s': %s != %s"
                     % (url, digest, checksum)
                 )
@@ -387,11 +436,13 @@ def fetch_url(url, target, checksum=None):
     except urllib.error.URLError as e:
         if os.path.exists(target):
             os.unlink(target)
-        raise FetchError("Failed to fetch '%s': %s" % (url, e)) from e
+        raise CFBSNetworkError("Failed to fetch '%s': %s" % (url, e)) from e
     except OSError as e:
         if os.path.exists(target):
             os.unlink(target)
-        raise FetchError("Failed to fetch '%s' to '%s': %s" % (url, target, e)) from e
+        raise CFBSNetworkError(
+            "Failed to fetch '%s' to '%s': %s" % (url, target, e)
+        ) from e
 
 
 def is_a_commit_hash(commit):

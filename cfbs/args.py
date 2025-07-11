@@ -3,7 +3,7 @@ import os
 from typing import List, Union
 
 from cfbs import commands
-from cfbs.utils import cache, GenericExitError
+from cfbs.utils import cache, CFBSExitError
 
 
 class ArgsTypesNamespace(argparse.Namespace):
@@ -54,13 +54,13 @@ def get_manual():
             with open(file_path, "r", encoding="utf-8") as man_file:
                 man = man_file.read()
                 if not man:
-                    raise GenericExitError("Manual file is empty")
+                    raise CFBSExitError("Manual file is empty")
                 else:
                     return man
         except OSError:
-            raise GenericExitError("Error reading manual file " + file_path)
+            raise CFBSExitError("Error reading manual file " + file_path)
     else:
-        raise GenericExitError("Manual file does not exist")
+        raise CFBSExitError("Manual file does not exist")
 
 
 @cache

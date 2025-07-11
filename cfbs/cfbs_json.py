@@ -4,7 +4,7 @@ import logging as log
 
 from cfbs.index import Index
 from cfbs.pretty import pretty, TOP_LEVEL_KEYS, MODULE_KEYS
-from cfbs.utils import read_json, GenericExitError
+from cfbs.utils import read_json, CFBSExitError
 
 
 def _construct_provided_module(name, data, url, commit, added_by="cfbs add"):
@@ -16,7 +16,7 @@ def _construct_provided_module(name, data, url, commit, added_by="cfbs add"):
     module = OrderedDict()
     module["name"] = name
     if "description" not in data:
-        raise GenericExitError(
+        raise CFBSExitError(
             "missing required key 'description' in module definition: %s" % pretty(data)
         )
     module["description"] = data["description"]
@@ -31,7 +31,7 @@ def _construct_provided_module(name, data, url, commit, added_by="cfbs add"):
     if "input" in data:
         module["input"] = data["input"]
     if "steps" not in data:
-        raise GenericExitError(
+        raise CFBSExitError(
             "missing required key 'steps' in module definition: %s" % pretty(data)
         )
     module["steps"] = data["steps"]
@@ -154,7 +154,7 @@ class CFBSJson:
         modules = OrderedDict()
         assert self._data is not None
         if "provides" not in self._data:
-            raise GenericExitError(
+            raise CFBSExitError(
                 "missing required key 'provides' in module definition: %s"
                 % pretty(self._data)
             )
