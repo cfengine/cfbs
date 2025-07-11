@@ -706,7 +706,7 @@ def validate_command(paths=None, index_arg=None) -> int:
             # `path` can be either a directory containing a CFBS project (cfbs.json) or path to cfbs.json
             if not os.path.basename(path) == "cfbs.json":
                 if path.endswith(".json"):
-                    log.warning(
+                    raise GenericExitError(
                         "Only cfbs.json files can be validated. Skipping validation"
                     )
                     # if the user actually has an e.g. directory ending with `.json`,
@@ -718,12 +718,12 @@ def validate_command(paths=None, index_arg=None) -> int:
             if not os.path.isfile(path):
                 # either cfbs.json doesn't exist, or it's an e.g. directory
                 if not os.path.exists(path):
-                    log.warning(
+                    raise GenericExitError(
                         "%s is not a valid CFBS project path, skipping validation"
                         % path
                     )
                 else:
-                    log.warning(
+                    raise GenericExitError(
                         "A non-file named cfbs.json detected. Skipping validation. "
                         + "If it is not a mistake that cfbs.json is not a file, specify the full path to the cfbs.json file inside to validate."
                     )
