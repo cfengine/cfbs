@@ -9,9 +9,9 @@ import os
 from typing import Union
 
 from cfbs.result import Result
-from cfbs.validate import CFBSValidationError
 from cfbs.version import string as version
 from cfbs.utils import (
+    CFBSValidationError,
     GenericExitError,
     UserError,
     is_cfbs_repo,

@@ -32,6 +32,7 @@ from cfbs.utils import (
     strip_left,
     strip_right_any,
     GenericExitError,
+    CFBSValidationError,
 )
 from cfbs.pretty import TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.cfbs_config import CFBSConfig
@@ -78,24 +79,6 @@ def step_has_valid_arg_count(args, expected):
             return False
 
     return True
-
-
-class CFBSValidationError(Exception):
-    def __init__(self, name_or_message, message=None) -> None:
-        assert name_or_message
-        if message:
-            name = name_or_message
-        else:
-            name = None
-            message = name_or_message
-        if name is None:
-            super().__init__("Error in cfbs.json: " + message)
-        elif type(name) is int:
-            super().__init__(
-                "Error in cfbs.json for module at index %d: " % name + message
-            )
-        else:
-            super().__init__("Error in cfbs.json for module '%s': " % name + message)
 
 
 def _validate_top_level_keys(config):

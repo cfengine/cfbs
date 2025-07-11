@@ -50,6 +50,37 @@ class NetworkError(Exception):
     pass
 
 
+class CFBSValidationError(Exception):
+    """Exception for when validation fails.
+
+    Commonly this means some fields / values are wrong in cfbs.json, or that the referenced
+    files / modules don't exist.
+
+    Mostly used by validate.py / cfbs validate command, but can be used in other places for
+    the same purpose.
+
+    For example: If you inside the cfbs build logic want to check that "steps" exists,
+    you can raise a validation error if it doesn't. However, if you believe other
+    validation logic should have already checked this and it's not possible,
+    an assertion or programmer error is more appropriate."""
+
+    def __init__(self, name_or_message, message=None) -> None:
+        assert name_or_message
+        if message:
+            name = name_or_message
+        else:
+            name = None
+            message = name_or_message
+        if name is None:
+            super().__init__("Error in cfbs.json: " + message)
+        elif type(name) is int:
+            super().__init__(
+                "Error in cfbs.json for module at index %d: " % name + message
+            )
+        else:
+            super().__init__("Error in cfbs.json for module '%s': " % name + message)
+
+
 def _sh(cmd: str):
     # print(cmd)
     try:
