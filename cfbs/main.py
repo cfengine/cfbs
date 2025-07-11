@@ -11,7 +11,7 @@ from typing import Union
 from cfbs.result import Result
 from cfbs.validate import CFBSValidationError
 from cfbs.version import string as version
-from cfbs.utils import GenericExitError, is_cfbs_repo, ProgrammerError
+from cfbs.utils import GenericExitError, UserError, is_cfbs_repo, ProgrammerError
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
 from cfbs.args import get_args, print_help, get_manual
@@ -63,62 +63,62 @@ def _main() -> Union[int, Result]:
     if not args.command:
         print_help()
         print("")
-        raise GenericExitError("No command given")
+        raise UserError("No command given")
 
     if args.command not in commands.get_command_names():
         print_help()
-        raise GenericExitError("Command '%s' not found" % args.command)
+        raise UserError("Command '%s' not found" % args.command)
 
     if args.masterfiles and args.command != "init":
-        raise GenericExitError(
+        raise UserError(
             "The option --masterfiles is only for 'cfbs init', not 'cfbs %s'"
             % args.command
         )
 
     if args.omit_download and args.command != "generate-release-information":
-        raise GenericExitError(
+        raise UserError(
             "The option --omit-download is only for 'cfbs generate-release-information', not 'cfbs %s'"
             % args.command
         )
 
     if args.check_against_git and args.command != "generate-release-information":
-        raise GenericExitError(
+        raise UserError(
             "The option --check-against-git is only for 'cfbs generate-release-information', not 'cfbs %s'"
             % args.command
         )
 
     if args.minimum_version and args.command != "generate-release-information":
-        raise GenericExitError(
+        raise UserError(
             "The option --from is only for 'cfbs generate-release-information', not 'cfbs %s'"
             % args.command
         )
 
     if args.masterfiles_dir and args.command not in ("analyze", "analyse"):
-        raise GenericExitError(
+        raise UserError(
             "The option --masterfiles-dir is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.reference_version and args.command not in ("analyze", "analyse"):
-        raise GenericExitError(
+        raise UserError(
             "The option --reference-version is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.to_json and args.command not in ("analyze", "analyse"):
-        raise GenericExitError(
+        raise UserError(
             "The option --to-json is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.ignored_path_components and args.command not in ("analyze", "analyse"):
-        raise GenericExitError(
+        raise UserError(
             "The option --ignored-path-components is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
 
     if args.offline and args.command not in ("analyze", "analyse"):
-        raise GenericExitError(
+        raise UserError(
             "The option --offline is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
         )
@@ -131,7 +131,7 @@ def _main() -> Union[int, Result]:
         "update",
         "input",
     ):
-        raise GenericExitError(
+        raise UserError(
             "The option --non-interactive is not for cfbs %s" % (args.command)
         )
 
@@ -261,6 +261,8 @@ def main() -> int:
     except CFBSValidationError as e:
         print("Error: " + str(e))
     except GenericExitError as e:
+        print("Error: " + str(e))
+    except UserError as e:
         print("Error: " + str(e))
     except (AssertionError, ProgrammerError) as e:
         print("Error: " + str(e))

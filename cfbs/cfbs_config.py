@@ -8,6 +8,7 @@ from collections import OrderedDict
 from cfbs.result import Result
 from cfbs.utils import (
     GenericExitError,
+    UserError,
     read_file,
     write_json,
     load_bundlenames,
@@ -388,7 +389,7 @@ class CFBSConfig(CFBSJson):
         checksum=None,
     ) -> Result:
         if not to_add:
-            raise GenericExitError("Must specify at least one module to add")
+            raise UserError("Must specify at least one module to add")
 
         modules_in_build_key = self.get("build", [])
         assert type(modules_in_build_key) is list
@@ -404,7 +405,7 @@ class CFBSConfig(CFBSJson):
         else:
             # for this `if` to be valid, module names containing `://` should be illegal
             if "://" in to_add[0]:
-                raise GenericExitError(
+                raise UserError(
                     "URI scheme not supported. The supported URI schemes are: "
                     + ", ".join(SUPPORTED_URI_SCHEMES)
                 )

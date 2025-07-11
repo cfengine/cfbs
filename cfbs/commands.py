@@ -18,6 +18,7 @@ from cfbs.cfbs_json import CFBSJson
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     FetchError,
+    UserError,
     cfbs_filename,
     is_cfbs_repo,
     read_json,
@@ -126,7 +127,7 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
 @cfbs_command("init")
 def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     if is_cfbs_repo():
-        raise GenericExitError("Already initialized - look at %s" % cfbs_filename())
+        raise UserError("Already initialized - look at %s" % cfbs_filename())
 
     name = prompt_user(
         non_interactive,
@@ -705,11 +706,9 @@ def validate_command(paths=None, index_arg=None) -> int:
         for path in paths:
             # Exit out early if we find anything wrong like missing files:
             if not os.path.exists(path):
-                raise GenericExitError(
-                    "Specified path '{}' does not exist".format(path)
-                )
+                raise UserError("Specified path '{}' does not exist".format(path))
             if path.endswith(".json") and not os.path.isfile(path):
-                raise GenericExitError(
+                raise UserError(
                     "'{}' is not a file - Please specify a path to a cfbs project file, ending in .json, or a folder containing a cfbs.json".format(
                         path
                     )
@@ -717,7 +716,7 @@ def validate_command(paths=None, index_arg=None) -> int:
             if not path.endswith(".json") and not os.path.isfile(
                 os.path.join(path, "cfbs.json")
             ):
-                raise GenericExitError(
+                raise UserError(
                     "No CFBS project file found at '{}'".format(
                         os.path.join(path, "cfbs.json")
                     )

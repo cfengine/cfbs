@@ -19,10 +19,25 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 class ProgrammerError(RuntimeError):
+    """Exception to use for cases where we as developers made a mistake.
+
+    Situations which should never happen - similar to assertions.
+    """
+
     pass
 
 
 class GenericExitError(Exception):
+    """Generic errors which make the program exit.
+
+    Most of these should be converted to more specific exception types."""
+
+    pass
+
+
+class UserError(Exception):
+    """Exception for when the user did something wrong, such as specifying a file which does not exist."""
+
     pass
 
 
