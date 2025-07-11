@@ -11,7 +11,13 @@ from typing import Union
 from cfbs.result import Result
 from cfbs.validate import CFBSValidationError
 from cfbs.version import string as version
-from cfbs.utils import GenericExitError, UserError, is_cfbs_repo, ProgrammerError
+from cfbs.utils import (
+    GenericExitError,
+    UserError,
+    is_cfbs_repo,
+    ProgrammerError,
+    NetworkError,
+)
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
 from cfbs.args import get_args, print_help, get_manual
@@ -263,6 +269,8 @@ def main() -> int:
     except GenericExitError as e:
         print("Error: " + str(e))
     except UserError as e:
+        print("Error: " + str(e))
+    except NetworkError as e:
         print("Error: " + str(e))
     except (AssertionError, ProgrammerError) as e:
         print("Error: " + str(e))
