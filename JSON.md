@@ -274,9 +274,9 @@ In `cfbs.json`'s `"steps"`, the build step name must be separated from the rest 
     (This is to try to catch mistakes).
   - `n` must be an integer, from 1 to 1000, and may optionally have a trailing `+` to signify "or more".
     At most 1000 replacements will be performed, regardless of whether you specify `+` or not.
-- `replace_version <to_replace> <filename>`
+- `replace_version <n> <to_replace> <filename>`
   - Replace the string inside the file with the version number of that module.
-  - The module must have a version and the string must occur exactly once in the file.
+  - Works identically to `replace`, except the string to replace with, i.e. the version number, is found automatically.
 
 When `def.json` is modified during a `json`, `input`, `directory`, `bundles`, or `policy_files` build step, the values of some lists of strings are deduplicated, when this does not make any difference in behavior.
 These cases are:
