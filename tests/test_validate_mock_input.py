@@ -12,7 +12,7 @@ class MockConfig(OrderedDict):
     def raw_data(self):
         return deepcopy(self)
 
-    def warn_about_unknown_keys(self):
+    def warn_about_unknown_keys(self, raise_exceptions=False):
         pass
 
 

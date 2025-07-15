@@ -4,7 +4,7 @@ import logging as log
 
 from cfbs.index import Index
 from cfbs.pretty import pretty, TOP_LEVEL_KEYS, MODULE_KEYS
-from cfbs.utils import read_json, CFBSExitError
+from cfbs.utils import CFBSValidationError, read_json, CFBSExitError
 
 
 def _construct_provided_module(name, data, url, commit, added_by="cfbs add"):
@@ -81,12 +81,12 @@ class CFBSJson:
             modules += data["build"]
         return modules
 
-    def warn_about_unknown_keys(self):
+    def warn_about_unknown_keys(self, raise_exceptions=False):
         """Basic validation to warn the user when a cfbs.json has unknown keys.
 
         Unknown keys are typically due to
         typos, or an outdated version of cfbs. This basic type of
-        validation only produces warnings (we want cfbs to still work),
+        validation only produces warnings (we want cfbs build to still work),
         and is run for various cfbs commands, not just cfbs build / validate.
         For the more complete validation, see validate.py.
         """
@@ -97,20 +97,26 @@ class CFBSJson:
 
         for key in data:
             if key not in TOP_LEVEL_KEYS:
-                log.warning(
+                msg = (
                     'The top level key "%s" is not known to this version of cfbs.\n'
                     + "Is it a typo? If not, try upgrading cfbs:\n"
                     + "pip3 install --upgrade cfbs"
                 )
+                if raise_exceptions:
+                    raise CFBSValidationError(msg)
+                log.warning(msg)
         for module in self._find_all_module_objects():
             for key in module:
                 if key not in MODULE_KEYS:
-                    log.warning(
+                    msg = (
                         'The module level key "%s" is not known to this version of cfbs.\n'
                         % key
                         + "Is it a typo? If not, try upgrading cfbs:\n"
                         + "pip3 install --upgrade cfbs"
                     )
+                    if raise_exceptions:
+                        raise CFBSValidationError(msg)
+                    log.warning(msg)
 
     def _get_all_module_names(self, search_in=("build", "provides", "index")):
         modules = []
