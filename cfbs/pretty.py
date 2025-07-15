@@ -15,6 +15,7 @@ MODULE_KEYS = (
     "repo",
     "url",
     "by",
+    "index",
     "version",
     "commit",
     "subdirectory",

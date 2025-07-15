@@ -58,6 +58,25 @@ MAX_FILENAME_LENGTH = 128
 MAX_BUILD_STEP_LENGTH = 256
 
 
+def validate_index_string(index):
+    assert type(index) is str
+    if index.strip() == "":
+        raise CFBSValidationError(
+            'The "index" string must be a URL / path (string), not "%s" (whitespace)'
+            % index
+        )
+    if not index.endswith(".json"):
+        raise CFBSValidationError(
+            'The "index" string must refer to a JSON file / URL (ending in .json)'
+        )
+    if not index.startswith(("https://", "./")):
+        raise CFBSValidationError(
+            'The "index" string must be a URL (starting with https://) or relative path (starting with ./)'
+        )
+    if index.startswith("https://") and " " in index:
+        raise CFBSValidationError('The "index" URL must not contain spaces')
+
+
 def split_build_step(command) -> Tuple[str, List[str]]:
     terms = command.split(" ")
     operation, args = terms[0], terms[1:]
@@ -131,20 +150,8 @@ def _validate_top_level_keys(config):
             raise CFBSValidationError(
                 'The "index" field must either be a URL / path (string) or an inline index (object / dictionary)'
             )
-        if type(index) is str and index.strip() == "":
-            raise CFBSValidationError(
-                'The "index" string must be a URL / path (string), not "%s"' % index
-            )
-        if type(index) is str and not index.endswith(".json"):
-            raise CFBSValidationError(
-                'The "index" string must refer to a JSON file / URL (ending in .json)'
-            )
-        if type(index) is str and not index.startswith(("https://", "./")):
-            raise CFBSValidationError(
-                'The "index" string must be a URL (starting with https://) or relative path (starting with ./)'
-            )
-        if type(index) is str and index.startswith("https://") and " " in index:
-            raise CFBSValidationError('The "index" URL must not contain spaces')
+        if type(index) is str:
+            validate_index_string(index)
 
     if "provides" in config:
         if type(config["provides"]) not in (dict, OrderedDict):
@@ -438,6 +445,16 @@ def _validate_module_object(context, name, module, config):
                     name, '"dependencies" cannot reference an alias'
                 )
 
+    def validate_index(name, module):
+        assert "index" in module
+        if type(module["version"]) is not str:
+            raise CFBSValidationError(name, '"index" in "%s" must be a string' % name)
+        try:
+            validate_index_string(module["index"])
+        except CFBSValidationError as e:
+            msg = str(e) + " (in module '%s')" % name
+            raise CFBSValidationError(msg)
+
     def validate_version(name, module):
         assert "version" in module
         if type(module["version"]) is not str:
@@ -661,6 +678,8 @@ def _validate_module_object(context, name, module, config):
         validate_by(name, module)
     if "dependencies" in module:
         validate_dependencies(name, module, config, context)
+    if "index" in module:
+        validate_index(name, module)
     if "version" in module:
         validate_version(name, module)
     if "commit" in module:
