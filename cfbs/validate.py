@@ -350,290 +350,298 @@ def validate_build_step(name, module, i, operation, args, strict=False):
         pass
 
 
-def _validate_module_object(context, name, module, config):
-    def validate_alias(name, module, context):
-        if context == "index":
-            search_in = ("index",)
-        elif context == "provides":
-            search_in = "provides"
-        else:
+def _validate_module_alias(name, module, context, config):
+    if context == "index":
+        search_in = ("index",)
+    elif context == "provides":
+        search_in = "provides"
+    else:
+        raise CFBSValidationError(
+            name, '"alias" is only allowed inside "index" or "provides"'
+        )
+    assert "alias" in module
+    if len(module) != 1:
+        raise CFBSValidationError(name, '"alias" cannot be used with other attributes')
+    if type(module["alias"]) is not str:
+        raise CFBSValidationError(name, '"alias" must be of type string')
+    if not module["alias"]:
+        raise CFBSValidationError(name, '"alias" must be non-empty')
+    validate_module_name_content(name)
+    if not config.can_reach_dependency(module["alias"], search_in):
+        raise CFBSValidationError(
+            name, '"alias" must reference another module in the index'
+        )
+    if "alias" in config.find_module(module["alias"], search_in):
+        raise CFBSValidationError(name, '"alias" cannot reference another alias')
+
+
+def _validate_module_name(name, module):
+    assert "name" in module
+    assert name == module["name"]
+    if type(module["name"]) is not str:
+        raise CFBSValidationError(name, '"name" must be of type string')
+    if not module["name"]:
+        raise CFBSValidationError(name, '"name" must be non-empty')
+
+    validate_module_name_content(name)
+
+
+def _validate_module_description(name, module):
+    assert "description" in module
+    if type(module["description"]) is not str:
+        raise CFBSValidationError(name, '"description" must be of type string')
+    if not module["description"]:
+        raise CFBSValidationError(name, '"description" must be non-empty')
+
+
+def _validate_module_tags(name, module):
+    assert "tags" in module
+    if type(module["tags"]) is not list:
+        raise CFBSValidationError(name, '"tags" must be of type list')
+    for tag in module["tags"]:
+        if type(tag) is not str:
+            raise CFBSValidationError(name, '"tags" must be a list of strings')
+
+
+def _validate_module_repo(name, module):
+    assert "repo" in module
+    if type(module["repo"]) is not str:
+        raise CFBSValidationError(name, '"repo" must be of type string')
+    if not module["repo"]:
+        raise CFBSValidationError(name, '"repo" must be non-empty')
+
+
+def _validate_module_by(name, module):
+    assert "by" in module
+    if type(module["by"]) is not str:
+        raise CFBSValidationError(name, '"by" must be of type string')
+    if not module["by"]:
+        raise CFBSValidationError(name, '"by" must be non-empty')
+
+
+def _validate_module_dependencies(name, module, config, context):
+    if context == "build":
+        search_in = ("build",)
+    elif context == "provides":
+        search_in = ("index", "provides")
+    else:
+        assert context == "index"
+        search_in = ("index",)
+    assert "dependencies" in module
+    if type(module["dependencies"]) is not list:
+        raise CFBSValidationError(
+            name, 'Value of attribute "dependencies" must be of type list'
+        )
+    for dependency in module["dependencies"]:
+        if type(dependency) is not str:
+            raise CFBSValidationError(name, '"dependencies" must be a list of strings')
+        if not config.can_reach_dependency(dependency, search_in):
             raise CFBSValidationError(
-                name, '"alias" is only allowed inside "index" or "provides"'
+                name,
+                '"dependencies" references a module which could not be found: "%s"'
+                % dependency,
             )
-        assert "alias" in module
-        if len(module) != 1:
+        if "alias" in config.find_module(dependency):
+            raise CFBSValidationError(name, '"dependencies" cannot reference an alias')
+
+
+def _validate_module_index(name, module):
+    assert "index" in module
+    if type(module["version"]) is not str:
+        raise CFBSValidationError(name, '"index" in "%s" must be a string' % name)
+    try:
+        validate_index_string(module["index"])
+    except CFBSValidationError as e:
+        msg = str(e) + " (in module '%s')" % name
+        raise CFBSValidationError(msg)
+
+
+def _validate_module_version(name, module):
+    assert "version" in module
+    if type(module["version"]) is not str:
+        raise CFBSValidationError(name, '"version" must be of type string')
+    regex = r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9]+))?"
+    if re.fullmatch(regex, module["version"]) is None:
+        raise CFBSValidationError(name, '"version" must match regex %s' % regex)
+
+
+def _validate_module_commit(name, module):
+    assert "commit" in module
+    commit = module["commit"]
+    if type(commit) is not str:
+        raise CFBSValidationError(name, '"commit" must be of type string')
+    if not is_a_commit_hash(commit):
+        raise CFBSValidationError(name, '"commit" must be a commit reference')
+
+
+def _validate_module_subdirectory(name, module):
+    assert "subdirectory" in module
+    if type(module["subdirectory"]) is not str:
+        raise CFBSValidationError(name, '"subdirectory" must be of type string')
+    if not module["subdirectory"]:
+        raise CFBSValidationError(name, '"subdirectory" must be non-empty')
+    if module["subdirectory"].startswith("./"):
+        raise CFBSValidationError(name, '"subdirectory" must not start with ./')
+    if module["subdirectory"].startswith("/"):
+        raise CFBSValidationError(
+            name, '"subdirectory" must be a relative path, not starting with /'
+        )
+    if " " in module["subdirectory"]:
+        raise CFBSValidationError(name, '"subdirectory" cannot contain spaces')
+    if module["subdirectory"].endswith(("/", "/.")):
+        raise CFBSValidationError(name, '"subdirectory" must not end with / or /.')
+
+
+def _validate_module_steps(name, module):
+    assert "steps" in module
+    if type(module["steps"]) is not list:
+        raise CFBSValidationError(name, '"steps" must be of type list')
+    if not module["steps"]:
+        raise CFBSValidationError(name, '"steps" must be non-empty')
+    for i, step in enumerate(module["steps"]):
+        if type(step) is not str:
+            raise CFBSValidationError(name, '"steps" must be a list of strings')
+        if not step or step.strip() == "":
             raise CFBSValidationError(
-                name, '"alias" cannot be used with other attributes'
+                name, '"steps" must be a list of non-empty / non-whitespace strings'
             )
-        if type(module["alias"]) is not str:
-            raise CFBSValidationError(name, '"alias" must be of type string')
-        if not module["alias"]:
-            raise CFBSValidationError(name, '"alias" must be non-empty')
-        validate_module_name_content(name)
-        if not config.can_reach_dependency(module["alias"], search_in):
+        operation, args = split_build_step(step)
+        validate_build_step(name, module, i, operation, args)
+
+
+def _validate_module_url_field(name, module, field):
+    assert field in module
+    url = module.get(field)
+    if url and not url.startswith("https://"):
+        raise CFBSValidationError(name, '"%s" must be an HTTPS URL' % field)
+
+
+def _validate_module_input(name, module):
+    assert "input" in module
+    if type(module["input"]) is not list or not module["input"]:
+        raise CFBSValidationError(
+            name, 'The module\'s "input" must be a non-empty array'
+        )
+
+    required_string_fields = ["type", "variable", "namespace", "bundle", "label"]
+
+    required_string_fields_subtype = ["type", "label", "question"]
+
+    for input_element in module["input"]:
+        if type(input_element) not in (dict, OrderedDict) or not input_element:
             raise CFBSValidationError(
-                name, '"alias" must reference another module in the index'
+                name,
+                'The module\'s "input" array must consist of non-empty objects (dictionaries)',
             )
-        if "alias" in config.find_module(module["alias"], search_in):
-            raise CFBSValidationError(name, '"alias" cannot reference another alias')
-
-    def validate_name(name, module):
-        assert "name" in module
-        assert name == module["name"]
-        if type(module["name"]) is not str:
-            raise CFBSValidationError(name, '"name" must be of type string')
-        if not module["name"]:
-            raise CFBSValidationError(name, '"name" must be non-empty')
-
-        validate_module_name_content(name)
-
-    def validate_description(name, module):
-        assert "description" in module
-        if type(module["description"]) is not str:
-            raise CFBSValidationError(name, '"description" must be of type string')
-        if not module["description"]:
-            raise CFBSValidationError(name, '"description" must be non-empty')
-
-    def validate_tags(name, module):
-        assert "tags" in module
-        if type(module["tags"]) is not list:
-            raise CFBSValidationError(name, '"tags" must be of type list')
-        for tag in module["tags"]:
-            if type(tag) is not str:
-                raise CFBSValidationError(name, '"tags" must be a list of strings')
-
-    def validate_repo(name, module):
-        assert "repo" in module
-        if type(module["repo"]) is not str:
-            raise CFBSValidationError(name, '"repo" must be of type string')
-        if not module["repo"]:
-            raise CFBSValidationError(name, '"repo" must be non-empty')
-
-    def validate_by(name, module):
-        assert "by" in module
-        if type(module["by"]) is not str:
-            raise CFBSValidationError(name, '"by" must be of type string')
-        if not module["by"]:
-            raise CFBSValidationError(name, '"by" must be non-empty')
-
-    def validate_dependencies(name, module, config, context):
-        if context == "build":
-            search_in = ("build",)
-        elif context == "provides":
-            search_in = ("index", "provides")
-        else:
-            assert context == "index"
-            search_in = ("index",)
-        assert "dependencies" in module
-        if type(module["dependencies"]) is not list:
-            raise CFBSValidationError(
-                name, 'Value of attribute "dependencies" must be of type list'
-            )
-        for dependency in module["dependencies"]:
-            if type(dependency) is not str:
-                raise CFBSValidationError(
-                    name, '"dependencies" must be a list of strings'
-                )
-            if not config.can_reach_dependency(dependency, search_in):
+        for field in required_string_fields:
+            if field not in input_element:
                 raise CFBSValidationError(
                     name,
-                    '"dependencies" references a module which could not be found: "%s"'
-                    % dependency,
+                    'The "%s" field is required in module input elements' % field,
                 )
-            if "alias" in config.find_module(dependency):
+            if (
+                type(input_element[field]) is not str
+                or input_element[field].strip() == ""
+            ):
                 raise CFBSValidationError(
-                    name, '"dependencies" cannot reference an alias'
+                    name,
+                    'The "%s" field in input elements must be a non-empty / non-whitespace string'
+                    % field,
                 )
 
-    def validate_index(name, module):
-        assert "index" in module
-        if type(module["version"]) is not str:
-            raise CFBSValidationError(name, '"index" in "%s" must be a string' % name)
-        try:
-            validate_index_string(module["index"])
-        except CFBSValidationError as e:
-            msg = str(e) + " (in module '%s')" % name
-            raise CFBSValidationError(msg)
-
-    def validate_version(name, module):
-        assert "version" in module
-        if type(module["version"]) is not str:
-            raise CFBSValidationError(name, '"version" must be of type string')
-        regex = r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9]+))?"
-        if re.fullmatch(regex, module["version"]) is None:
-            raise CFBSValidationError(name, '"version" must match regex %s' % regex)
-
-    def validate_commit(name, module):
-        assert "commit" in module
-        commit = module["commit"]
-        if type(commit) is not str:
-            raise CFBSValidationError(name, '"commit" must be of type string')
-        if not is_a_commit_hash(commit):
-            raise CFBSValidationError(name, '"commit" must be a commit reference')
-
-    def validate_subdirectory(name, module):
-        assert "subdirectory" in module
-        if type(module["subdirectory"]) is not str:
-            raise CFBSValidationError(name, '"subdirectory" must be of type string')
-        if not module["subdirectory"]:
-            raise CFBSValidationError(name, '"subdirectory" must be non-empty')
-        if module["subdirectory"].startswith("./"):
-            raise CFBSValidationError(name, '"subdirectory" must not start with ./')
-        if module["subdirectory"].startswith("/"):
+        if input_element["type"] not in ("string", "list"):
             raise CFBSValidationError(
-                name, '"subdirectory" must be a relative path, not starting with /'
+                name,
+                'The input "type" must be "string" or "list", not "%s"'
+                % input_element["type"],
             )
-        if " " in module["subdirectory"]:
-            raise CFBSValidationError(name, '"subdirectory" cannot contain spaces')
-        if module["subdirectory"].endswith(("/", "/.")):
-            raise CFBSValidationError(name, '"subdirectory" must not end with / or /.')
-
-    def validate_steps(name, module):
-        assert "steps" in module
-        if type(module["steps"]) is not list:
-            raise CFBSValidationError(name, '"steps" must be of type list')
-        if not module["steps"]:
-            raise CFBSValidationError(name, '"steps" must be non-empty')
-        for i, step in enumerate(module["steps"]):
-            if type(step) is not str:
-                raise CFBSValidationError(name, '"steps" must be a list of strings')
-            if not step or step.strip() == "":
-                raise CFBSValidationError(
-                    name, '"steps" must be a list of non-empty / non-whitespace strings'
-                )
-            operation, args = split_build_step(step)
-            validate_build_step(name, module, i, operation, args)
-
-    def validate_url_field(name, module, field):
-        assert field in module
-        url = module.get(field)
-        if url and not url.startswith("https://"):
-            raise CFBSValidationError(name, '"%s" must be an HTTPS URL' % field)
-
-    def validate_module_input(name, module):
-        assert "input" in module
-        if type(module["input"]) is not list or not module["input"]:
+        if not re.fullmatch(r"[a-z_]+", input_element["variable"]):
             raise CFBSValidationError(
-                name, 'The module\'s "input" must be a non-empty array'
+                name,
+                '"%s" is not an acceptable variable name, must match regex "[a-z_]+"'
+                % input_element["variable"],
+            )
+        if not re.fullmatch(r"[a-z_][a-z0-9_]+", input_element["namespace"]):
+            raise CFBSValidationError(
+                name,
+                '"%s" is not an acceptable namespace, must match regex "[a-z_][a-z0-9_]+"'
+                % input_element["namespace"],
+            )
+        if not re.fullmatch(r"[a-z_]+", input_element["bundle"]):
+            raise CFBSValidationError(
+                name,
+                '"%s" is not an acceptable bundle name, must match regex "[a-z_]+"'
+                % input_element["bundle"],
             )
 
-        required_string_fields = ["type", "variable", "namespace", "bundle", "label"]
-
-        required_string_fields_subtype = ["type", "label", "question"]
-
-        for input_element in module["input"]:
-            if type(input_element) not in (dict, OrderedDict) or not input_element:
+        if input_element["type"] == "list":
+            if "while" not in input_element:
+                raise CFBSValidationError(
+                    name, 'For a "list" input element, a "while" prompt is required'
+                )
+            if (
+                type(input_element["while"]) is not str
+                or not input_element["while"].strip()
+            ):
                 raise CFBSValidationError(
                     name,
-                    'The module\'s "input" array must consist of non-empty objects (dictionaries)',
+                    'The "while" prompt in an input "list" element must be a non-empty / non-whitespace string',
                 )
-            for field in required_string_fields:
-                if field not in input_element:
-                    raise CFBSValidationError(
-                        name,
-                        'The "%s" field is required in module input elements' % field,
-                    )
-                if (
-                    type(input_element[field]) is not str
-                    or input_element[field].strip() == ""
-                ):
-                    raise CFBSValidationError(
-                        name,
-                        'The "%s" field in input elements must be a non-empty / non-whitespace string'
-                        % field,
-                    )
-
-            if input_element["type"] not in ("string", "list"):
+            if "subtype" not in input_element:
+                raise CFBSValidationError(
+                    name, 'For a "list" input element, a "subtype" is required'
+                )
+            if type(input_element["subtype"]) not in (list, dict, OrderedDict):
                 raise CFBSValidationError(
                     name,
-                    'The input "type" must be "string" or "list", not "%s"'
-                    % input_element["type"],
+                    'The list element "subtype" must be an object or an array of objects (dictionaries)',
                 )
-            if not re.fullmatch(r"[a-z_]+", input_element["variable"]):
-                raise CFBSValidationError(
-                    name,
-                    '"%s" is not an acceptable variable name, must match regex "[a-z_]+"'
-                    % input_element["variable"],
-                )
-            if not re.fullmatch(r"[a-z_][a-z0-9_]+", input_element["namespace"]):
-                raise CFBSValidationError(
-                    name,
-                    '"%s" is not an acceptable namespace, must match regex "[a-z_][a-z0-9_]+"'
-                    % input_element["namespace"],
-                )
-            if not re.fullmatch(r"[a-z_]+", input_element["bundle"]):
-                raise CFBSValidationError(
-                    name,
-                    '"%s" is not an acceptable bundle name, must match regex "[a-z_]+"'
-                    % input_element["bundle"],
-                )
-
-            if input_element["type"] == "list":
-                if "while" not in input_element:
-                    raise CFBSValidationError(
-                        name, 'For a "list" input element, a "while" prompt is required'
-                    )
-                if (
-                    type(input_element["while"]) is not str
-                    or not input_element["while"].strip()
-                ):
-                    raise CFBSValidationError(
-                        name,
-                        'The "while" prompt in an input "list" element must be a non-empty / non-whitespace string',
-                    )
-                if "subtype" not in input_element:
-                    raise CFBSValidationError(
-                        name, 'For a "list" input element, a "subtype" is required'
-                    )
-                if type(input_element["subtype"]) not in (list, dict, OrderedDict):
-                    raise CFBSValidationError(
-                        name,
-                        'The list element "subtype" must be an object or an array of objects (dictionaries)',
-                    )
-                subtype = input_element["subtype"]
-                if type(subtype) is not list:
-                    subtype = [subtype]
-                for part in subtype:
-                    for field in required_string_fields_subtype:
-                        if field not in part:
-                            raise CFBSValidationError(
-                                name,
-                                'The "%s" field is required in module input "subtype" objects'
-                                % field,
-                            )
-                        if type(part[field]) is not str or part[field].strip() == "":
-                            raise CFBSValidationError(
-                                name,
-                                'The "%s" field in module input "subtype" objects must be a non-empty / non-whitespace string'
-                                % field,
-                            )
-                    if len(subtype) > 1:
-                        # The "key" field is used to create the JSON objects for each
-                        # input in a list of "things" which are not just strings,
-                        # i.e. consist of multiple values
-                        if (
-                            "key" not in part
-                            or type(part["key"]) is not str
-                            or part["key"].strip() == ""
-                        ):
-                            raise CFBSValidationError(
-                                name,
-                                'When using module input with type list, and subtype includes multiple values, "key" is required to distinguish them',
-                            )
-                    if part["type"] != "string":
+            subtype = input_element["subtype"]
+            if type(subtype) is not list:
+                subtype = [subtype]
+            for part in subtype:
+                for field in required_string_fields_subtype:
+                    if field not in part:
                         raise CFBSValidationError(
                             name,
-                            'Only "string" supported for the "type" of module input list elements, not "%s"'
-                            % part["type"],
+                            'The "%s" field is required in module input "subtype" objects'
+                            % field,
                         )
+                    if type(part[field]) is not str or part[field].strip() == "":
+                        raise CFBSValidationError(
+                            name,
+                            'The "%s" field in module input "subtype" objects must be a non-empty / non-whitespace string'
+                            % field,
+                        )
+                if len(subtype) > 1:
+                    # The "key" field is used to create the JSON objects for each
+                    # input in a list of "things" which are not just strings,
+                    # i.e. consist of multiple values
+                    if (
+                        "key" not in part
+                        or type(part["key"]) is not str
+                        or part["key"].strip() == ""
+                    ):
+                        raise CFBSValidationError(
+                            name,
+                            'When using module input with type list, and subtype includes multiple values, "key" is required to distinguish them',
+                        )
+                if part["type"] != "string":
+                    raise CFBSValidationError(
+                        name,
+                        'Only "string" supported for the "type" of module input list elements, not "%s"'
+                        % part["type"],
+                    )
 
+
+def _validate_module_object(context, name, module, config):
     assert context in ("index", "provides", "build")
 
     # Step 1 - Handle special cases (alias):
 
     if "alias" in module:
         # Needs to be validated first because it's missing the other fields:
-        validate_alias(name, module, context)
+        _validate_module_alias(name, module, context, config)
         return  # alias entries would fail the other validation below
 
     # Step 2 - Check for required fields:
@@ -667,33 +675,33 @@ def _validate_module_object(context, name, module, config):
     # Step 3 - Validate fields:
 
     if "name" in module:
-        validate_name(name, module)
+        _validate_module_name(name, module)
     if "description" in module:
-        validate_description(name, module)
+        _validate_module_description(name, module)
     if "tags" in module:
-        validate_tags(name, module)
+        _validate_module_tags(name, module)
     if "repo" in module:
-        validate_repo(name, module)
+        _validate_module_repo(name, module)
     if "by" in module:
-        validate_by(name, module)
+        _validate_module_by(name, module)
     if "dependencies" in module:
-        validate_dependencies(name, module, config, context)
+        _validate_module_dependencies(name, module, config, context)
     if "index" in module:
-        validate_index(name, module)
+        _validate_module_index(name, module)
     if "version" in module:
-        validate_version(name, module)
+        _validate_module_version(name, module)
     if "commit" in module:
-        validate_commit(name, module)
+        _validate_module_commit(name, module)
     if "subdirectory" in module:
-        validate_subdirectory(name, module)
+        _validate_module_subdirectory(name, module)
     if "steps" in module:
-        validate_steps(name, module)
+        _validate_module_steps(name, module)
     if "website" in module:
-        validate_url_field(name, module, "website")
+        _validate_module_url_field(name, module, "website")
     if "documentation" in module:
-        validate_url_field(name, module, "documentation")
+        _validate_module_url_field(name, module, "documentation")
     if "input" in module:
-        validate_module_input(name, module)
+        _validate_module_input(name, module)
 
     # Step 4 - Additional validation checks:
 
