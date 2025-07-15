@@ -105,8 +105,11 @@ class CFBSJson:
                 if raise_exceptions:
                     raise CFBSValidationError(msg)
                 log.warning(msg)
+        already_printed = []
         for module in self._find_all_module_objects():
             for key in module:
+                if key in already_printed:
+                    continue
                 if key not in MODULE_KEYS:
                     msg = (
                         'The module level key "%s" is not known to this version of cfbs.\n'
@@ -117,6 +120,7 @@ class CFBSJson:
                     if raise_exceptions:
                         raise CFBSValidationError(msg)
                     log.warning(msg)
+                    already_printed.append(key)
 
     def _get_all_module_names(self, search_in=("build", "provides", "index")):
         modules = []
