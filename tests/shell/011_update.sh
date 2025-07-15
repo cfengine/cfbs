@@ -43,7 +43,7 @@ cat cfbs.json | grep -F "version" | grep -F "."
 cat cfbs.json | grep -F "commit"
 cat cfbs.json | grep -F "subdirectory" | grep -F "libraries/python"
 cat cfbs.json | grep -F "added_by" | grep -F "promise-type-ansible"
-cat cfbs.json | grep -F "steps" | grep -F "copy cfengine.py modules/promises/"
+cat cfbs.json | grep -F "copy cfengine_module_library.py modules/promises/cfengine_module_library.py"
 
 cfbs status
 cfbs build
