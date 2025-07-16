@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+"""cfbs_config.py - Logic for manipulating a project / cfbs.json config file.
+
+TODOs:
+- A lot of the code which is currently inside some long commands in commands.py
+  should be moved here.
+- CFBSConfig.add() logic needs a good refactoring. It has a lot more code than
+  necessary duplicated for slightly different cases (URL vs index vs provides
+  vs dependencies). It should be rewritten / unified, and split up into a few
+  discrete steps:
+  1. Collect modules to add (and filter)
+  2. Validate modules and abort if the new modules fail validation
+  3. Add modules and make commits
+"""
+
+
 import os
 import copy
 import glob

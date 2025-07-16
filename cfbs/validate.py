@@ -17,6 +17,17 @@ accidentally introducing circular dependencies.
 Thus, for example, the common parts needed by both build.py
 and validate.py, should be in utils.py or validate.py,
 not in build.py.
+
+TODOs:
+1. Although we don't import anything from cfbs_config.py
+   nor cfbs_json.py, we still depend on them by calling
+   certain methods on the config object, such as
+   config.warn_about_unknown_keys() and config.find_module().
+   We should decouple this so that validate.py is more pure
+   and can be called and tested with just simple JSON data
+   / dicts. This should make it easer to write unit tests,
+   use stricter type checking, and maintain all the validation
+   code in one place.
 """
 
 import logging as log

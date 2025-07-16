@@ -1,3 +1,15 @@
+"""cfbs_json.py - Simple read-only abstraction of a cfbs.json file
+
+Don't put code which makes changes to cfbs.json here, that should
+go in cfbs_config.py.
+
+TODOs:
+1. Code related to validation should be moved to validate.py.
+   For example warn_about_unknown_keys(). Validation code
+   should just take "raw data" (JSON dicts) and not be coupled
+   with cfbs_json.py nor cfbs_config.py.
+"""
+
 from collections import OrderedDict
 from copy import deepcopy
 import logging as log
