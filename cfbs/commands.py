@@ -45,7 +45,11 @@ from cfbs.build import (
     perform_build,
 )
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
-from cfbs.validate import validate_config, validate_config_raise_exceptions
+from cfbs.validate import (
+    validate_config,
+    validate_config_raise_exceptions,
+    validate_single_module,
+)
 from cfbs.internal_file_management import (
     clone_url_repo,
     SUPPORTED_URI_SCHEMES,
@@ -582,6 +586,8 @@ def update_command(to_update) -> Result:
     module_updates = ModuleUpdates(config)
     index = None
 
+    old_modules = []
+    new_modules = []
     for update in to_update:
         old_module = config.get_module_from_build(update.name)
         assert (
@@ -611,7 +617,7 @@ def update_command(to_update) -> Result:
         if not old_module:
             log.warning("Module '%s' not in build. Skipping its update." % update.name)
             continue
-
+        old_modules.append(old_module)
         if "url" in old_module:
             path, commit = clone_url_repo(old_module["url"])
             remote_config = CFBSJson(
@@ -663,11 +669,28 @@ def update_command(to_update) -> Result:
                 continue
 
             new_module = index_info
+        new_modules.append(new_module)
 
+    assert len(old_modules) == len(to_update)
+    assert len(old_modules) == len(new_modules)
+
+    for name, module in zip(to_update, old_modules):
+        # TODO: Consider removing this, it should not be necessary -
+        #       the old modeules from cfbs.json should already be validated.
+        #       However, it also shouldn't hurt.
+        #       We can also consider if we want validation to be slightly different
+        #       in cfbs update, i.e. allow you to run cfbs update even with an
+        #       invalid config, so long as your updated module actually fix the errors.
+        validate_single_module(
+            context="build", name=name, module=module, config=None, local_check=True
+        )
+    for name, module in zip(to_update, new_modules):
+        validate_single_module(
+            context="build", name=name, module=module, config=None, local_check=True
+        )
+
+    for old_module, new_module, update in zip(old_modules, new_modules, to_update):
         update_module(old_module, new_module, module_updates, update)
-
-        # add new items
-
         updated.append(update)
 
     if module_updates.new_deps:
@@ -677,6 +700,7 @@ def update_command(to_update) -> Result:
             for d in module_updates.new_deps
         ]
         config.add_with_dependencies(objects)
+    validate_config_raise_exceptions(config, empty_build_list_ok=False)
     config.save()
 
     if module_updates.changes_made:
