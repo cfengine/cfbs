@@ -19,9 +19,7 @@ and validate.py, should be in utils.py or validate.py,
 not in build.py.
 """
 
-import argparse
 import logging as log
-import sys
 import re
 from collections import OrderedDict
 from typing import List, Tuple
@@ -35,7 +33,6 @@ from cfbs.utils import (
     CFBSValidationError,
 )
 from cfbs.pretty import TOP_LEVEL_KEYS, MODULE_KEYS
-from cfbs.cfbs_config import CFBSConfig
 
 AVAILABLE_BUILD_STEPS = {
     "copy": 2,
@@ -730,18 +727,3 @@ def _validate_config_for_build_field(config, empty_build_list_ok=False):
         raise CFBSExitError(
             "The \"build\" field in ./cfbs.json is empty - add modules with 'cfbs add'"
         )
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("file", nargs="?", default="./cfbs.json")
-    args = parser.parse_args()
-
-    config = CFBSConfig.get_instance(filename=args.file, non_interactive=True)
-    r = validate_config(config)
-
-    sys.exit(r)
-
-
-if __name__ == "__main__":
-    main()
