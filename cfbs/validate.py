@@ -193,9 +193,11 @@ def validate_module_name_content(name):
     log.debug("Validated name of module %s" % name)
 
 
-def _validate_config(config, empty_build_list_ok=False):
+def validate_config_raise_exceptions(config, empty_build_list_ok=False):
     # First validate the config i.e. the user's cfbs.json
-    config.warn_about_unknown_keys()
+    # Here we can raise exceptions, that's what the rest of
+    # the function does, and they are caught by validate_config()
+    config.warn_about_unknown_keys(raise_exceptions=True)
     _validate_top_level_keys(config)
     raw_data = config.raw_data
 
@@ -217,7 +219,7 @@ def _validate_config(config, empty_build_list_ok=False):
 def validate_config(config, empty_build_list_ok=False):
     """Returns `0` if there are no validation errors, and `1` otherwise."""
     try:
-        _validate_config(config, empty_build_list_ok)
+        validate_config_raise_exceptions(config, empty_build_list_ok)
         return 0
     except CFBSValidationError as e:
         print(e)
