@@ -19,6 +19,7 @@ from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     CFBSNetworkError,
     CFBSUserError,
+    CFBSValidationError,
     cfbs_filename,
     is_cfbs_repo,
     read_json,
@@ -572,7 +573,15 @@ def _clean_unused_modules(config=None):
 @commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update) -> Result:
     config = CFBSConfig.get_instance()
-    validate_config_raise_exceptions(config, empty_build_list_ok=True)
+    r = validate_config(config, empty_build_list_ok=True)
+    valid_before = r == 0
+    if not valid_before:
+        log.warning(
+            "Your cfbs.json fails validation before update "
+            + "(see messages above) - "
+            + "We will attempt update anyway, hoping newer "
+            + "versions of modules might fix the issues"
+        )
     build = config["build"]
 
     # Update all modules in build if none specified
@@ -674,16 +683,10 @@ def update_command(to_update) -> Result:
     assert len(old_modules) == len(to_update)
     assert len(old_modules) == len(new_modules)
 
-    for name, module in zip(to_update, old_modules):
-        # TODO: Consider removing this, it should not be necessary -
-        #       the old modeules from cfbs.json should already be validated.
-        #       However, it also shouldn't hurt.
-        #       We can also consider if we want validation to be slightly different
-        #       in cfbs update, i.e. allow you to run cfbs update even with an
-        #       invalid config, so long as your updated module actually fix the errors.
-        validate_single_module(
-            context="build", name=name, module=module, config=None, local_check=True
-        )
+    # We don't validate old modules here because we want to allow
+    # cfbs update to fix invalid modules with a newer valid version.
+
+    # Validate new modules, we don't want to add them unless they are valid:
     for name, module in zip(to_update, new_modules):
         validate_single_module(
             context="build", name=name, module=module, config=None, local_check=True
@@ -700,7 +703,21 @@ def update_command(to_update) -> Result:
             for d in module_updates.new_deps
         ]
         config.add_with_dependencies(objects)
-    validate_config_raise_exceptions(config, empty_build_list_ok=False)
+    r = validate_config(config, empty_build_list_ok=False)
+    valid_after = r == 0
+    if not valid_after:
+        if valid_before:
+            raise CFBSValidationError(
+                "The cfbs.json was valid before update, "
+                + "but is invalid after adding new versions "
+                + "of modules - aborting update "
+                + "(see validation error messages above)"
+            )
+        raise CFBSValidationError(
+            "The cfbs.json was invalid before update, "
+            + "but updating modules did not fix it - aborting update"
+            + "(see validation error messages above)"
+        )
     config.save()
 
     if module_updates.changes_made:
