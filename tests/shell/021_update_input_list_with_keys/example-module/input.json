@@ -2,6 +2,8 @@
   {
     "type": "list",
     "variable": "files",
+    "namespace": "example_module",
+    "bundle": "example_module",
     "label": "Files",
     "subtype": [
       {

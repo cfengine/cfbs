@@ -45,7 +45,7 @@ from cfbs.build import (
     perform_build,
 )
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
-from cfbs.validate import validate_config
+from cfbs.validate import validate_config, validate_config_raise_exceptions
 from cfbs.internal_file_management import (
     clone_url_repo,
     SUPPORTED_URI_SCHEMES,
@@ -295,9 +295,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
 @cfbs_command("status")
 def status_command() -> int:
     config = CFBSConfig.get_instance()
-    if validate_config(config, empty_build_list_ok=True) != 0:
-        return 1
-    config.warn_about_unknown_keys()
+    validate_config_raise_exceptions(config, empty_build_list_ok=True)
     print("Name:        %s" % config["name"])
     print("Description: %s" % config["description"])
     print("File:        %s" % cfbs_filename())
@@ -392,7 +390,7 @@ def add_command(
     checksum=None,
 ) -> Union[Result, int]:
     config = CFBSConfig.get_instance()
-    config.warn_about_unknown_keys()
+    validate_config_raise_exceptions(config, empty_build_list_ok=True)
     r = config.add_command(to_add, added_by, checksum)
     config.save()
     return r
@@ -402,7 +400,7 @@ def add_command(
 @commit_after_command("Removed module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
 def remove_command(to_remove: List[str]):
     config = CFBSConfig.get_instance()
-    config.warn_about_unknown_keys()
+    validate_config_raise_exceptions(config, empty_build_list_ok=True)
     if "build" not in config:
         raise CFBSExitError(
             'Cannot remove any modules because the "build" key is missing from cfbs.json'
@@ -570,7 +568,7 @@ def _clean_unused_modules(config=None):
 @commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update) -> Result:
     config = CFBSConfig.get_instance()
-    config.warn_about_unknown_keys()
+    validate_config_raise_exceptions(config, empty_build_list_ok=True)
     build = config["build"]
 
     # Update all modules in build if none specified
@@ -1046,7 +1044,7 @@ def analyze_command(
 @commit_after_command("Added input for module%s", [PLURAL_S])
 def input_command(args, input_from="cfbs input") -> Result:
     config = CFBSConfig.get_instance()
-    config.warn_about_unknown_keys()
+    validate_config_raise_exceptions(config, empty_build_list_ok=True)
     do_commit = False
     files_to_commit = []
     for module_name in args:

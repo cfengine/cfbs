@@ -6,6 +6,8 @@ cd ./tmp/
 
 # Set up the project we will build:
 cp ../shell/043_replace_version/example-cfbs.json ./cfbs.json
+cfbs validate
+
 mkdir -p subdir
 cp ../shell/043_replace_version/subdir/example.py ./subdir/example.py
 

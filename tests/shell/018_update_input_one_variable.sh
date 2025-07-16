@@ -8,6 +8,7 @@ rm -rf .git
 rm -rf example-module
 cp -r ../shell/018_update_input_one_variable/example-module .
 cp ../shell/018_update_input_one_variable/example-cfbs.json cfbs.json
+cfbs validate
 
 cfbs --loglevel=debug --non-interactive update
 grep '"label": "Filepath"' example-module/input.json

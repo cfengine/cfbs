@@ -8,6 +8,7 @@ rm -rf .git
 rm -rf example-module
 cp -r ../shell/021_update_input_list_with_keys/example-module .
 cp ../shell/021_update_input_list_with_keys/example-cfbs.json cfbs.json
+cfbs validate
 
 cfbs --loglevel=debug --non-interactive update
 grep '"while": "Create another file?"' example-module/input.json

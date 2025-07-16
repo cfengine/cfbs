@@ -8,6 +8,8 @@ rm -rf .git
 rm -rf delete-files
 
 cp ../shell/042_update_from_url/example-cfbs.json cfbs.json
+cfbs validate
+
 cp -r ../shell/042_update_from_url/delete-files .
 
 cfbs --loglevel=debug --non-interactive update

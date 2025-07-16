@@ -6,6 +6,7 @@
   "index": {
     "example-module": {
       "description": "Example module",
+      "tags": [],
       "repo": "https://github.com/example-user/example-modules.git",
       "by": "https://github.com/example-user",
       "version": "1.0.1",
@@ -15,6 +16,8 @@
         {
           "type": "list",
           "variable": "files",
+          "namespace": "example_module",
+          "bundle": "example_module",
           "label": "Files",
           "subtype": [
             {
@@ -35,15 +38,14 @@
           "while": "Create another file?"
         }
       ],
-      "steps": [
-        "input ./input.json def.json"
-      ]
+      "steps": ["input ./input.json def.json"]
     }
   },
   "build": [
     {
       "name": "example-module",
       "description": "Example module",
+      "tags": [],
       "commit": "0000000000000000000000000000000000000000",
       "by": "https://github.com/example-user",
       "version": "1.0.0",
@@ -52,6 +54,8 @@
         {
           "type": "list",
           "variable": "files",
+          "namespace": "example_module",
+          "bundle": "example_module",
           "label": "Files",
           "subtype": [
             {
@@ -72,9 +76,7 @@
           "while": "Do you want to create another file?"
         }
       ],
-      "steps": [
-        "input ./input.json def.json"
-      ],
+      "steps": ["input ./input.json def.json"],
       "added_by": "cfbs add"
     }
   ]
