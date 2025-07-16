@@ -1087,6 +1087,12 @@ def analyze_command(
     return 0
 
 
+@cfbs_command("convert")
+def convert_command():
+    print("This is not implemented yet.")
+    return 0
+
+
 @cfbs_command("input")
 @commit_after_command("Added input for module%s", [PLURAL_S])
 def input_command(args, input_from="cfbs input"):
