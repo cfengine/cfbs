@@ -597,6 +597,7 @@ def update_command(to_update) -> Result:
 
     old_modules = []
     new_modules = []
+    update_objects = []
     for update in to_update:
         old_module = config.get_module_from_build(update.name)
         assert (
@@ -626,7 +627,6 @@ def update_command(to_update) -> Result:
         if not old_module:
             log.warning("Module '%s' not in build. Skipping its update." % update.name)
             continue
-        old_modules.append(old_module)
         if "url" in old_module:
             path, commit = clone_url_repo(old_module["url"])
             remote_config = CFBSJson(
@@ -678,21 +678,27 @@ def update_command(to_update) -> Result:
                 continue
 
             new_module = index_info
+        update_objects.append(update)
+        old_modules.append(old_module)
         new_modules.append(new_module)
 
-    assert len(old_modules) == len(to_update)
+    assert len(old_modules) == len(update_objects)
     assert len(old_modules) == len(new_modules)
 
     # We don't validate old modules here because we want to allow
     # cfbs update to fix invalid modules with a newer valid version.
 
     # Validate new modules, we don't want to add them unless they are valid:
-    for name, module in zip(to_update, new_modules):
+    for update, module in zip(update_objects, new_modules):
         validate_single_module(
-            context="build", name=name, module=module, config=None, local_check=True
+            context="build",
+            name=update.name,
+            module=module,
+            config=None,
+            local_check=True,
         )
 
-    for old_module, new_module, update in zip(old_modules, new_modules, to_update):
+    for old_module, new_module, update in zip(old_modules, new_modules, update_objects):
         update_module(old_module, new_module, module_updates, update)
         updated.append(update)
 

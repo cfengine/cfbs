@@ -372,8 +372,12 @@ def _validate_module_alias(name, module, context, config):
         raise CFBSValidationError(name, '"alias" cannot reference another alias')
 
 
-def _validate_module_name(name, module):
+def _validate_module_name(name: str, module):
     assert "name" in module
+    assert name
+    assert type(name) is str
+    assert module["name"]
+    assert type(module["name"]) is str
     assert name == module["name"]
     if type(module["name"]) is not str:
         raise CFBSValidationError(name, '"name" must be of type string')
