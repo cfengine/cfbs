@@ -6,6 +6,8 @@ __copyright__ = ["Northern.tech AS"]
 import logging as log
 import sys
 import os
+import traceback
+import pathlib
 from typing import Union
 
 from cfbs.result import Result
@@ -272,19 +274,50 @@ def main() -> int:
         return r
     except CFBSValidationError as e:
         print("Error: " + str(e))
+        return 1
     except CFBSExitError as e:
         print("Error: " + str(e))
+        return 1
     except CFBSUserError as e:
         print("Error: " + str(e))
+        return 1
     except CFBSNetworkError as e:
         print("Error: " + str(e))
-    except (AssertionError, CFBSProgrammerError) as e:
-        print("Error: " + str(e))
-        print(
-            "This is an unexpected error indicating a bug, please create a ticket at:"
+        return 1
+    # AssertionError and CFBSProgrammerError are not expected, print extra info:
+    except AssertionError as e:
+        tb = traceback.extract_tb(e.__traceback__)
+        frame = tb[-1]
+        this_file = pathlib.Path(__file__)
+        cfbs_prefix = os.path.abspath(this_file.parent.parent.resolve())
+        filename = os.path.abspath(frame.filename)
+        # Opportunistically cut off beginning of path if possible:
+        if filename.startswith(cfbs_prefix):
+            filename = filename[len(cfbs_prefix) :]
+            if filename.startswith("/"):
+                filename = filename[1:]
+        line = frame.lineno
+        # Avoid using frame.colno - it was not available in python 3.5,
+        # and even in the latest version, it is not declared in the
+        # docstring, so you will get linting warnings;
+        # https://github.com/python/cpython/blob/v3.13.5/Lib/traceback.py#L276-L288
+        # column = frame.colno
+        assertion = frame.line
+        explanation = str(e)
+        message = "Assertion failed - %s%s (%s:%s)" % (
+            assertion,
+            (" - " + explanation) if explanation else "",
+            filename,
+            line,
         )
-        print("https://northerntech.atlassian.net/")
-    print("(Rerun with CFBACKTRACE=1 in front of your command to show backtraces)")
+        print("Error: " + message)
+    except CFBSProgrammerError as e:
+        print("Error: " + str(e))
+    print("This is an unexpected error indicating a bug, please create a ticket at:")
+    print("https://northerntech.atlassian.net/")
+    print(
+        "(Rerun with CFBACKTRACE=1 in front of your command to show the full backtrace)"
+    )
 
     # TODO: Handle other exceptions
     return 1
