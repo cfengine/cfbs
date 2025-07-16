@@ -447,7 +447,7 @@ def _validate_module_dependencies(name, module, config, context):
 
 def _validate_module_index(name, module):
     assert "index" in module
-    if type(module["version"]) is not str:
+    if type(module["index"]) is not str:
         raise CFBSValidationError(name, '"index" in "%s" must be a string' % name)
     try:
         validate_index_string(module["index"])
