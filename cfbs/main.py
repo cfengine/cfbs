@@ -184,6 +184,8 @@ def _main() -> int:
             args.offline,
             does_log_info(args.loglevel),
         )
+    if args.command == "convert":
+        return commands.convert_command()
 
     if args.command == "generate-release-information":
         return commands.generate_release_information_command(

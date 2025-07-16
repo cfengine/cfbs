@@ -256,6 +256,7 @@ These commands are centered around a user making changes to a project (manually 
 - `cfbs analyse`: Same as `cfbs analyze`.
 - `cfbs analyze`: Analyze the policy set specified by the given path.
 - `cfbs clean`: Remove modules which were added as dependencies, but are no longer needed.
+- `cfbs convert`: Initialize a new CFEngine Build project based on an existing policy set.
 - `cfbs help`: Print the help menu.
 - `cfbs info`: Print information about a module.
 - `cfbs init`: Initialize a new CFEngine Build project.
