@@ -12,8 +12,7 @@
       "added_by": "cfbs add",
       "steps": [
         "copy delete-files.cf services/cfbs/modules/delete-files/delete-files.cf",
-        "input delete-files/input.json def.json",
-        "something test"
+        "input delete-files/input.json def.json"
       ],
       "input": [
         {

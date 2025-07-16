@@ -8,6 +8,7 @@ rm -rf .git
 rm -rf example-module
 cp -r ../shell/019_update_input_two_variables/example-module .
 cp ../shell/019_update_input_two_variables/example-cfbs.json cfbs.json
+cfbs validate
 
 cfbs --loglevel=debug --non-interactive update
 grep '"label": "Path"' example-module/input.json

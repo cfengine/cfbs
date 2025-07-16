@@ -2,6 +2,8 @@
   {
     "type": "string",
     "variable": "filename",
+    "namespace": "example_module",
+    "bundle": "example_module",
     "label": "Filename",
     "question": "What file should this module create?",
     "default": "/tmp/example.txt",
@@ -10,6 +12,8 @@
   {
     "type": "string",
     "variable": "content",
+    "namespace": "example_module",
+    "bundle": "example_module",
     "label": "Content",
     "question": "What content should this file have?",
     "default": "Bye CFEngine!",

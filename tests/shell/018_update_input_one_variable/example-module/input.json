@@ -2,6 +2,8 @@
   {
     "type": "string",
     "variable": "filename",
+    "namespace": "example_module",
+    "bundle": "example_module",
     "label": "Filename",
     "question": "What file should this module create?",
     "response": "/tmp/create-single-file.txt",

@@ -6,6 +6,7 @@
   "index": {
     "example-module": {
       "description": "Example module",
+      "tags": [],
       "repo": "https://github.com/example-user/example-modules.git",
       "by": "https://github.com/example-user",
       "version": "1.0.1",
@@ -15,6 +16,8 @@
         {
           "type": "string",
           "variable": "filename",
+          "namespace": "example_module",
+          "bundle": "example_module",
           "label": "Filename",
           "question": "What file should this module create?",
           "default": "/tmp/example.txt"
@@ -22,20 +25,21 @@
         {
           "type": "string",
           "variable": "content",
+          "namespace": "example_module",
+          "bundle": "example_module",
           "label": "Content",
           "question": "What content should this file have?",
           "default": "/tmp/example.txt"
         }
       ],
-      "steps": [
-        "input ./input.json def.json"
-      ]
+      "steps": ["input ./input.json def.json"]
     }
   },
   "build": [
     {
       "name": "example-module",
       "description": "Example module",
+      "tags": [],
       "repo": "https://github.com/example-user/example-modules.git",
       "commit": "0000000000000000000000000000000000000000",
       "by": "https://github.com/example-user",
@@ -45,14 +49,14 @@
         {
           "type": "string",
           "variable": "filename",
+          "namespace": "example_module",
+          "bundle": "example_module",
           "label": "Filename",
           "question": "What file should this module create?",
           "default": "/tmp/example.txt"
         }
       ],
-      "steps": [
-        "input ./input.json def.json"
-      ],
+      "steps": ["input ./input.json def.json"],
       "added_by": "cfbs add"
     }
   ]

@@ -8,6 +8,7 @@ rm -rf .git
 rm -rf example-module
 cp -r ../shell/020_update_input_list/example-module .
 cp ../shell/020_update_input_list/example-cfbs.json cfbs.json
+cfbs validate
 
 cfbs --loglevel=debug --non-interactive update
 grep '"label": "Filepaths"' example-module/input.json
