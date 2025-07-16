@@ -9,6 +9,7 @@ import os
 from typing import Union
 
 from cfbs.result import Result
+from cfbs.validate import validate_index_string
 from cfbs.version import string as version
 from cfbs.utils import (
     CFBSValidationError,
@@ -74,6 +75,13 @@ def _main() -> Union[int, Result]:
     if args.command not in commands.get_command_names():
         print_help()
         raise CFBSUserError("Command '%s' not found" % args.command)
+
+    if args.index is not None:
+        if args.command not in ["init", "add", "search", "validate"]:
+            raise CFBSUserError(
+                "'--index' option can not be used with the '%s' command" % args.command
+            )
+        validate_index_string(args.index)
 
     if args.masterfiles and args.command != "init":
         raise CFBSUserError(

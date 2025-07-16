@@ -94,7 +94,11 @@ def get_arg_parser():
         help="Don't prompt, use defaults (only for testing)",
         action="store_true",
     )
-    parser.add_argument("--index", help="Specify alternate index", type=str)
+    parser.add_argument(
+        "--index",
+        help="Specify alternate index (HTTPS URL or relative path to JSON file)",
+        type=str,
+    )
     parser.add_argument(
         "--check", help="Check if file(s) would be reformatted", action="store_true"
     )

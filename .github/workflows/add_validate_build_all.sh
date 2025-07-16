@@ -11,7 +11,7 @@ rm -rf ./tmp/
 mkdir -p ./tmp/
 
 # This script is written to also work in for example cfengine/cfbs
-# where we'd need to downooad cfbs.json.
+# where we'd need to download cfbs.json.
 if [ ! -f ./cfbs.json ] ; then
     echo "No cfbs.json found in current working directory, downloading from GitHub"
     curl -L https://raw.githubusercontent.com/cfengine/build-index/refs/heads/master/cfbs.json -o ./tmp/cfbs.json

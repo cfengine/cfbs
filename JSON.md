@@ -368,7 +368,7 @@ Which results in:
 You can start a project with an alternate index:
 
 ```
-cfbs init --index blah
+cfbs init --index ./some-index.json
 ```
 
 ```json
@@ -376,12 +376,12 @@ cfbs init --index blah
   "name": "Example",
   "description": "Example description",
   "type": "policy-set",
-  "index": "blah",
+  "index": "./some-index.json",
   "build": []
 }
 ```
 
-`blah` can be a URL or a relative file path (inside project).
+The `--index` argument can either be a relative path to a JSON, as seen above, or a HTTPS URL.
 
 ## Index file
 
