@@ -38,6 +38,7 @@ from cfbs.pretty import pretty, CFBS_DEFAULT_SORTING_RULES
 from cfbs.cfbs_json import CFBSJson
 from cfbs.module import Module, is_module_added_manually
 from cfbs.prompts import prompt_user, YES_NO_CHOICES
+from cfbs.validate import validate_single_module
 
 
 # Legacy; do not use. Use the 'Result' namedtuple instead.
@@ -348,6 +349,11 @@ class CFBSConfig(CFBSJson):
                 del module["subdirectory"]
             if self.index.custom_index is not None:
                 module["index"] = self.index.custom_index
+            # TODO: This validation could probably be done in a better place,
+            #       after we refactor the add logic:
+            validate_single_module(
+                context="build", name=name, module=module, config=None, local_check=True
+            )
             self["build"].append(module)
             self._handle_local_module(module)
 
