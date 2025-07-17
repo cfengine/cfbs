@@ -2,7 +2,7 @@ import copy
 import os
 import logging as log
 
-from cfbs.prompts import YES_NO_CHOICES, prompt_user
+from cfbs.prompts import prompt_user_yesno
 from cfbs.utils import read_json, CFBSExitError, write_json
 
 
@@ -134,16 +134,13 @@ def update_module(old_module, new_module, module_updates, update):
         if key == "steps":
             # same commit => user modifications, don't revert them
             if commit_differs:
-                ans = prompt_user(
+                if prompt_user_yesno(
                     module_updates.config.non_interactive,
                     "Module %s has different build steps now\n" % old_module["name"]
                     + "old steps: %s\n" % old_module["steps"]
                     + "new steps: %s\n" % new_module["steps"]
                     + "Do you want to use the new build steps?",
-                    choices=YES_NO_CHOICES,
-                    default="yes",
-                )
-                if ans.lower() in ["y", "yes"]:
+                ):
                     old_module["steps"] = new_module["steps"]
                     local_changes_made = True
                 else:
@@ -167,14 +164,13 @@ def update_module(old_module, new_module, module_updates, update):
                         local_changes_made |= update_input_data(old_module, input_data)
                     except InputDataUpdateFailed as e:
                         log.warning(e)
-                        if prompt_user(
+                        if not prompt_user_yesno(
                             module_updates.config.non_interactive,
                             "Input for module '%s' has changed " % old_module["name"]
                             + "and may no longer be compatible. "
                             + "Do you want to re-enter input now?",
-                            YES_NO_CHOICES,
-                            "no",
-                        ).lower() in ("no", "n"):
+                            default="no",
+                        ):
                             continue
                         input_data = copy.deepcopy(old_module["input"])
                         module_updates.config.input_command(

@@ -109,7 +109,7 @@ from cfbs.git import (
     ls_remote,
 )
 from cfbs.git_magic import Result, commit_after_command, git_commit_maybe_prompt
-from cfbs.prompts import YES_NO_CHOICES, prompt_user
+from cfbs.prompts import prompt_user, prompt_user_yesno
 from cfbs.module import Module, is_module_added_manually
 from cfbs.masterfiles.generate_release_information import generate_release_information
 
@@ -199,20 +199,15 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     is_git = is_git_repo()
     if do_git is None:
         if is_git:
-            git_ans = prompt_user(
+            do_git = prompt_user_yesno(
                 non_interactive,
                 "This is a git repository. Do you want cfbs to make commits to it?",
-                choices=YES_NO_CHOICES,
-                default="yes",
             )
         else:
-            git_ans = prompt_user(
+            do_git = prompt_user_yesno(
                 non_interactive,
                 "Do you want cfbs to initialize a git repository and make commits to it?",
-                choices=YES_NO_CHOICES,
-                default="yes",
             )
-        do_git = git_ans.lower() in ("yes", "y")
     else:
         assert do_git in ("yes", "no")
         do_git = True if do_git == "yes" else False
@@ -287,12 +282,10 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     branch = None
     to_add = []
     if masterfiles is None:
-        if prompt_user(
+        if prompt_user_yesno(
             non_interactive,
             "Do you wish to build on top of the default policy set, masterfiles? (Recommended)",
-            choices=YES_NO_CHOICES,
-            default="yes",
-        ) in ("yes", "y"):
+        ):
             to_add = ["masterfiles"]
         else:
             answer = prompt_user(
@@ -477,7 +470,7 @@ def remove_command(to_remove: List[str]):
 
     def _remove_module_user_prompt(module):
         dependents = _get_dependents(module["name"])
-        return prompt_user(
+        return prompt_user_yesno(
             config.non_interactive,
             "Do you wish to remove '%s'?" % module["name"]
             + (
@@ -486,8 +479,6 @@ def remove_command(to_remove: List[str]):
                 if dependents
                 else ""
             ),
-            choices=YES_NO_CHOICES,
-            default="yes",
         )
 
     def _get_modules_by_url(name) -> list:
@@ -506,8 +497,7 @@ def remove_command(to_remove: List[str]):
             if not matches:
                 raise CFBSExitError("Could not find module with URL '%s'" % name)
             for module in matches:
-                answer = _remove_module_user_prompt(module)
-                if answer.lower() in ("yes", "y"):
+                if _remove_module_user_prompt(module):
                     print("Removing module '%s'" % module["name"])
                     modules.remove(module)
                     msg += "\n - Removed module '%s'" % module["name"]
@@ -515,8 +505,7 @@ def remove_command(to_remove: List[str]):
         else:
             module = _get_module_by_name(name)
             if module:
-                answer = _remove_module_user_prompt(module)
-                if answer.lower() in ("yes", "y"):
+                if _remove_module_user_prompt(module):
                     print("Removing module '%s'" % name)
                     modules.remove(module)
                     msg += "\n - Removed module '%s'" % module["name"]
@@ -524,13 +513,12 @@ def remove_command(to_remove: List[str]):
             else:
                 print("Module '%s' not found" % name)
         input_path = os.path.join(".", name, "input.json")
-        if os.path.isfile(input_path) and prompt_user(
+        if os.path.isfile(input_path) and prompt_user_yesno(
             config.non_interactive,
             "Module '%s' has input data '%s'. Do you want to remove it?"
             % (name, input_path),
-            choices=YES_NO_CHOICES,
             default="no",
-        ).lower() in ("yes", "y"):
+        ):
             rm(input_path)
             files.append(input_path)
             msg += "\n - Removed input data for module '%s'" % name
@@ -594,13 +582,10 @@ def _clean_unused_modules(config=None):
         added_by = module["added_by"] if "added_by" in module else ""
         print("%s - %s - added by: %s" % (name, description, added_by))
 
-    answer = prompt_user(
+    if prompt_user_yesno(
         config.non_interactive,
         "Do you wish to remove these modules?",
-        choices=YES_NO_CHOICES,
-        default="yes",
-    )
-    if answer.lower() in ("yes", "y"):
+    ):
         for module in to_remove:
             modules.remove(module)
         config.save()
@@ -1144,12 +1129,11 @@ def input_command(args, input_from="cfbs input") -> Result:
 
         input_path = os.path.join(".", module_name, "input.json")
         if os.path.isfile(input_path):
-            if prompt_user(
+            if not prompt_user_yesno(
                 config.non_interactive,
                 "Input already exists for this module, do you want to overwrite it?",
-                YES_NO_CHOICES,
-                "no",
-            ).lower() in ("no", "n"):
+                default="no",
+            ):
                 continue
 
         input_data = copy.deepcopy(module["input"])

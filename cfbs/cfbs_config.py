@@ -37,7 +37,7 @@ from cfbs.internal_file_management import (
 from cfbs.pretty import pretty, CFBS_DEFAULT_SORTING_RULES
 from cfbs.cfbs_json import CFBSJson
 from cfbs.module import Module, is_module_added_manually
-from cfbs.prompts import prompt_user, YES_NO_CHOICES
+from cfbs.prompts import prompt_user, prompt_user_yesno
 from cfbs.validate import validate_single_module
 
 
@@ -175,13 +175,10 @@ class CFBSConfig(CFBSJson):
                 deps = "" if not deps else " (Depends on: " + ", ".join(deps) + ")"
                 print("  - " + m["name"] + deps)
             if len(modules) > 1 and not self.non_interactive:
-                answer = prompt_user(
+                if not prompt_user_yesno(
                     non_interactive=self.non_interactive,
                     prompt="Do you want to add all %d of them?" % (len(modules)),
-                    choices=YES_NO_CHOICES,
-                    default="yes",
-                )
-                if answer.lower() not in ("y", "yes"):
+                ):
                     add_all = False
         else:
             missing = [k for k in to_add if k not in provides]
@@ -191,14 +188,11 @@ class CFBSConfig(CFBSJson):
 
         for i, module in enumerate(modules, start=1):
             if not add_all:
-                answer = prompt_user(
+                if not prompt_user_yesno(
                     non_interactive=self.non_interactive,
                     prompt="(%d/%d) Do you want to add '%s'?"
                     % (i, len(modules), module["name"]),
-                    choices=YES_NO_CHOICES,
-                    default="yes",
-                )
-                if answer.lower() not in ("y", "yes"):
+                ):
                     continue
             self.add_with_dependencies(module, remote_config, str_added_by=added_by)
 
@@ -454,13 +448,12 @@ class CFBSConfig(CFBSJson):
                         + "Please make sure to run 'cfbs input' to re-enter input "
                         + "before building and deploying/installing your project."
                     )
-                elif prompt_user(
+                elif prompt_user_yesno(
                     self.non_interactive,
                     "The added module '%s' accepts user input. " % name
                     + "Do you want to add it now?",
-                    YES_NO_CHOICES,
-                    "no",
-                ).lower() in ("yes", "y"):
+                    default="no",
+                ):
                     input_data = copy.deepcopy(module["input"])
                     self.input_command(name, input_data)
                     write_json(input_path, input_data)
@@ -515,12 +508,9 @@ class CFBSConfig(CFBSJson):
                 result = []
 
                 result.append(_input_elements(subtype))
-                while prompt_user(
-                    self.non_interactive,
-                    input_data["while"],
-                    choices=YES_NO_CHOICES,
-                    default="no",
-                ).lower() in ("yes", "y"):
+                while prompt_user_yesno(
+                    self.non_interactive, input_data["while"], default="no"
+                ):
                     result.append(_input_elements(subtype))
                 return result
 
@@ -532,12 +522,9 @@ class CFBSConfig(CFBSJson):
                         % subtype["type"]
                     )
                 result = [_input_string(subtype)]
-                while prompt_user(
-                    self.non_interactive,
-                    input_data["while"],
-                    choices=YES_NO_CHOICES,
-                    default="no",
-                ).lower() in ("yes", "y"):
+                while prompt_user_yesno(
+                    self.non_interactive, input_data["while"], default="no"
+                ):
                     result.append(_input_string(subtype))
                 return result
             raise CFBSExitError(
