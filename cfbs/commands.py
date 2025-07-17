@@ -19,6 +19,7 @@ from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     CFBSNetworkError,
     CFBSUserError,
+    CFBSValidationError,
     cfbs_filename,
     is_cfbs_repo,
     read_json,
@@ -45,7 +46,11 @@ from cfbs.build import (
     perform_build,
 )
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
-from cfbs.validate import validate_config, validate_config_raise_exceptions
+from cfbs.validate import (
+    validate_config,
+    validate_config_raise_exceptions,
+    validate_single_module,
+)
 from cfbs.internal_file_management import (
     clone_url_repo,
     SUPPORTED_URI_SCHEMES,
@@ -568,7 +573,15 @@ def _clean_unused_modules(config=None):
 @commit_after_command("Updated module%s", [PLURAL_S])
 def update_command(to_update) -> Result:
     config = CFBSConfig.get_instance()
-    validate_config_raise_exceptions(config, empty_build_list_ok=True)
+    r = validate_config(config, empty_build_list_ok=True)
+    valid_before = r == 0
+    if not valid_before:
+        log.warning(
+            "Your cfbs.json fails validation before update "
+            + "(see messages above) - "
+            + "We will attempt update anyway, hoping newer "
+            + "versions of modules might fix the issues"
+        )
     build = config["build"]
 
     # Update all modules in build if none specified
@@ -582,6 +595,9 @@ def update_command(to_update) -> Result:
     module_updates = ModuleUpdates(config)
     index = None
 
+    old_modules = []
+    new_modules = []
+    update_objects = []
     for update in to_update:
         old_module = config.get_module_from_build(update.name)
         assert (
@@ -611,7 +627,6 @@ def update_command(to_update) -> Result:
         if not old_module:
             log.warning("Module '%s' not in build. Skipping its update." % update.name)
             continue
-
         if "url" in old_module:
             path, commit = clone_url_repo(old_module["url"])
             remote_config = CFBSJson(
@@ -663,11 +678,28 @@ def update_command(to_update) -> Result:
                 continue
 
             new_module = index_info
+        update_objects.append(update)
+        old_modules.append(old_module)
+        new_modules.append(new_module)
 
+    assert len(old_modules) == len(update_objects)
+    assert len(old_modules) == len(new_modules)
+
+    # We don't validate old modules here because we want to allow
+    # cfbs update to fix invalid modules with a newer valid version.
+
+    # Validate new modules, we don't want to add them unless they are valid:
+    for update, module in zip(update_objects, new_modules):
+        validate_single_module(
+            context="build",
+            name=update.name,
+            module=module,
+            config=None,
+            local_check=True,
+        )
+
+    for old_module, new_module, update in zip(old_modules, new_modules, update_objects):
         update_module(old_module, new_module, module_updates, update)
-
-        # add new items
-
         updated.append(update)
 
     if module_updates.new_deps:
@@ -677,6 +709,21 @@ def update_command(to_update) -> Result:
             for d in module_updates.new_deps
         ]
         config.add_with_dependencies(objects)
+    r = validate_config(config, empty_build_list_ok=False)
+    valid_after = r == 0
+    if not valid_after:
+        if valid_before:
+            raise CFBSValidationError(
+                "The cfbs.json was valid before update, "
+                + "but is invalid after adding new versions "
+                + "of modules - aborting update "
+                + "(see validation error messages above)"
+            )
+        raise CFBSValidationError(
+            "The cfbs.json was invalid before update, "
+            + "but updating modules did not fix it - aborting update"
+            + "(see validation error messages above)"
+        )
     config.save()
 
     if module_updates.changes_made:

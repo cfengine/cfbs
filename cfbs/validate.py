@@ -210,11 +210,11 @@ def validate_config_raise_exceptions(config, empty_build_list_ok=False):
 
     if "index" in raw_data and type(raw_data["index"]) in (dict, OrderedDict):
         for name, module in raw_data["index"].items():
-            _validate_module_object("index", name, module, config)
+            validate_single_module("index", name, module, config)
 
     if "provides" in raw_data:
         for name, module in raw_data["provides"].items():
-            _validate_module_object("provides", name, module, config)
+            validate_single_module("provides", name, module, config)
 
     if config["type"] == "module":
         validate_module_name_content(config["name"])
@@ -372,8 +372,12 @@ def _validate_module_alias(name, module, context, config):
         raise CFBSValidationError(name, '"alias" cannot reference another alias')
 
 
-def _validate_module_name(name, module):
+def _validate_module_name(name: str, module):
     assert "name" in module
+    assert name
+    assert type(name) is str
+    assert module["name"]
+    assert type(module["name"]) is str
     assert name == module["name"]
     if type(module["name"]) is not str:
         raise CFBSValidationError(name, '"name" must be of type string')
@@ -416,8 +420,18 @@ def _validate_module_by(name, module):
         raise CFBSValidationError(name, '"by" must be non-empty')
 
 
-def _validate_module_dependencies(name, module, config, context):
-    if context == "build":
+def _validate_module_dependencies(name, module, config, context, local_check=False):
+    assert name
+    assert module
+    assert context in ("build", "provides", "index")
+    if local_check:
+        assert config is None
+    else:
+        assert config
+
+    if local_check:
+        search_in = None
+    elif context == "build":
         search_in = ("build",)
     elif context == "provides":
         search_in = ("index", "provides")
@@ -432,6 +446,9 @@ def _validate_module_dependencies(name, module, config, context):
     for dependency in module["dependencies"]:
         if type(dependency) is not str:
             raise CFBSValidationError(name, '"dependencies" must be a list of strings')
+        if local_check:
+            continue
+        assert config
         if not config.can_reach_dependency(dependency, search_in):
             raise CFBSValidationError(
                 name,
@@ -631,12 +648,33 @@ def _validate_module_input(name, module):
                     )
 
 
-def _validate_module_object(context, name, module, config):
+def validate_single_module(context, name, module, config, local_check=False):
+    """Function to validate one module object.
+
+    Called repeatedly for each module in index, provides, and build.
+    Also called from other places, like in the update command,
+    before "accepting" new versions of a module object.
+    Planned to be used by cfbs add as well in the future.
+
+    local_check can be set to True if you don't want to check
+    references to other parts of the cfbs.json i.e. to disable
+    checks for dependencies and aliases. In that case, the function must be
+    called with config = None.
+    """
     assert context in ("index", "provides", "build")
+    if local_check:
+        assert config is None
+    else:
+        assert config
 
     # Step 1 - Handle special cases (alias):
 
     if "alias" in module:
+        if local_check:
+            raise CFBSValidationError(
+                "The 'alias' field is not allowed in '%s', inside '$%s'"
+                % (name, context)
+            )
         # Needs to be validated first because it's missing the other fields:
         _validate_module_alias(name, module, context, config)
         return  # alias entries would fail the other validation below
@@ -682,7 +720,7 @@ def _validate_module_object(context, name, module, config):
     if "by" in module:
         _validate_module_by(name, module)
     if "dependencies" in module:
-        _validate_module_dependencies(name, module, config, context)
+        _validate_module_dependencies(name, module, config, context, local_check)
     if "index" in module:
         _validate_module_index(name, module)
     if "version" in module:
@@ -722,7 +760,7 @@ def _validate_config_for_build_field(config, empty_build_list_ok=False):
         # If there are modules in "build" validate them:
         for index, module in enumerate(config["build"]):
             name = module["name"] if "name" in module else index
-            _validate_module_object("build", name, module, config)
+            validate_single_module("build", name, module, config)
     elif not empty_build_list_ok:
         raise CFBSExitError(
             "The \"build\" field in ./cfbs.json is empty - add modules with 'cfbs add'"
