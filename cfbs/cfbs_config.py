@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+"""cfbs_config.py - Logic for manipulating a project / cfbs.json config file.
+
+TODOs:
+- A lot of the code which is currently inside some long commands in commands.py
+  should be moved here.
+- CFBSConfig.add() logic needs a good refactoring. It has a lot more code than
+  necessary duplicated for slightly different cases (URL vs index vs provides
+  vs dependencies). It should be rewritten / unified, and split up into a few
+  discrete steps:
+  1. Collect modules to add (and filter)
+  2. Validate modules and abort if the new modules fail validation
+  3. Add modules and make commits
+"""
+
+
 import os
 import copy
 import glob
@@ -23,6 +38,7 @@ from cfbs.pretty import pretty, CFBS_DEFAULT_SORTING_RULES
 from cfbs.cfbs_json import CFBSJson
 from cfbs.module import Module, is_module_added_manually
 from cfbs.prompts import prompt_user, YES_NO_CHOICES
+from cfbs.validate import validate_single_module
 
 
 # Legacy; do not use. Use the 'Result' namedtuple instead.
@@ -333,6 +349,11 @@ class CFBSConfig(CFBSJson):
                 del module["subdirectory"]
             if self.index.custom_index is not None:
                 module["index"] = self.index.custom_index
+            # TODO: This validation could probably be done in a better place,
+            #       after we refactor the add logic:
+            validate_single_module(
+                context="build", name=name, module=module, config=None, local_check=True
+            )
             self["build"].append(module)
             self._handle_local_module(module)
 

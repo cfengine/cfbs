@@ -1,6 +1,45 @@
 """
+commands.py - Entry points for each cfbs command.
+
+Each cfbs command has a corresponding function named <command>_command.
 Functions ending in "_command" are dynamically included in the list of commands
 in main.py for -h/--help/help.
+
+At a high level, each command should do something like this:
+1. Open the cfbs.json file using CFBSConfig.get_instance().
+2. Validate arguments and cfbs.json data before we start editing.
+3. Perform the necessary operations using the CFBSConfig methods.
+4. Validate cfbs.json again after editing.
+5. Save changes and make commits.
+6. Return an appropriate exit code.
+   0 for success, 1 for failure.
+   Raising exceptions is also an option and often preferred, see main.py for exception handling code.
+
+Note that most of the business logic (step 2) should be implemented in CFBSConfig.
+
+The command function (in this file) should have parameters which
+map closely to the command line arguments.
+
+For example, cfbs status does not take any arguments, so the signature should be:
+
+def status_command() -> int:
+
+On the other hand, cfbs search takes a list of search terms:
+
+cfbs search <terms>
+
+So, the appropriate signature is:
+
+def search_command(terms: List[str]) -> int:
+
+Todos:
+1. Some of these functions are getting too long, business logic should be moved into
+   CFBSConfig in cfbs_config.py. Commands should generally not call other commands,
+   instead they should call the correct CFBSConfig method(s).
+2. Decorators, like the git ones, should not change the parameters nor types of
+   the functions they decorate. This makes them much harder to read, and
+   type checkers don't understand it either. It applies to both types and values of
+   parameters and returns.
 """
 
 import os
