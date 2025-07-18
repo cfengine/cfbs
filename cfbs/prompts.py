@@ -1,7 +1,7 @@
 YES_NO_CHOICES = ("yes", "y", "no", "n")
 
 
-def prompt_user(non_interactive, prompt, choices=None, default=None):
+def prompt_user(non_interactive: bool, prompt: str, choices=None, default=None):
     if non_interactive:
         if default is None:
             raise ValueError(
@@ -38,3 +38,16 @@ def prompt_user(non_interactive, prompt, choices=None, default=None):
             answer = None
 
     return answer
+
+
+def prompt_user_yesno(non_interactive: bool, prompt: str, default="yes"):
+    """Returns `True` if the answer is yes, and `False` otherwise."""
+
+    answer = prompt_user(
+        non_interactive,
+        prompt,
+        choices=YES_NO_CHOICES,
+        default=default,
+    )
+
+    return answer.lower() in ("yes", "y")

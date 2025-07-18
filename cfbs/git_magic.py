@@ -5,7 +5,7 @@ do prompts, etc.
 """
 
 from typing import Iterable, Union
-from cfbs.prompts import YES_NO_CHOICES, prompt_user
+from cfbs.prompts import prompt_user_yesno
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.git import (
     git_commit,
@@ -49,13 +49,7 @@ def git_commit_maybe_prompt(
                 prompt += "\n" if line == "" else "\t" + line + "\n"
             prompt += "\nEdit it?"
 
-        ans = prompt_user(
-            non_interactive,
-            prompt,
-            choices=YES_NO_CHOICES,
-            default="no",
-        )
-        edit_commit_msg = ans.lower() in ("yes", "y")
+        edit_commit_msg = prompt_user_yesno(non_interactive, prompt, default="no")
 
     git_commit(
         commit_msg,
