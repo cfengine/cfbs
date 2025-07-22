@@ -173,7 +173,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     if is_cfbs_repo():
         raise CFBSUserError("Already initialized - look at %s" % cfbs_filename())
 
-    name = prompt_user(
+    project_name = prompt_user(
         non_interactive,
         "Please enter the name of this CFEngine Build project",
         default="Example project",
@@ -186,7 +186,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
 
     config = OrderedDict(
         {
-            "name": name,
+            "name": project_name,
             "type": "policy-set",  # TODO: Prompt whether user wants to make a module
             "description": description,
             "build": [],
@@ -269,7 +269,9 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
             return 1
 
     print(
-        "Initialized an empty project called '{}' in '{}'".format(name, cfbs_filename())
+        "Initialized an empty project called '{}' in '{}'".format(
+            project_name, cfbs_filename()
+        )
     )
 
     """
