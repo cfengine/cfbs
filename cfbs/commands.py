@@ -100,11 +100,8 @@ from cfbs.internal_file_management import (
 )
 from cfbs.index import _VERSION_INDEX, Index
 from cfbs.git import (
-    git_exists,
+    git_configure_and_initialize,
     is_git_repo,
-    git_get_config,
-    git_set_config,
-    git_init,
     CFBSGitError,
     ls_remote,
 )
@@ -200,9 +197,8 @@ def init_command(
     if index:
         config["index"] = index
 
-    is_git = is_git_repo()
     if use_git is None:
-        if is_git:
+        if is_git_repo():
             use_git = prompt_user_yesno(
                 non_interactive,
                 "This is a git repository. Do you want cfbs to make commits to it?",
@@ -214,41 +210,13 @@ def init_command(
             )
 
     if use_git is True:
-        if not git_exists():
-            print("Command 'git' was not found")
-            return 1
-
         user_name = get_args().git_user_name
-        if not user_name:
-            user_name = git_get_config("user.name")
-            user_name = prompt_user(
-                non_interactive,
-                "Please enter user name to use for git commits",
-                default=user_name or "cfbs",
-            )
-
         user_email = get_args().git_user_email
-        if not user_email:
-            user_email = git_get_config("user.email")
-            node_name = os.uname().nodename
-            user_email = prompt_user(
-                non_interactive,
-                "Please enter user email to use for git commits",
-                default=user_email or ("cfbs@%s" % node_name),
-            )
-
-        if not is_git:
-            try:
-                git_init(user_name, user_email, description)
-            except CFBSGitError as e:
-                print(str(e))
-                return 1
-        else:
-            if not git_set_config("user.name", user_name) or not git_set_config(
-                "user.email", user_email
-            ):
-                print("Failed to set Git user name and email")
-                return 1
+        r = git_configure_and_initialize(
+            user_name, user_email, non_interactive, description
+        )
+        if r != 0:
+            return r
 
     config["git"] = use_git
 
