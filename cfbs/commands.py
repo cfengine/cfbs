@@ -195,24 +195,24 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     if index:
         config["index"] = index
 
-    do_git = get_args().git
+    use_git = get_args().git
     is_git = is_git_repo()
-    if do_git is None:
+    if use_git is None:
         if is_git:
-            do_git = prompt_user_yesno(
+            use_git = prompt_user_yesno(
                 non_interactive,
                 "This is a git repository. Do you want cfbs to make commits to it?",
             )
         else:
-            do_git = prompt_user_yesno(
+            use_git = prompt_user_yesno(
                 non_interactive,
                 "Do you want cfbs to initialize a git repository and make commits to it?",
             )
     else:
-        assert do_git in ("yes", "no")
-        do_git = True if do_git == "yes" else False
+        assert use_git in ("yes", "no")
+        use_git = True if use_git == "yes" else False
 
-    if do_git is True:
+    if use_git is True:
         if not git_exists():
             print("Command 'git' was not found")
             return 1
@@ -249,14 +249,14 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
                 print("Failed to set Git user name and email")
                 return 1
 
-    config["git"] = do_git
+    config["git"] = use_git
 
     data = pretty(config, CFBS_DEFAULT_SORTING_RULES) + "\n"
     with open(cfbs_filename(), "w") as f:
         f.write(data)
     assert is_cfbs_repo()
 
-    if do_git:
+    if use_git:
         try:
             git_commit_maybe_prompt(
                 "Initialized a new CFEngine Build project",
