@@ -169,7 +169,12 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
 
 
 @cfbs_command("init")
-def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
+def init_command(
+    index=None,
+    masterfiles=None,
+    non_interactive=False,
+    use_git: Union[bool, None] = None,
+) -> int:
     if is_cfbs_repo():
         raise CFBSUserError("Already initialized - look at %s" % cfbs_filename())
 
@@ -195,7 +200,6 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     if index:
         config["index"] = index
 
-    use_git = get_args().git
     is_git = is_git_repo()
     if use_git is None:
         if is_git:

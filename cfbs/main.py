@@ -163,6 +163,7 @@ def _main() -> Union[int, Result]:
             index=args.index,
             masterfiles=args.masterfiles,
             non_interactive=args.non_interactive,
+            use_git=args.git,
         )
 
     if args.command == "search":
