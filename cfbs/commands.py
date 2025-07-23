@@ -212,11 +212,9 @@ def init_command(
     if use_git is True:
         user_name = get_args().git_user_name
         user_email = get_args().git_user_email
-        r = git_configure_and_initialize(
+        git_configure_and_initialize(
             user_name, user_email, non_interactive, description
         )
-        if r != 0:
-            return r
 
     config["git"] = use_git
 

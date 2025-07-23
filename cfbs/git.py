@@ -15,7 +15,7 @@ from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProce
 from typing import Iterable, Union
 
 from cfbs.prompts import prompt_user
-from cfbs.utils import are_paths_equal
+from cfbs.utils import CFBSExitError, are_paths_equal
 
 
 class CFBSGitError(Exception):
@@ -120,8 +120,7 @@ def git_configure_and_initialize(
     user_name=None, user_email=None, non_interactive=False, description=None
 ):
     if not git_exists():
-        print("Command 'git' was not found")
-        return 1
+        raise CFBSExitError("Command 'git' was not found")
 
     if not user_name:
         user_name = git_get_config("user.name")
@@ -141,19 +140,12 @@ def git_configure_and_initialize(
         )
 
     if not is_git_repo():
-        try:
-            git_init(user_name, user_email, description)
-        except CFBSGitError as e:
-            print(str(e))
-            return 1
+        git_init(user_name, user_email, description)
     else:
         if not git_set_config("user.name", user_name) or not git_set_config(
             "user.email", user_email
         ):
-            print("Failed to set Git user name and email")
-            return 1
-
-    return 0
+            raise CFBSExitError("Failed to set Git user name and email")
 
 
 def git_commit(
