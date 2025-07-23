@@ -208,9 +208,6 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
                 non_interactive,
                 "Do you want cfbs to initialize a git repository and make commits to it?",
             )
-    else:
-        assert use_git in ("yes", "no")
-        use_git = True if use_git == "yes" else False
 
     if use_git is True:
         if not git_exists():
