@@ -230,10 +230,9 @@ def init_command(
                 non_interactive,
                 [cfbs_filename()],
             )
-        except CFBSGitError as e:
-            print(str(e))
+        except CFBSGitError:
             os.unlink(cfbs_filename())
-            return 1
+            raise
 
     print(
         "Initialized an empty project called '{}' in '{}'".format(
