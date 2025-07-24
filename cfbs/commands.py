@@ -100,11 +100,8 @@ from cfbs.internal_file_management import (
 )
 from cfbs.index import _VERSION_INDEX, Index
 from cfbs.git import (
-    git_exists,
+    git_configure_and_initialize,
     is_git_repo,
-    git_get_config,
-    git_set_config,
-    git_init,
     CFBSGitError,
     ls_remote,
 )
@@ -169,11 +166,16 @@ def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
 
 
 @cfbs_command("init")
-def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
+def init_command(
+    index=None,
+    masterfiles=None,
+    non_interactive=False,
+    use_git: Union[bool, None] = None,
+) -> int:
     if is_cfbs_repo():
         raise CFBSUserError("Already initialized - look at %s" % cfbs_filename())
 
-    name = prompt_user(
+    project_name = prompt_user(
         non_interactive,
         "Please enter the name of this CFEngine Build project",
         default="Example project",
@@ -186,7 +188,7 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
 
     config = OrderedDict(
         {
-            "name": name,
+            "name": project_name,
             "type": "policy-set",  # TODO: Prompt whether user wants to make a module
             "description": description,
             "build": [],
@@ -195,81 +197,47 @@ def init_command(index=None, masterfiles=None, non_interactive=False) -> int:
     if index:
         config["index"] = index
 
-    do_git = get_args().git
-    is_git = is_git_repo()
-    if do_git is None:
-        if is_git:
-            do_git = prompt_user_yesno(
+    if use_git is None:
+        if is_git_repo():
+            use_git = prompt_user_yesno(
                 non_interactive,
                 "This is a git repository. Do you want cfbs to make commits to it?",
             )
         else:
-            do_git = prompt_user_yesno(
+            use_git = prompt_user_yesno(
                 non_interactive,
                 "Do you want cfbs to initialize a git repository and make commits to it?",
             )
-    else:
-        assert do_git in ("yes", "no")
-        do_git = True if do_git == "yes" else False
 
-    if do_git is True:
-        if not git_exists():
-            print("Command 'git' was not found")
-            return 1
-
+    if use_git is True:
         user_name = get_args().git_user_name
-        if not user_name:
-            user_name = git_get_config("user.name")
-            user_name = prompt_user(
-                non_interactive,
-                "Please enter user name to use for git commits",
-                default=user_name or "cfbs",
-            )
-
         user_email = get_args().git_user_email
-        if not user_email:
-            user_email = git_get_config("user.email")
-            node_name = os.uname().nodename
-            user_email = prompt_user(
-                non_interactive,
-                "Please enter user email to use for git commits",
-                default=user_email or ("cfbs@%s" % node_name),
-            )
+        git_configure_and_initialize(
+            user_name, user_email, non_interactive, description
+        )
 
-        if not is_git:
-            try:
-                git_init(user_name, user_email, description)
-            except CFBSGitError as e:
-                print(str(e))
-                return 1
-        else:
-            if not git_set_config("user.name", user_name) or not git_set_config(
-                "user.email", user_email
-            ):
-                print("Failed to set Git user name and email")
-                return 1
-
-    config["git"] = do_git
+    config["git"] = use_git
 
     data = pretty(config, CFBS_DEFAULT_SORTING_RULES) + "\n"
     with open(cfbs_filename(), "w") as f:
         f.write(data)
     assert is_cfbs_repo()
 
-    if do_git:
+    if use_git:
         try:
             git_commit_maybe_prompt(
                 "Initialized a new CFEngine Build project",
                 non_interactive,
                 [cfbs_filename()],
             )
-        except CFBSGitError as e:
-            print(str(e))
+        except CFBSGitError:
             os.unlink(cfbs_filename())
-            return 1
+            raise
 
     print(
-        "Initialized an empty project called '{}' in '{}'".format(name, cfbs_filename())
+        "Initialized an empty project called '{}' in '{}'".format(
+            project_name, cfbs_filename()
+        )
     )
 
     """

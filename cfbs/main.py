@@ -10,6 +10,7 @@ import traceback
 import pathlib
 from typing import Union
 
+from cfbs.git import CFBSGitError
 from cfbs.result import Result
 from cfbs.validate import validate_index_string
 from cfbs.version import string as version
@@ -163,6 +164,7 @@ def _main() -> Union[int, Result]:
             index=args.index,
             masterfiles=args.masterfiles,
             non_interactive=args.non_interactive,
+            use_git=args.git,
         )
 
     if args.command == "search":
@@ -282,6 +284,9 @@ def main() -> int:
         print("Error: " + str(e))
         return 1
     except CFBSNetworkError as e:
+        print("Error: " + str(e))
+        return 1
+    except CFBSGitError as e:
         print("Error: " + str(e))
         return 1
     # AssertionError and CFBSProgrammerError are not expected, print extra info:

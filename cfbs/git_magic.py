@@ -98,13 +98,13 @@ def with_git_commit(
             if not should_commit:
                 return ret
 
-            if do_git == "yes":
+            if do_git is True:
                 if not is_git_repo():
                     log.error(
                         "Used '--git=yes' option on what appears to not be a git repository"
                     )
                     return ret
-            elif do_git == "no":
+            elif do_git is False:
                 return ret
             else:
                 assert do_git is None

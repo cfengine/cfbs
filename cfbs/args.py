@@ -20,7 +20,7 @@ class ArgsTypesNamespace(argparse.Namespace):
     check: bool
     checksum: Union[str, None]
     keep_order: bool
-    git: Union[str, None]
+    git: Union[bool, None]
     git_user_name: Union[str, None]
     git_user_email: Union[str, None]
     git_commit_message: Union[str, None]
@@ -61,6 +61,21 @@ def get_manual():
             raise CFBSExitError("Error reading manual file " + file_path)
     else:
         raise CFBSExitError("Manual file does not exist")
+
+
+def yesno_to_bool(s: str):
+    if s == "yes":
+        return True
+    if s == "no":
+        return False
+    assert False
+
+
+class YesNoToBool(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        assert type(values) is str
+        values = yesno_to_bool(values)
+        setattr(namespace, self.dest, values)
 
 
 @cache
@@ -116,6 +131,7 @@ def get_arg_parser():
     parser.add_argument(
         "--git",
         choices=("yes", "no"),
+        action=YesNoToBool,
         help="Override git option in cfbs.json",
     )
     parser.add_argument(

@@ -14,7 +14,8 @@ import tempfile
 from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProcessError
 from typing import Iterable, Union
 
-from cfbs.utils import are_paths_equal
+from cfbs.prompts import prompt_user
+from cfbs.utils import CFBSExitError, are_paths_equal
 
 
 class CFBSGitError(Exception):
@@ -113,6 +114,38 @@ def git_init(user_name=None, user_email=None, description=None, initial_branch="
     if description is not None:
         with open(os.path.join(".git", "description"), "w") as f:
             f.write(description + "\n")
+
+
+def git_configure_and_initialize(
+    user_name=None, user_email=None, non_interactive=False, description=None
+):
+    if not git_exists():
+        raise CFBSExitError("Command 'git' was not found")
+
+    if not user_name:
+        user_name = git_get_config("user.name")
+        user_name = prompt_user(
+            non_interactive,
+            "Please enter user name to use for git commits",
+            default=user_name or "cfbs",
+        )
+
+    if not user_email:
+        user_email = git_get_config("user.email")
+        node_name = os.uname().nodename
+        user_email = prompt_user(
+            non_interactive,
+            "Please enter user email to use for git commits",
+            default=user_email or ("cfbs@%s" % node_name),
+        )
+
+    if not is_git_repo():
+        git_init(user_name, user_email, description)
+    else:
+        if not git_set_config("user.name", user_name) or not git_set_config(
+            "user.email", user_email
+        ):
+            raise CFBSExitError("Failed to set Git user name and email")
 
 
 def git_commit(
