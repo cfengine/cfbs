@@ -393,7 +393,7 @@ def add_command(
     to_add: List[str],
     added_by="cfbs add",
     checksum=None,
-) -> Union[Result, int]:
+):
     config = CFBSConfig.get_instance()
     validate_config_raise_exceptions(config, empty_build_list_ok=True)
     r = config.add_command(to_add, added_by, checksum)
