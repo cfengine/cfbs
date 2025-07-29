@@ -68,7 +68,7 @@ def with_git_commit(
     failure_exit_code=1,
 ):
     def decorator(fn: Callable[..., Result]):
-        def decorated_fn(*args, **kwargs):
+        def decorated_fn(*args, **kwargs) -> int:
             try:
                 result = fn(*args, **kwargs)
             except CFBSReturnWithoutCommit as e:

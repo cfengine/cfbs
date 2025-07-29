@@ -37,9 +37,7 @@ Todos:
    CFBSConfig in cfbs_config.py. Commands should generally not call other commands,
    instead they should call the correct CFBSConfig method(s).
 2. Decorators, like the git ones, should not change the parameters nor types of
-   the functions they decorate. This makes them much harder to read, and
-   type checkers don't understand it either. It applies to both types and values of
-   parameters and returns.
+   the functions they decorate. This makes them much harder to read. It applies to both types and values of parameters and returns.
 """
 
 import os
@@ -287,9 +285,6 @@ def init_command(
         to_add = ["%s@%s" % (remote, commit), "masterfiles"]
     if to_add:
         result = add_command(to_add, added_by="cfbs init")
-        assert not isinstance(
-            result, Result
-        ), "Our git decorators are confusing the type checkers"
         if result != 0:
             return result
         # TODO: Do we need to make commits here?
