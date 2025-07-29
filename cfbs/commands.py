@@ -122,7 +122,7 @@ _commands = OrderedDict()
 # Decorator to specify that a function is a command (verb in the CLI)
 # Adds the name + function pair to the global dict of commands
 # Does not modify/wrap the function it decorates.
-def cfbs_command(name):
+def cfbs_command(name: str):
     def inner(function):
         _commands[name] = function
         return function  # Unmodified, we've just added it to the dict
@@ -136,7 +136,7 @@ def get_command_names():
 
 
 @cfbs_command("pretty")
-def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
+def pretty_command(filenames: List[str], check: bool, keep_order: bool) -> int:
     if not filenames:
         raise CFBSExitError("Filenames missing for cfbs pretty command")
 
@@ -345,7 +345,7 @@ def status_command() -> int:
 
 
 @cfbs_command("search")
-def search_command(terms: list) -> int:
+def search_command(terms: List[str]) -> int:
     index = CFBSConfig.get_instance().index
     results = {}
 
@@ -390,7 +390,7 @@ def search_command(terms: list) -> int:
 @cfbs_command("add")
 @commit_after_command("Added module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
 def add_command(
-    to_add: list,
+    to_add: List[str],
     added_by="cfbs add",
     checksum=None,
 ) -> Union[Result, int]:

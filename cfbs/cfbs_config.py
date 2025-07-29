@@ -19,6 +19,7 @@ import copy
 import glob
 import logging as log
 from collections import OrderedDict
+from typing import List
 
 from cfbs.result import Result
 from cfbs.utils import (
@@ -43,7 +44,7 @@ from cfbs.validate import validate_single_module
 
 # Legacy; do not use. Use the 'Result' namedtuple instead.
 class CFBSReturnWithoutCommit(Exception):
-    def __init__(self, r):
+    def __init__(self, r: int):
         self.retval = r
 
 
@@ -399,7 +400,7 @@ class CFBSConfig(CFBSJson):
 
     def add_command(
         self,
-        to_add: list,
+        to_add: List[str],
         added_by="cfbs add",
         checksum=None,
     ) -> Result:
