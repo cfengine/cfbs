@@ -1,5 +1,11 @@
-from collections import namedtuple
+from typing import List, NamedTuple, Union
 
-Result = namedtuple(
-    "Result", ("return_code", "do_commit", "commit_message", "commit_files")
+Result = NamedTuple(
+    "Result",
+    (
+        ("return_code", int),
+        ("do_commit", bool),
+        ("commit_message", Union[str, None]),
+        ("commit_files", List[str]),
+    ),
 )
