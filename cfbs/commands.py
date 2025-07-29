@@ -511,7 +511,8 @@ def remove_command(to_remove: List[str]):
 @cfbs_command("clean")
 @commit_after_command("Cleaned unused modules")
 def clean_command(config=None):
-    return _clean_unused_modules(config)
+    r = _clean_unused_modules(config)
+    return Result(r)
 
 
 def _clean_unused_modules(config=None):
@@ -1122,19 +1123,19 @@ def set_input_command(name, infile):
     module = config.get_module_from_build(name)
     if module is None:
         log.error("Module '%s' not found" % name)
-        return 1
+        return Result(1)
 
     spec = module.get("input")
     if spec is None:
         log.error("Module '%s' does not accept input" % name)
-        return 1
+        return Result(1)
     log.debug("Input spec for module '%s': %s" % (name, pretty(spec)))
 
     try:
         data = json.load(infile, object_pairs_hook=OrderedDict)
     except json.decoder.JSONDecodeError as e:
         log.error("Error reading json from stdin: %s" % e)
-        return 1
+        return Result(1)
     log.debug("Input data for module '%s': %s" % (name, pretty(data)))
 
     def _compare_dict(a, b, ignore=None):
@@ -1178,7 +1179,7 @@ def set_input_command(name, infile):
                 "Input data for module '%s' does not conform with input definition"
                 % name
             )
-            return 1
+            return Result(1)
 
     path = os.path.join(name, "input.json")
 

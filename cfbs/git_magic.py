@@ -4,7 +4,7 @@ Here it's okay to depend on other parts of the CFBS codebase,
 do prompts, etc.
 """
 
-from typing import Iterable, Union
+from typing import Callable, Iterable, Union
 from cfbs.prompts import prompt_user_yesno
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.git import (
@@ -67,16 +67,14 @@ def with_git_commit(
     positional_args_lambdas=None,
     failure_exit_code=1,
 ):
-    def decorator(fn):
+    def decorator(fn: Callable[..., Result]):
         def decorated_fn(*args, **kwargs):
             try:
                 result = fn(*args, **kwargs)
             except CFBSReturnWithoutCommit as e:
                 # Legacy; do not use. Use the Result namedtuple instead.
                 return e.retval
-            ret, should_commit, msg, files = (
-                result if isinstance(result, Result) else (result, True, None, [])
-            )
+            ret, should_commit, msg, files = result
             files += files_to_commit
 
             # Message from the Result namedtuple overrides message from decorator
