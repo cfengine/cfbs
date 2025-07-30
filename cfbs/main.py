@@ -8,10 +8,8 @@ import sys
 import os
 import traceback
 import pathlib
-from typing import Union
 
 from cfbs.git import CFBSGitError
-from cfbs.result import Result
 from cfbs.validate import validate_index_string
 from cfbs.version import string as version
 from cfbs.utils import (
@@ -51,7 +49,7 @@ def does_log_info(level):
     return level == "info" or level == "debug"
 
 
-def _main() -> Union[int, Result]:
+def _main() -> int:
     """Actual body of main function.
 
     Mainly for getting command line arguments and calling the appropriate
@@ -266,13 +264,9 @@ def main() -> int:
     """
     if os.getenv("CFBACKTRACE") == "1":
         r = _main()
-        assert type(r) is int
         return r
     try:
         r = _main()
-        # TODO: I'm not exactly sure when the commands
-        # would actually return result and what that really means.
-        assert type(r) is int
         return r
     except CFBSValidationError as e:
         print("Error: " + str(e))
