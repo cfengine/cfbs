@@ -52,6 +52,7 @@ from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
 
 from cfbs.cfbs_json import CFBSJson
+from cfbs.types import CFBSCommandGitResult
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     CFBSNetworkError,
@@ -104,11 +105,7 @@ from cfbs.git import (
     ls_remote,
 )
 
-from cfbs.git_magic import (
-    CFBSCommandGitResult,
-    commit_after_command,
-    git_commit_maybe_prompt,
-)
+from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import prompt_user, prompt_user_yesno
 from cfbs.module import Module, is_module_added_manually
 from cfbs.masterfiles.generate_release_information import generate_release_information

@@ -21,7 +21,7 @@ import logging as log
 from collections import OrderedDict
 from typing import List
 
-from cfbs.result import CFBSCommandGitResult
+from cfbs.types import CFBSCommandGitResult
 from cfbs.utils import (
     CFBSExitError,
     CFBSUserError,
