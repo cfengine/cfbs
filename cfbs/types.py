@@ -1,5 +1,7 @@
 from typing import List, NamedTuple, Union
 
+CFBSCommandExitCode = int
+
 
 class CFBSCommandGitResult(NamedTuple):
     return_code: int

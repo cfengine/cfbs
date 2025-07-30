@@ -52,7 +52,7 @@ from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
 
 from cfbs.cfbs_json import CFBSJson
-from cfbs.types import CFBSCommandGitResult
+from cfbs.types import CFBSCommandExitCode, CFBSCommandGitResult
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     CFBSNetworkError,
@@ -124,10 +124,10 @@ def cfbs_command(name: str):
     Decorator to specify that a function is a command (verb in the CLI).
     Adds the name + function pair to the global dict of commands.
     Does not modify/wrap the function it decorates.
-    Ensures cfbs command functions return an `int`.
+    Ensures cfbs command functions return a `CFBSCommandExitCode`.
     """
 
-    def inner(function: Callable[..., int]):
+    def inner(function: Callable[..., CFBSCommandExitCode]):
         _commands[name] = function
         return function  # Unmodified, we've just added it to the dict
 

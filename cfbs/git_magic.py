@@ -15,7 +15,7 @@ from cfbs.git import (
     git_check_tracked_changes,
 )
 from cfbs.args import get_args
-from cfbs.types import CFBSCommandGitResult
+from cfbs.types import CFBSCommandExitCode, CFBSCommandGitResult
 import logging as log
 from functools import partial
 
@@ -68,7 +68,7 @@ def with_git_commit(
     failure_exit_code=1,
 ):
     def decorator(fn: Callable[..., CFBSCommandGitResult]):
-        def decorated_fn(*args, **kwargs) -> int:
+        def decorated_fn(*args, **kwargs) -> CFBSCommandExitCode:
             try:
                 result = fn(*args, **kwargs)
             except CFBSReturnWithoutCommit as e:
