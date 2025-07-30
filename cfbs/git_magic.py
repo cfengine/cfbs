@@ -15,7 +15,7 @@ from cfbs.git import (
     git_check_tracked_changes,
 )
 from cfbs.args import get_args
-from cfbs.result import Result
+from cfbs.result import CFBSCommandGitResult
 import logging as log
 from functools import partial
 
@@ -67,17 +67,17 @@ def with_git_commit(
     positional_args_lambdas=None,
     failure_exit_code=1,
 ):
-    def decorator(fn: Callable[..., Result]):
+    def decorator(fn: Callable[..., CFBSCommandGitResult]):
         def decorated_fn(*args, **kwargs) -> int:
             try:
                 result = fn(*args, **kwargs)
             except CFBSReturnWithoutCommit as e:
-                # Legacy; do not use. Use the Result namedtuple instead.
+                # Legacy; do not use. Use the CFBSCommandGitResult namedtuple instead.
                 return e.retval
             ret, should_commit, msg, files = result
             files += files_to_commit
 
-            # Message from the Result namedtuple overrides message from decorator
+            # Message from the CFBSCommandGitResult namedtuple overrides message from decorator
             if not msg:
                 if positional_args_lambdas:
                     positional_args = (

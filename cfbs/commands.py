@@ -103,7 +103,12 @@ from cfbs.git import (
     CFBSGitError,
     ls_remote,
 )
-from cfbs.git_magic import Result, commit_after_command, git_commit_maybe_prompt
+
+from cfbs.git_magic import (
+    CFBSCommandGitResult,
+    commit_after_command,
+    git_commit_maybe_prompt,
+)
 from cfbs.prompts import prompt_user, prompt_user_yesno
 from cfbs.module import Module, is_module_added_manually
 from cfbs.masterfiles.generate_release_information import generate_release_information
@@ -500,14 +505,14 @@ def remove_command(to_remove: List[str]):
             _clean_unused_modules(config)
         except CFBSReturnWithoutCommit:
             pass
-    return Result(0, changes_made, msg, files)
+    return CFBSCommandGitResult(0, changes_made, msg, files)
 
 
 @cfbs_command("clean")
 @commit_after_command("Cleaned unused modules")
 def clean_command(config=None):
     r = _clean_unused_modules(config)
-    return Result(r)
+    return CFBSCommandGitResult(r)
 
 
 def _clean_unused_modules(config=None):
@@ -559,7 +564,7 @@ def _clean_unused_modules(config=None):
 
 @cfbs_command("update")
 @commit_after_command("Updated module%s", [PLURAL_S])
-def update_command(to_update) -> Result:
+def update_command(to_update):
     config = CFBSConfig.get_instance()
     r = validate_config(config, empty_build_list_ok=True)
     valid_before = r == 0
@@ -726,7 +731,7 @@ def update_command(to_update) -> Result:
     else:
         print("Modules are already up to date")
 
-    return Result(
+    return CFBSCommandGitResult(
         0, module_updates.changes_made, module_updates.msg, module_updates.files
     )
 
@@ -1077,7 +1082,7 @@ def analyze_command(
 
 @cfbs_command("input")
 @commit_after_command("Added input for module%s", [PLURAL_S])
-def input_command(args, input_from="cfbs input") -> Result:
+def input_command(args, input_from="cfbs input"):
     config = CFBSConfig.get_instance()
     validate_config_raise_exceptions(config, empty_build_list_ok=True)
     do_commit = False
@@ -1107,7 +1112,7 @@ def input_command(args, input_from="cfbs input") -> Result:
         do_commit = True
         files_to_commit.append(input_path)
     config.save()
-    return Result(0, do_commit, None, files_to_commit)
+    return CFBSCommandGitResult(0, do_commit, None, files_to_commit)
 
 
 @cfbs_command("set-input")
@@ -1118,19 +1123,19 @@ def set_input_command(name, infile):
     module = config.get_module_from_build(name)
     if module is None:
         log.error("Module '%s' not found" % name)
-        return Result(1)
+        return CFBSCommandGitResult(1)
 
     spec = module.get("input")
     if spec is None:
         log.error("Module '%s' does not accept input" % name)
-        return Result(1)
+        return CFBSCommandGitResult(1)
     log.debug("Input spec for module '%s': %s" % (name, pretty(spec)))
 
     try:
         data = json.load(infile, object_pairs_hook=OrderedDict)
     except json.decoder.JSONDecodeError as e:
         log.error("Error reading json from stdin: %s" % e)
-        return Result(1)
+        return CFBSCommandGitResult(1)
     log.debug("Input data for module '%s': %s" % (name, pretty(data)))
 
     def _compare_dict(a, b, ignore=None):
@@ -1174,7 +1179,7 @@ def set_input_command(name, infile):
                 "Input data for module '%s' does not conform with input definition"
                 % name
             )
-            return Result(1)
+            return CFBSCommandGitResult(1)
 
     path = os.path.join(name, "input.json")
 
@@ -1190,7 +1195,7 @@ def set_input_command(name, infile):
     else:
         log.debug("Input data for '%s' unchanged, nothing to write / commit" % name)
 
-    return Result(0, changes_made, None, [path])
+    return CFBSCommandGitResult(0, changes_made, None, [path])
 
 
 @cfbs_command("get-input")
