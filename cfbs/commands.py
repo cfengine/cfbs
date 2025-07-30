@@ -22,7 +22,7 @@ map closely to the command line arguments.
 
 For example, cfbs status does not take any arguments, so the signature should be:
 
-def status_command() -> int:
+def status_command():
 
 On the other hand, cfbs search takes a list of search terms:
 
@@ -30,7 +30,7 @@ cfbs search <terms>
 
 So, the appropriate signature is:
 
-def search_command(terms: List[str]) -> int:
+def search_command(terms: List[str]):
 
 Todos:
 1. Some of these functions are getting too long, business logic should be moved into
@@ -46,7 +46,7 @@ import copy
 import logging as log
 import json
 import functools
-from typing import List, Union
+from typing import Callable, List, Union
 from collections import OrderedDict
 from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
@@ -124,9 +124,10 @@ def cfbs_command(name: str):
     Decorator to specify that a function is a command (verb in the CLI).
     Adds the name + function pair to the global dict of commands.
     Does not modify/wrap the function it decorates.
+    Ensures cfbs command functions return an `int`.
     """
 
-    def inner(function):
+    def inner(function: Callable[..., int]):
         _commands[name] = function
         return function  # Unmodified, we've just added it to the dict
 
@@ -139,7 +140,7 @@ def get_command_names():
 
 
 @cfbs_command("pretty")
-def pretty_command(filenames: List[str], check: bool, keep_order: bool) -> int:
+def pretty_command(filenames: List[str], check: bool, keep_order: bool):
     if not filenames:
         raise CFBSExitError("Filenames missing for cfbs pretty command")
 
@@ -174,7 +175,7 @@ def init_command(
     masterfiles=None,
     non_interactive=False,
     use_git: Union[bool, None] = None,
-) -> int:
+):
     if is_cfbs_repo():
         raise CFBSUserError("Already initialized - look at %s" % cfbs_filename())
 
@@ -298,7 +299,7 @@ def init_command(
 
 
 @cfbs_command("status")
-def status_command() -> int:
+def status_command():
     config = CFBSConfig.get_instance()
     validate_config_raise_exceptions(config, empty_build_list_ok=True)
     print("Name:        %s" % config["name"])
@@ -345,7 +346,7 @@ def status_command() -> int:
 
 
 @cfbs_command("search")
-def search_command(terms: List[str]) -> int:
+def search_command(terms: List[str]):
     index = CFBSConfig.get_instance().index
     results = {}
 
@@ -737,7 +738,7 @@ def update_command(to_update):
 
 
 @cfbs_command("validate")
-def validate_command(paths=None, index_arg=None) -> int:
+def validate_command(paths=None, index_arg=None):
     if paths:
         ret_value = 0
 
@@ -874,7 +875,7 @@ def _download_dependencies(
 
 
 @cfbs_command("download")
-def download_command(force, ignore_versions=False) -> int:
+def download_command(force, ignore_versions=False):
     config = CFBSConfig.get_instance()
     r = validate_config(config)
     if r != 0:
@@ -888,7 +889,7 @@ def download_command(force, ignore_versions=False) -> int:
 
 
 @cfbs_command("build")
-def build_command(ignore_versions=False) -> int:
+def build_command(ignore_versions=False):
     config = CFBSConfig.get_instance()
     r = validate_config(config)
     if r != 0:
@@ -906,7 +907,7 @@ def build_command(ignore_versions=False) -> int:
 
 
 @cfbs_command("install")
-def install_command(args) -> int:
+def install_command(args):
     if len(args) > 1:
         raise CFBSExitError(
             "Only one destination is allowed for command: cfbs install [destination]"
@@ -1018,7 +1019,7 @@ def analyze_command(
     user_ignored_path_components=None,
     offline=False,
     verbose=False,
-) -> int:
+):
     if len(policyset_paths) == 0:
         # no policyset path is a shorthand for using the current directory as the policyset path
         log.info(
@@ -1199,7 +1200,7 @@ def set_input_command(name, infile):
 
 
 @cfbs_command("get-input")
-def get_input_command(name, outfile) -> int:
+def get_input_command(name, outfile):
     config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
     module = config.get_module_from_build(name)
