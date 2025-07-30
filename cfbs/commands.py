@@ -119,10 +119,13 @@ FIRST_ARG_SLIST = lambda args, _: ", ".join("'%s'" % module for module in args[0
 _commands = OrderedDict()
 
 
-# Decorator to specify that a function is a command (verb in the CLI)
-# Adds the name + function pair to the global dict of commands
-# Does not modify/wrap the function it decorates.
 def cfbs_command(name: str):
+    """
+    Decorator to specify that a function is a command (verb in the CLI).
+    Adds the name + function pair to the global dict of commands.
+    Does not modify/wrap the function it decorates.
+    """
+
     def inner(function):
         _commands[name] = function
         return function  # Unmodified, we've just added it to the dict
