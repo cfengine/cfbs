@@ -159,9 +159,7 @@ def git_commit(
 
     :param commit_msg: commit message to use for the commit
     :param scope: files to include in the commit or `"all"` (`git commit -a`)
-    :type scope: str or an iterable of str
-    :param edit_commit_msg=False: whether the user should be prompted to edit and
-                            save the commit message or not
+    :param edit_commit_msg: whether the user should be prompted to edit and save the commit message or not
     :param user_name: override git config user name
     :param user_email: override git config user email
 
