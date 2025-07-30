@@ -32,6 +32,11 @@ So, the appropriate signature is:
 
 def search_command(terms: List[str]):
 
+The return type (after any decoration) of the cfbs command functions is `CFBSCommandExitCode`.
+This type is indistinguishably defined to be `int`.
+The return type before decoration of functions decorated by `commit_after_command` is `CFBSCommandGitResult`.
+The `commit_after_command` decorator then changes the return type to `CFBSCommandExitCode`.
+
 Todos:
 1. Some of these functions are getting too long, business logic should be moved into
    CFBSConfig in cfbs_config.py. Commands should generally not call other commands,
