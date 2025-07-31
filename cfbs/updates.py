@@ -128,7 +128,13 @@ def update_module(old_module, new_module, module_updates, update):
     commit_differs = old_module["commit"] != new_module["commit"]
     old_version = old_module.get("version")
     local_changes_made = False
-    for key in old_module.keys():
+    for key in list(old_module.keys()):
+        if key == "subdirectory" and old_module[key] == "" and key not in new_module:
+            # Handle special case of old modules having "" subdirectory:
+            # no longer allowed, but can be safely removed
+            del old_module[key]
+            local_changes_made = True
+            continue
         if key not in new_module or old_module[key] == new_module[key]:
             continue
         if key == "steps":
