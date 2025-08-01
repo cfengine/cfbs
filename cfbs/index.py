@@ -15,29 +15,29 @@ _VERSION_INDEX = (
 )
 
 
-def _local_module_data_cf_file(module):
-    dst = os.path.join("services", "cfbs", module[2:])
+def _local_module_data_cf_file(module_name: str):
+    dst = os.path.join("services", "cfbs", module_name[2:])
     return {
         "description": "Local policy file added using cfbs command line",
         "tags": ["local"],
-        "steps": ["copy %s %s" % (module, dst)],
+        "steps": ["copy %s %s" % (module_name, dst)],
         "added_by": "cfbs add",
     }
 
 
-def _local_module_data_json_file(module):
+def _local_module_data_json_file(module_name: str):
     return {
         "description": "Local augments file added using cfbs command line",
         "tags": ["local"],
-        "steps": ["json %s def.json" % module],
+        "steps": ["json %s def.json" % module_name],
         "added_by": "cfbs add",
     }
 
 
-def _local_module_data_subdir(module):
-    assert module.startswith("./")
-    assert module.endswith(("/", "/."))
-    dst = os.path.join("services", "cfbs", module[2:])
+def _local_module_data_subdir(module_name: str):
+    assert module_name.startswith("./")
+    assert module_name.endswith(("/", "/."))
+    dst = os.path.join("services", "cfbs", module_name[2:])
     return {
         "description": "Local subdirectory added using cfbs command line",
         "tags": ["local"],
@@ -46,17 +46,17 @@ def _local_module_data_subdir(module):
     }
 
 
-def _generate_local_module_object(module):
-    assert module.startswith("./")
-    assert module.endswith((".cf", ".json", "/"))
-    assert os.path.isfile(module) or os.path.isdir(module)
+def _generate_local_module_object(module_name: str):
+    assert module_name.startswith("./")
+    assert module_name.endswith((".cf", ".json", "/"))
+    assert os.path.isfile(module_name) or os.path.isdir(module_name)
 
-    if os.path.isdir(module):
-        return _local_module_data_subdir(module)
-    if module.endswith(".cf"):
-        return _local_module_data_cf_file(module)
-    if module.endswith(".json"):
-        return _local_module_data_json_file(module)
+    if os.path.isdir(module_name):
+        return _local_module_data_subdir(module_name)
+    if module_name.endswith(".cf"):
+        return _local_module_data_cf_file(module_name)
+    if module_name.endswith(".json"):
+        return _local_module_data_json_file(module_name)
 
 
 class Index:
