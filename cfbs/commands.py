@@ -22,7 +22,7 @@ map closely to the command line arguments.
 
 For example, cfbs status does not take any arguments, so the signature should be:
 
-def status_command() -> int:
+def status_command():
 
 On the other hand, cfbs search takes a list of search terms:
 
@@ -30,16 +30,19 @@ cfbs search <terms>
 
 So, the appropriate signature is:
 
-def search_command(terms: List[str]) -> int:
+def search_command(terms: List[str]):
+
+The return type (after any decoration) of the cfbs command functions is `CFBSCommandExitCode`.
+This type is indistinguishably defined to be `int`.
+The return type before decoration of functions decorated by `commit_after_command` is `CFBSCommandGitResult`.
+The `commit_after_command` decorator then changes the return type to `CFBSCommandExitCode`.
 
 Todos:
 1. Some of these functions are getting too long, business logic should be moved into
    CFBSConfig in cfbs_config.py. Commands should generally not call other commands,
    instead they should call the correct CFBSConfig method(s).
 2. Decorators, like the git ones, should not change the parameters nor types of
-   the functions they decorate. This makes them much harder to read, and
-   type checkers don't understand it either. It applies to both types and values of
-   parameters and returns.
+   the functions they decorate. This makes them much harder to read. It applies to both types and values of parameters and returns.
 """
 
 import os
@@ -48,12 +51,13 @@ import copy
 import logging as log
 import json
 import functools
-from typing import List, Union
+from typing import Callable, List, Union
 from collections import OrderedDict
 from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
 
 from cfbs.cfbs_json import CFBSJson
+from cfbs.types import CFBSCommandExitCode, CFBSCommandGitResult
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     CFBSNetworkError,
@@ -105,7 +109,8 @@ from cfbs.git import (
     CFBSGitError,
     ls_remote,
 )
-from cfbs.git_magic import Result, commit_after_command, git_commit_maybe_prompt
+
+from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import prompt_user, prompt_user_yesno
 from cfbs.module import Module, is_module_added_manually
 from cfbs.masterfiles.generate_release_information import generate_release_information
@@ -119,11 +124,15 @@ FIRST_ARG_SLIST = lambda args, _: ", ".join("'%s'" % module for module in args[0
 _commands = OrderedDict()
 
 
-# Decorator to specify that a function is a command (verb in the CLI)
-# Adds the name + function pair to the global dict of commands
-# Does not modify/wrap the function it decorates.
-def cfbs_command(name):
-    def inner(function):
+def cfbs_command(name: str):
+    """
+    Decorator to specify that a function is a command (verb in the CLI).
+    Adds the name + function pair to the global dict of commands.
+    Does not modify/wrap the function it decorates.
+    Ensures cfbs command functions return a `CFBSCommandExitCode`.
+    """
+
+    def inner(function: Callable[..., CFBSCommandExitCode]):
         _commands[name] = function
         return function  # Unmodified, we've just added it to the dict
 
@@ -136,7 +145,7 @@ def get_command_names():
 
 
 @cfbs_command("pretty")
-def pretty_command(filenames: list, check: bool, keep_order: bool) -> int:
+def pretty_command(filenames: List[str], check: bool, keep_order: bool):
     if not filenames:
         raise CFBSExitError("Filenames missing for cfbs pretty command")
 
@@ -171,7 +180,7 @@ def init_command(
     masterfiles=None,
     non_interactive=False,
     use_git: Union[bool, None] = None,
-) -> int:
+):
     if is_cfbs_repo():
         raise CFBSUserError("Already initialized - look at %s" % cfbs_filename())
 
@@ -287,9 +296,6 @@ def init_command(
         to_add = ["%s@%s" % (remote, commit), "masterfiles"]
     if to_add:
         result = add_command(to_add, added_by="cfbs init")
-        assert not isinstance(
-            result, Result
-        ), "Our git decorators are confusing the type checkers"
         if result != 0:
             return result
         # TODO: Do we need to make commits here?
@@ -298,7 +304,7 @@ def init_command(
 
 
 @cfbs_command("status")
-def status_command() -> int:
+def status_command():
     config = CFBSConfig.get_instance()
     validate_config_raise_exceptions(config, empty_build_list_ok=True)
     print("Name:        %s" % config["name"])
@@ -345,7 +351,7 @@ def status_command() -> int:
 
 
 @cfbs_command("search")
-def search_command(terms: list) -> int:
+def search_command(terms: List[str]):
     index = CFBSConfig.get_instance().index
     results = {}
 
@@ -390,10 +396,10 @@ def search_command(terms: list) -> int:
 @cfbs_command("add")
 @commit_after_command("Added module%s %s", [PLURAL_S, FIRST_ARG_SLIST])
 def add_command(
-    to_add: list,
+    to_add: List[str],
     added_by="cfbs add",
     checksum=None,
-) -> Union[Result, int]:
+):
     config = CFBSConfig.get_instance()
     validate_config_raise_exceptions(config, empty_build_list_ok=True)
     r = config.add_command(to_add, added_by, checksum)
@@ -505,13 +511,14 @@ def remove_command(to_remove: List[str]):
             _clean_unused_modules(config)
         except CFBSReturnWithoutCommit:
             pass
-    return Result(0, changes_made, msg, files)
+    return CFBSCommandGitResult(0, changes_made, msg, files)
 
 
 @cfbs_command("clean")
 @commit_after_command("Cleaned unused modules")
 def clean_command(config=None):
-    return _clean_unused_modules(config)
+    r = _clean_unused_modules(config)
+    return CFBSCommandGitResult(r)
 
 
 def _clean_unused_modules(config=None):
@@ -563,7 +570,7 @@ def _clean_unused_modules(config=None):
 
 @cfbs_command("update")
 @commit_after_command("Updated module%s", [PLURAL_S])
-def update_command(to_update) -> Result:
+def update_command(to_update):
     config = CFBSConfig.get_instance()
     r = validate_config(config, empty_build_list_ok=True)
     valid_before = r == 0
@@ -730,13 +737,13 @@ def update_command(to_update) -> Result:
     else:
         print("Modules are already up to date")
 
-    return Result(
+    return CFBSCommandGitResult(
         0, module_updates.changes_made, module_updates.msg, module_updates.files
     )
 
 
 @cfbs_command("validate")
-def validate_command(paths=None, index_arg=None) -> int:
+def validate_command(paths=None, index_arg=None):
     if paths:
         ret_value = 0
 
@@ -873,7 +880,7 @@ def _download_dependencies(
 
 
 @cfbs_command("download")
-def download_command(force, ignore_versions=False) -> int:
+def download_command(force, ignore_versions=False):
     config = CFBSConfig.get_instance()
     r = validate_config(config)
     if r != 0:
@@ -887,7 +894,7 @@ def download_command(force, ignore_versions=False) -> int:
 
 
 @cfbs_command("build")
-def build_command(ignore_versions=False) -> int:
+def build_command(ignore_versions=False):
     config = CFBSConfig.get_instance()
     r = validate_config(config)
     if r != 0:
@@ -905,7 +912,7 @@ def build_command(ignore_versions=False) -> int:
 
 
 @cfbs_command("install")
-def install_command(args) -> int:
+def install_command(args):
     if len(args) > 1:
         raise CFBSExitError(
             "Only one destination is allowed for command: cfbs install [destination]"
@@ -1017,7 +1024,7 @@ def analyze_command(
     user_ignored_path_components=None,
     offline=False,
     verbose=False,
-) -> int:
+):
     if len(policyset_paths) == 0:
         # no policyset path is a shorthand for using the current directory as the policyset path
         log.info(
@@ -1081,7 +1088,7 @@ def analyze_command(
 
 @cfbs_command("input")
 @commit_after_command("Added input for module%s", [PLURAL_S])
-def input_command(args, input_from="cfbs input") -> Result:
+def input_command(args, input_from="cfbs input"):
     config = CFBSConfig.get_instance()
     validate_config_raise_exceptions(config, empty_build_list_ok=True)
     do_commit = False
@@ -1111,7 +1118,7 @@ def input_command(args, input_from="cfbs input") -> Result:
         do_commit = True
         files_to_commit.append(input_path)
     config.save()
-    return Result(0, do_commit, None, files_to_commit)
+    return CFBSCommandGitResult(0, do_commit, None, files_to_commit)
 
 
 @cfbs_command("set-input")
@@ -1122,19 +1129,19 @@ def set_input_command(name, infile):
     module = config.get_module_from_build(name)
     if module is None:
         log.error("Module '%s' not found" % name)
-        return 1
+        return CFBSCommandGitResult(1)
 
     spec = module.get("input")
     if spec is None:
         log.error("Module '%s' does not accept input" % name)
-        return 1
+        return CFBSCommandGitResult(1)
     log.debug("Input spec for module '%s': %s" % (name, pretty(spec)))
 
     try:
         data = json.load(infile, object_pairs_hook=OrderedDict)
     except json.decoder.JSONDecodeError as e:
         log.error("Error reading json from stdin: %s" % e)
-        return 1
+        return CFBSCommandGitResult(1)
     log.debug("Input data for module '%s': %s" % (name, pretty(data)))
 
     def _compare_dict(a, b, ignore=None):
@@ -1178,7 +1185,7 @@ def set_input_command(name, infile):
                 "Input data for module '%s' does not conform with input definition"
                 % name
             )
-            return 1
+            return CFBSCommandGitResult(1)
 
     path = os.path.join(name, "input.json")
 
@@ -1194,11 +1201,11 @@ def set_input_command(name, infile):
     else:
         log.debug("Input data for '%s' unchanged, nothing to write / commit" % name)
 
-    return Result(0, changes_made, None, [path])
+    return CFBSCommandGitResult(0, changes_made, None, [path])
 
 
 @cfbs_command("get-input")
-def get_input_command(name, outfile) -> int:
+def get_input_command(name, outfile):
     config = CFBSConfig.get_instance()
     config.warn_about_unknown_keys()
     module = config.get_module_from_build(name)

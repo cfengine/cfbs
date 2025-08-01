@@ -4,7 +4,7 @@ Here it's okay to depend on other parts of the CFBS codebase,
 do prompts, etc.
 """
 
-from typing import Iterable, Union
+from typing import Callable, Iterable, Union
 from cfbs.prompts import prompt_user_yesno
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.git import (
@@ -15,7 +15,7 @@ from cfbs.git import (
     git_check_tracked_changes,
 )
 from cfbs.args import get_args
-from cfbs.result import Result
+from cfbs.types import CFBSCommandExitCode, CFBSCommandGitResult
 import logging as log
 from functools import partial
 
@@ -65,21 +65,19 @@ def with_git_commit(
     files_to_commit,
     commit_msg,
     positional_args_lambdas=None,
-    failed_return=False,
+    failure_exit_code=1,
 ):
-    def decorator(fn):
-        def decorated_fn(*args, **kwargs):
+    def decorator(fn: Callable[..., CFBSCommandGitResult]):
+        def decorated_fn(*args, **kwargs) -> CFBSCommandExitCode:
             try:
                 result = fn(*args, **kwargs)
             except CFBSReturnWithoutCommit as e:
-                # Legacy; do not use. Use the Result namedtuple instead.
+                # Legacy; do not use. Use the CFBSCommandGitResult namedtuple instead.
                 return e.retval
-            ret, should_commit, msg, files = (
-                result if isinstance(result, Result) else (result, True, None, [])
-            )
+            ret, should_commit, msg, files = result
             files += files_to_commit
 
-            # Message from the Result namedtuple overrides message from decorator
+            # Message from the CFBSCommandGitResult namedtuple overrides message from decorator
             if not msg:
                 if positional_args_lambdas:
                     positional_args = (
@@ -125,7 +123,7 @@ def with_git_commit(
                     print(str(e))
                 else:
                     print("Failed to commit changes, discarding them...")
-                    return failed_return
+                    return failure_exit_code
             return ret
 
         return decorated_fn
@@ -133,6 +131,4 @@ def with_git_commit(
     return decorator
 
 
-commit_after_command = partial(
-    with_git_commit, (0,), ("cfbs.json",), failed_return=True
-)
+commit_after_command = partial(with_git_commit, (0,), ("cfbs.json",))

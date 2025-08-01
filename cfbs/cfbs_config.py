@@ -19,8 +19,9 @@ import copy
 import glob
 import logging as log
 from collections import OrderedDict
+from typing import List
 
-from cfbs.result import Result
+from cfbs.types import CFBSCommandGitResult
 from cfbs.utils import (
     CFBSExitError,
     CFBSUserError,
@@ -41,9 +42,9 @@ from cfbs.prompts import prompt_user, prompt_user_yesno
 from cfbs.validate import validate_single_module
 
 
-# Legacy; do not use. Use the 'Result' namedtuple instead.
+# Legacy; do not use. Use the 'CFBSCommandGitResult' namedtuple instead.
 class CFBSReturnWithoutCommit(Exception):
-    def __init__(self, r):
+    def __init__(self, r: int):
         self.retval = r
 
 
@@ -399,10 +400,10 @@ class CFBSConfig(CFBSJson):
 
     def add_command(
         self,
-        to_add: list,
+        to_add: List[str],
         added_by="cfbs add",
         checksum=None,
-    ) -> Result:
+    ) -> CFBSCommandGitResult:
         if not to_add:
             raise CFBSUserError("Must specify at least one module to add")
 
@@ -468,7 +469,7 @@ class CFBSConfig(CFBSJson):
             msg = msg.replace("\n", "\n\n", 1)
 
         changes_made = count > 0
-        return Result(0, changes_made, msg, files)
+        return CFBSCommandGitResult(0, changes_made, msg, files)
 
     def input_command(self, module_name, input_data):
         def _check_keys(keys, input_data):

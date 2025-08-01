@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import os
+from typing import Tuple, Union
 
 from cfbs.internal_file_management import fetch_archive
 from cfbs.masterfiles.analyze import (
@@ -347,7 +348,7 @@ class VersionsData:
 
 
 class AnalyzedFiles:
-    def __init__(self, reference_version):
+    def __init__(self, reference_version: Union[str, None]):
         self.reference_version = reference_version
 
         self.missing = []
@@ -507,7 +508,7 @@ def analyze_policyset(
     masterfiles_dir="masterfiles",
     ignored_path_components=None,
     offline=False,
-):
+) -> Tuple[AnalyzedFiles, VersionsData]:
     """`path` should be either a masterfiles-path (containing masterfiles files directly),
     or a parent-path (containing `masterfiles_dir` and "modules" folders). `is_parentpath`
     should specify which of the two it is.
