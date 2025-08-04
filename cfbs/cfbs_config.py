@@ -364,7 +364,7 @@ class CFBSConfig(CFBSJson):
         to_add: list,
         added_by="cfbs add",
         checksum=None,
-    ) -> int:
+    ):
         index = self.index
 
         modules = [Module(m) for m in to_add]
@@ -380,7 +380,8 @@ class CFBSConfig(CFBSJson):
         # Filter modules which are already added:
         to_add = self._filter_modules_to_add(modules)
         if not to_add:
-            return 0  # Everything already added
+            # Everything already added
+            return
 
         # Convert names to objects:
         modules_to_add = [index.get_module_object(m, added_by[m.name]) for m in to_add]
@@ -396,7 +397,6 @@ class CFBSConfig(CFBSJson):
             self._add_without_dependencies(dependencies)
 
         self._add_without_dependencies(modules_to_add)
-        return 0
 
     def add_command(
         self,
