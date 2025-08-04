@@ -106,17 +106,15 @@ class CFBSConfig(CFBSJson):
             else 0
         )
 
-    def add_with_dependencies(
-        self, module, remote_config=None, str_added_by="cfbs add"
-    ):
+    def add_with_dependencies(self, module, remote_config=None, added_by="cfbs add"):
         if type(module) is list:
             # TODO: reuse logic from _add_modules instead
             for m in module:
-                self.add_with_dependencies(m, remote_config, str_added_by)
+                self.add_with_dependencies(m, remote_config, added_by)
             return
         if type(module) is str:
             module_str = module
-            module = (remote_config or self).get_module_for_build(module, str_added_by)
+            module = (remote_config or self).get_module_for_build(module, added_by)
             if not module:
                 raise CFBSExitError("Module '%s' not found" % module_str)
         if not module:
@@ -125,7 +123,7 @@ class CFBSConfig(CFBSJson):
         name = module["name"]
         assert "steps" in module
         if self._module_is_in_build(module):
-            if is_module_added_manually(str_added_by):
+            if is_module_added_manually(added_by):
                 print("Skipping already added module '%s'" % name)
             return
         if "dependencies" in module:
@@ -195,7 +193,7 @@ class CFBSConfig(CFBSJson):
                     % (i, len(modules), module["name"]),
                 ):
                     continue
-            self.add_with_dependencies(module, remote_config, str_added_by=added_by)
+            self.add_with_dependencies(module, remote_config, added_by)
 
     @staticmethod
     def _convert_added_by(added_by, to_add):
