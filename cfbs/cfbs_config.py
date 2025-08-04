@@ -19,7 +19,7 @@ import copy
 import glob
 import logging as log
 from collections import OrderedDict
-from typing import List
+from typing import List, Optional
 
 from cfbs.types import CFBSCommandGitResult
 from cfbs.utils import (
@@ -147,6 +147,7 @@ class CFBSConfig(CFBSJson):
         to_add: list,
         added_by="cfbs add",
         checksum=None,
+        explicit_build_steps=None,
     ):
         url_commit = None
         if url.endswith(SUPPORTED_ARCHIVES):
@@ -295,7 +296,7 @@ class CFBSConfig(CFBSJson):
         module["steps"].append(step)
         log.debug("Added build step '%s' for module '%s'" % (step, name))
 
-    def _handle_local_module(self, module):
+    def _handle_local_module(self, module, use_default_build_steps=True):
         name = module["name"]
         if not (
             name.startswith("./")
@@ -327,10 +328,12 @@ class CFBSConfig(CFBSJson):
                     )
                 # TODO: Support adding local modules with autorun tag
 
-        self._add_policy_files_build_step(module)
-        self._add_bundles_build_step(module, policy_files)
+        if use_default_build_steps:
+            self._add_policy_files_build_step(module)
+            self._add_bundles_build_step(module, policy_files)
 
-    def _add_without_dependencies(self, modules):
+    def _add_without_dependencies(self, modules, use_default_build_steps=True):
+        """Note: `use_default_build_steps` is only relevant for local modules."""
         assert modules
         assert len(modules) > 0
         assert modules[0]["name"]
@@ -348,7 +351,7 @@ class CFBSConfig(CFBSJson):
                 context="build", name=name, module=module, config=None, local_check=True
             )
             self["build"].append(module)
-            self._handle_local_module(module)
+            self._handle_local_module(module, use_default_build_steps)
 
             assert "added_by" in module
             added_by = module["added_by"]
@@ -362,7 +365,9 @@ class CFBSConfig(CFBSJson):
         to_add: list,
         added_by="cfbs add",
         checksum=None,
+        explicit_build_steps: Optional[List[str]] = None,
     ):
+        """Note: explicit build steps are applied only to directly added modules, not their dependencies."""
         index = self.index
 
         modules = [Module(m) for m in to_add]
@@ -382,7 +387,10 @@ class CFBSConfig(CFBSJson):
             return
 
         # Convert names to objects:
-        modules_to_add = [index.get_module_object(m, added_by[m.name]) for m in to_add]
+        modules_to_add = [
+            index.get_module_object(m, added_by[m.name], explicit_build_steps)
+            for m in to_add
+        ]
         modules_already_added = self["build"]
 
         assert not any(m for m in modules_to_add if "name" not in m)
@@ -394,13 +402,16 @@ class CFBSConfig(CFBSJson):
         if dependencies:
             self._add_without_dependencies(dependencies)
 
-        self._add_without_dependencies(modules_to_add)
+        self._add_without_dependencies(
+            modules_to_add, use_default_build_steps=explicit_build_steps is None
+        )
 
     def add_command(
         self,
         to_add: List[str],
         added_by="cfbs add",
         checksum=None,
+        explicit_build_steps: Optional[List[str]] = None,
     ) -> CFBSCommandGitResult:
         if not to_add:
             raise CFBSUserError("Must specify at least one module to add")
@@ -415,6 +426,7 @@ class CFBSConfig(CFBSJson):
                 to_add=to_add[1:],
                 added_by=added_by,
                 checksum=checksum,
+                explicit_build_steps=explicit_build_steps,
             )
         else:
             # for this `if` to be valid, module names containing `://` should be illegal
@@ -423,7 +435,7 @@ class CFBSConfig(CFBSJson):
                     "URI scheme not supported. The supported URI schemes are: "
                     + ", ".join(SUPPORTED_URI_SCHEMES)
                 )
-            self._add_modules(to_add, added_by, checksum)
+            self._add_modules(to_add, added_by, checksum, explicit_build_steps)
 
         added = {m["name"] for m in self["build"]}.difference(before)
 

@@ -51,7 +51,7 @@ import copy
 import logging as log
 import json
 import functools
-from typing import Callable, List, Union
+from typing import Callable, List, Optional, Union
 from collections import OrderedDict
 from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
@@ -399,10 +399,11 @@ def add_command(
     to_add: List[str],
     added_by="cfbs add",
     checksum=None,
+    explicit_build_steps: Optional[List[str]] = None,
 ):
     config = CFBSConfig.get_instance()
     validate_config_raise_exceptions(config, empty_build_list_ok=True)
-    r = config.add_command(to_add, added_by, checksum)
+    r = config.add_command(to_add, added_by, checksum, explicit_build_steps)
     config.save()
     return r
 

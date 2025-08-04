@@ -1,7 +1,7 @@
 import sys
 import os
 from collections import OrderedDict
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from cfbs.module import Module
 from cfbs.utils import CFBSNetworkError, get_or_read_json, CFBSExitError, get_json
@@ -34,25 +34,33 @@ def _local_module_data_json_file(module_name: str):
     }
 
 
-def _local_module_data_subdir(module_name: str):
+def _local_module_data_subdir(
+    module_name: str, explicit_build_steps: Optional[List[str]] = None
+):
     assert module_name.startswith("./")
     assert module_name.endswith(("/", "/."))
     dst = os.path.join("services", "cfbs", module_name[2:])
+    if explicit_build_steps is None:
+        build_steps = ["directory ./ {}".format(dst)]
+    else:
+        build_steps = explicit_build_steps
     return {
         "description": "Local subdirectory added using cfbs command line",
         "tags": ["local"],
-        "steps": ["directory ./ {}".format(dst)],
+        "steps": build_steps,
         "added_by": "cfbs add",
     }
 
 
-def _generate_local_module_object(module_name: str):
+def _generate_local_module_object(
+    module_name: str, explicit_build_steps: Optional[List[str]] = None
+):
     assert module_name.startswith("./")
     assert module_name.endswith((".cf", ".json", "/"))
     assert os.path.isfile(module_name) or os.path.isdir(module_name)
 
     if os.path.isdir(module_name):
-        return _local_module_data_subdir(module_name)
+        return _local_module_data_subdir(module_name, explicit_build_steps)
     if module_name.endswith(".cf"):
         return _local_module_data_cf_file(module_name)
     if module_name.endswith(".json"):
@@ -165,7 +173,12 @@ class Index:
             if os.path.exists(module.name):
                 module.name = local_module_name(module.name)
 
-    def get_module_object(self, module, added_by: Optional[str] = None):
+    def get_module_object(
+        self,
+        module,
+        added_by: Optional[str] = None,
+        explicit_build_steps: Optional[List[str]] = None,
+    ):
         if isinstance(module, str):
             module = Module(module)
         name = module.name
@@ -173,7 +186,7 @@ class Index:
         module = module.to_dict()
 
         if name.startswith("./"):
-            object = _generate_local_module_object(name)
+            object = _generate_local_module_object(name, explicit_build_steps)
         else:
             object = self[name]
             if version:
