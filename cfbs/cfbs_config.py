@@ -145,7 +145,7 @@ class CFBSConfig(CFBSJson):
 
     def _add_using_url(
         self,
-        url,
+        url: str,
         to_add: list,
         added_by="cfbs add",
         checksum=None,

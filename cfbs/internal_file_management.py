@@ -155,7 +155,7 @@ def _clone_and_checkout(url, path, commit):
     sh("git checkout " + commit, directory=path)
 
 
-def clone_url_repo(repo_url):
+def clone_url_repo(repo_url: str):
     assert repo_url.startswith(SUPPORTED_URI_SCHEMES)
 
     commit = None
@@ -196,7 +196,7 @@ def clone_url_repo(repo_url):
 
 
 def fetch_archive(
-    url, checksum=None, directory=None, with_index=True, extract_to_directory=False
+    url: str, checksum=None, directory=None, with_index=True, extract_to_directory=False
 ):
     assert url.endswith(SUPPORTED_ARCHIVES)
 

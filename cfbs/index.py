@@ -1,7 +1,7 @@
 import sys
 import os
 from collections import OrderedDict
-from typing import Union
+from typing import Optional, Union
 
 from cfbs.module import Module
 from cfbs.utils import CFBSNetworkError, get_or_read_json, CFBSExitError, get_json
@@ -165,7 +165,7 @@ class Index:
             if os.path.exists(module.name):
                 module.name = local_module_name(module.name)
 
-    def get_module_object(self, module, added_by=None):
+    def get_module_object(self, module, added_by: Optional[str] = None):
         if isinstance(module, str):
             module = Module(module)
         name = module.name
