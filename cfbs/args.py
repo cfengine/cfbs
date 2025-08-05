@@ -79,9 +79,17 @@ class YesNoToBool(argparse.Action):
 
 
 @cache
-def get_arg_parser():
+def get_arg_parser(whitespace_for_manual=False):
     command_list = commands.get_command_names()
-    parser = argparse.ArgumentParser(prog="cfbs", description="CFEngine Build System.")
+    CFBS_DESCRIPTION = "CFEngine Build System."
+    if whitespace_for_manual:
+        parser = argparse.ArgumentParser(
+            prog="cfbs",
+            description=CFBS_DESCRIPTION,
+            formatter_class=argparse.RawTextHelpFormatter,
+        )
+    else:
+        parser = argparse.ArgumentParser(prog="cfbs", description=CFBS_DESCRIPTION)
     parser.add_argument(
         "command",
         metavar="cmd",
