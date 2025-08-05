@@ -11,7 +11,7 @@ except ImportError:
 
 
 def generate_man_page():
-    manpage = Manpage(get_arg_parser())
+    manpage = Manpage(get_arg_parser(whitespace_for_manual=True))
     manpage.manual = "CFEngine Build System manual"
     manpage.description = (
         "combines multiple modules into 1 policy set to deploy on your infrastructure. "
