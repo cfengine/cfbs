@@ -37,7 +37,7 @@ from cfbs.internal_file_management import (
 )
 from cfbs.pretty import pretty, CFBS_DEFAULT_SORTING_RULES
 from cfbs.cfbs_json import CFBSJson
-from cfbs.module import Module, is_module_added_manually
+from cfbs.module import Module, is_module_added_manually, is_module_local
 from cfbs.prompts import prompt_user, prompt_user_yesno
 from cfbs.validate import validate_single_module
 
@@ -334,6 +334,11 @@ class CFBSConfig(CFBSJson):
 
     def _add_without_dependencies(self, modules, use_default_build_steps=True):
         """Note: `use_default_build_steps` is only relevant for local modules."""
+        if not use_default_build_steps:
+            assert len(modules) == 1 and modules[0]["name"].startswith(
+                "./"
+            ), "`use_default_build_steps` is currently only expected to be explicitly used for adding a single local module"
+
         assert modules
         assert len(modules) > 0
         assert modules[0]["name"]
@@ -367,7 +372,15 @@ class CFBSConfig(CFBSJson):
         checksum=None,
         explicit_build_steps: Optional[List[str]] = None,
     ):
-        """Note: explicit build steps are applied only to directly added modules, not their dependencies."""
+        """Note: explicit build steps are currently limited to single local modules without dependencies, see the asserts."""
+        if explicit_build_steps is not None:
+            assert (
+                len(to_add) == 1
+            ), "explicit_build_steps is only for adding a single module"
+            assert is_module_local(
+                to_add[0]
+            ), "explicit_build_steps is only for adding a local module"
+
         index = self.index
 
         modules = [Module(m) for m in to_add]
@@ -400,6 +413,9 @@ class CFBSConfig(CFBSJson):
         dependencies = self._find_dependencies(modules_to_add, modules_already_added)
 
         if dependencies:
+            assert (
+                explicit_build_steps is None
+            ), "explicit build steps do not apply to dependencies"
             self._add_without_dependencies(dependencies)
 
         self._add_without_dependencies(
