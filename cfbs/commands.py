@@ -57,7 +57,7 @@ from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
 
 from cfbs.cfbs_json import CFBSJson
-from cfbs.types import CFBSCommandExitCode, CFBSCommandGitResult
+from cfbs.cfbs_types import CFBSCommandExitCode, CFBSCommandGitResult
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     CFBSNetworkError,

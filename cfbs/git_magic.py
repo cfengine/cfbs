@@ -15,7 +15,7 @@ from cfbs.git import (
     git_check_tracked_changes,
 )
 from cfbs.args import get_args
-from cfbs.types import CFBSCommandExitCode, CFBSCommandGitResult
+from cfbs.cfbs_types import CFBSCommandExitCode, CFBSCommandGitResult
 import logging as log
 from functools import partial
 
