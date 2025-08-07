@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import os
 from typing import Tuple, Union
+import copy
 
 from cfbs.internal_file_management import fetch_archive
 from cfbs.masterfiles.analyze import (
@@ -75,9 +76,9 @@ def checksums_files(
     ignored_path_components=[],
 ):
     if checksums_dict is None:
-        checksums_dict = DEFAULT_CHECKSUMS_DICT
+        checksums_dict = copy.deepcopy(DEFAULT_CHECKSUMS_DICT)
     if files_dict is None:
-        files_dict = DEFAULT_FILES_DICT
+        files_dict = copy.deepcopy(DEFAULT_FILES_DICT)
 
     for root, _, files in os.walk(files_dir_path):
         for name in files:
@@ -520,7 +521,7 @@ def analyze_policyset(
     e.g. a backslash), and should not end with a `/` if it represents a file.
     """
     if ignored_path_components is None:
-        ignored_path_components = DEFAULT_IGNORED_PATH_COMPONENTS
+        ignored_path_components = copy.deepcopy(DEFAULT_IGNORED_PATH_COMPONENTS)
 
     checksums_dict, files_dict = checksums_files(
         path, ignored_path_components=ignored_path_components
