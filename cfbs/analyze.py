@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import os
 from typing import Tuple, Union
+import copy
 
 from cfbs.internal_file_management import fetch_archive
 from cfbs.masterfiles.analyze import (
@@ -75,9 +76,9 @@ def checksums_files(
     ignored_path_components=[],
 ):
     if checksums_dict is None:
-        checksums_dict = DEFAULT_CHECKSUMS_DICT
+        checksums_dict = copy.deepcopy(DEFAULT_CHECKSUMS_DICT)
     if files_dict is None:
-        files_dict = DEFAULT_FILES_DICT
+        files_dict = copy.deepcopy(DEFAULT_FILES_DICT)
 
     for root, _, files in os.walk(files_dir_path):
         for name in files:
@@ -223,8 +224,11 @@ def filepaths_display_moved(filepaths):
         print("└──", filepaths[-1][0], "<-", list_or_single(filepaths[-1][1]))
 
 
-def mpf_normalized_path(path, is_parentpath, masterfiles_dir):
-    """Returns a filepath converted from `path` to an MPF-comparable form."""
+def mpf_normalized_path(path, is_parentpath: bool, masterfiles_dir):
+    """Returns a filepath converted from `path` to an MPF-comparable form.
+
+    `path` should be a path inside the masterfiles directory (or inside the parent directory, if `is_parentpath` is `True`).
+    """
     # downloaded MPF release information filepaths always have forward slashes
     norm_path = path.replace(os.sep, "/")
 
@@ -501,6 +505,37 @@ DEFAULT_IGNORED_PATH_COMPONENTS = [
 ]
 
 
+def possible_policyset_paths(path, masterfiles_dir, is_parentpath, files_dict):
+    """Returns a list of possible policy-set paths inside an analyzed `path`.
+
+    The returned paths are in the form of relative paths to `path`.
+    """
+    possible_policyset_relpaths = []
+
+    for filepath in files_dict:
+        file_name = name(filepath)
+        if file_name in ("promises.cf", "update.cf"):
+            actual_filepath = mpf_denormalized_path(
+                filepath, is_parentpath, masterfiles_dir
+            )
+            # `checksums_files` output paths relative to its `files_dir_path` argument,
+            # therefore `actual_filepath` is now relative to the user-provided path already
+
+            filepath_dir = os.path.dirname(actual_filepath)
+            possible_policyset_relpaths.append(filepath_dir)
+
+    # for drive root, the path's parent is the path itself, so only check the parent path if this is not the case
+    if os.path.realpath(path) != os.path.realpath(os.path.join(path, "..")):
+        if os.path.exists(os.path.join(path, "..", "update.cf")) or os.path.exists(
+            os.path.join(path, "..", "promises.cf")
+        ):
+            possible_policyset_relpaths.append("..")
+
+    possible_policyset_relpaths = deduplicate_list(possible_policyset_relpaths)
+
+    return possible_policyset_relpaths
+
+
 def analyze_policyset(
     path,
     is_parentpath=False,
@@ -520,7 +555,7 @@ def analyze_policyset(
     e.g. a backslash), and should not end with a `/` if it represents a file.
     """
     if ignored_path_components is None:
-        ignored_path_components = DEFAULT_IGNORED_PATH_COMPONENTS
+        ignored_path_components = copy.deepcopy(DEFAULT_IGNORED_PATH_COMPONENTS)
 
     checksums_dict, files_dict = checksums_files(
         path, ignored_path_components=ignored_path_components
@@ -595,34 +630,14 @@ def analyze_policyset(
     if reference_version is None:
         # try to detect whether the user provided a wrong policy set path
         # gather all possible policy set paths, by detecting promises.cf or update.cf
-        possible_policyset_relpaths = []
-        mpfnorm_path = mpf_normalized_path(path, is_parentpath, masterfiles_dir)
-        for filepath in files_dict:
-            file_name = name(filepath)
-            if file_name in ("promises.cf", "update.cf"):
-                relpath = os.path.relpath(filepath, mpfnorm_path)
-                relpath = relpath.replace(os.sep, "/")
-
-                if "/" not in relpath:
-                    # `"."`, not `path`, as the list collects relative paths
-                    possible_policyset_relpaths.append(".")
-                if relpath.endswith("/update.cf"):
-                    possible_policyset_relpaths.append(relpath[:-10])
-                if relpath.endswith("/promises.cf"):
-                    possible_policyset_relpaths.append(relpath[:-12])
-
-        # for drive root, the path's parent is the path itself, so only check the parent path if this is not the case
-        if os.path.realpath(path) != os.path.realpath(os.path.join(path, "..")):
-            if os.path.exists(os.path.join(path, "..", "update.cf")) or os.path.exists(
-                os.path.join(path, "..", "promises.cf")
-            ):
-                possible_policyset_relpaths.append("..")
-
-        possible_policyset_relpaths = deduplicate_list(possible_policyset_relpaths)
+        possible_policyset_relpaths = possible_policyset_paths(
+            path, masterfiles_dir, is_parentpath, files_dict
+        )
 
         # check whether the policy set contains update.cf or promises.cf directly in masterfiles
+        # `os.path.dirname` results in `''` rather than `'.'` for current directory
         if not (
-            (masterfiles_dir if is_parentpath else ".") in possible_policyset_relpaths
+            (masterfiles_dir if is_parentpath else "") in possible_policyset_relpaths
         ):
             extra_error_text = ""
             if len(possible_policyset_relpaths) > 0:
