@@ -132,7 +132,7 @@ def _main() -> int:
             % args.command
         )
 
-    if args.offline and args.command not in ("analyze", "analyse"):
+    if args.offline and args.command not in ("analyze", "analyse", "convert"):
         raise CFBSUserError(
             "The option --offline is only for 'cfbs analyze', not 'cfbs %s'"
             % args.command
@@ -185,7 +185,7 @@ def _main() -> int:
             does_log_info(args.loglevel),
         )
     if args.command == "convert":
-        return commands.convert_command()
+        return commands.convert_command(args.non_interactive, args.offline)
 
     if args.command == "generate-release-information":
         return commands.generate_release_information_command(

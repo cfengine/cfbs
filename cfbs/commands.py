@@ -55,6 +55,7 @@ from typing import Callable, List, Optional, Union
 from collections import OrderedDict
 from cfbs.analyze import analyze_policyset
 from cfbs.args import get_args
+from typing import Iterable
 
 from cfbs.cfbs_json import CFBSJson
 from cfbs.cfbs_types import CFBSCommandExitCode, CFBSCommandGitResult
@@ -92,6 +93,7 @@ from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import (
     validate_config,
     validate_config_raise_exceptions,
+    validate_module_name_content,
     validate_single_module,
 )
 from cfbs.internal_file_management import (
@@ -1088,7 +1090,129 @@ def analyze_command(
 
 
 @cfbs_command("convert")
-def convert_command():
+def convert_command(non_interactive=False, offline=False):
+    def cfbs_convert_cleanup():
+        os.unlink(cfbs_filename())
+        rm(".git", missing_ok=True)
+
+    def cfbs_convert_git_commit(
+        commit_message: str, add_scope: Union[str, Iterable[str]] = "all"
+    ):
+        try:
+            git_commit_maybe_prompt(commit_message, non_interactive, scope=add_scope)
+        except CFBSGitError:
+            cfbs_convert_cleanup()
+            raise
+
+    dir_content = [f.name for f in os.scandir(".")]
+
+    if not (len(dir_content) == 1 and dir_content[0].startswith("masterfiles-")):
+        raise CFBSUserError(
+            "cfbs convert must be run in a directory containing only one item, a subdirectory named masterfiles-<some-name>"
+        )
+
+    dir_name = dir_content[0]
+    path_string = "./" + dir_name + "/"
+
+    # validate the local module
+    validate_module_name_content(path_string)
+
+    promises_cf_path = os.path.join(dir_name, "promises.cf")
+    if not os.path.isfile(promises_cf_path):
+        raise CFBSUserError(
+            "The file '"
+            + promises_cf_path
+            + "' does not exist - make sure '"
+            + path_string
+            + "' is a policy set based on masterfiles."
+        )
+
+    print(
+        "Found policy set in '%s' with 'promises.cf' in the expected location."
+        % path_string
+    )
+
+    print("Analyzing '" + path_string + "'...")
+    analyzed_files, _ = analyze_policyset(
+        path=dir_name,
+        is_parentpath=False,
+        reference_version=None,
+        masterfiles_dir=dir_name,
+        ignored_path_components=None,
+        offline=offline,
+    )
+
+    current_index = CFBSConfig.get_instance().index
+    default_version = current_index.get_module_object("masterfiles")["version"]
+
+    reference_version = analyzed_files.reference_version
+    if reference_version is None:
+        print(
+            "Did not detect any version of masterfiles, proceeding using the default version (%s)."
+            % default_version
+        )
+        masterfiles_version = default_version
+    else:
+        print("Detected version %s of masterfiles." % reference_version)
+        masterfiles_version = reference_version
+
+    if not prompt_user_yesno(
+        non_interactive,
+        "Do you want to continue making a new CFEngine Build project based on masterfiles %s?"
+        % masterfiles_version,
+    ):
+        raise CFBSExitError("User did not proceed, exiting.")
+
+    print("Initializing a new CFBS project...")
+    # since there should be no other files than the masterfiles-name directory, there shouldn't be a .git directory
+    assert not is_git_repo()
+    r = init_command(masterfiles="no", non_interactive=non_interactive, use_git=True)
+    # the cfbs-init should've created a Git repository
+    assert is_git_repo()
+    if r != 0:
+        print("Initializing a new CFBS project failed, aborting conversion.")
+        cfbs_convert_cleanup()
+        return r
+
+    print("Adding masterfiles %s to the project..." % masterfiles_version)
+    masterfiles_to_add = ["masterfiles@%s" % masterfiles_version]
+    r = add_command(masterfiles_to_add, added_by="cfbs convert")
+    if r != 0:
+        print("Adding the masterfiles module failed, aborting conversion.")
+        cfbs_convert_cleanup()
+        return r
+
+    print("Adding the policy files...")
+    local_module_to_add = [path_string]
+    r = add_command(
+        local_module_to_add,
+        added_by="cfbs convert",
+        explicit_build_steps=["copy ./ ./"],
+    )
+    if r != 0:
+        print("Adding the policy files module failed, aborting conversion.")
+        cfbs_convert_cleanup()
+        return r
+
+    # here, matching files are files that have identical (filepath, checksum)
+    if len(analyzed_files.unmodified) != 0:
+        print(
+            "Deleting matching files between masterfiles %s and '%s'..."
+            % (masterfiles_version, path_string)
+        )
+        for unmodified_mpf_file in analyzed_files.unmodified:
+            rm(os.path.join(dir_name, unmodified_mpf_file))
+
+        print("Creating Git commit...")
+        cfbs_convert_git_commit("Deleted unmodified policy files")
+
+    print(
+        "Your project is now functional, can be built, and will produce a version of masterfiles %s with your modifications."
+        % masterfiles_version
+    )
+    print(
+        "The next conversion step is to handle modified files and files from other versions of masterfiles."
+    )
     print("This is not implemented yet.")
     return 0
 

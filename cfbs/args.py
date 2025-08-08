@@ -196,7 +196,7 @@ def get_arg_parser(whitespace_for_manual=False):
     )
     parser.add_argument(
         "--offline",
-        help="Do not connect to the Internet to download the latest version of MPF release information during 'cfbs analyze'",
+        help="Do not connect to the Internet to download the latest version of MPF release information during 'cfbs analyze' and 'cfbs convert'",
         action="store_true",
     )
     parser.add_argument(

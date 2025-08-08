@@ -4,7 +4,7 @@ from cfbs.pretty import pretty
 
 
 def is_module_added_manually(added_by: str):
-    return added_by in ("cfbs add", "cfbs init")
+    return added_by in ("cfbs add", "cfbs init", "cfbs convert")
 
 
 def is_module_local(name: str):
