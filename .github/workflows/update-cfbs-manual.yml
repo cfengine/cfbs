@@ -51,5 +51,5 @@ jobs:
             larsewi
             craigcomstock
             jakub-nt
-          branch: update-manpage
+          branch: pr-update-manpage
           branch-suffix: timestamp
