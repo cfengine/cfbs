@@ -36,7 +36,7 @@ jobs:
         run: |
           echo "MANPAGE_HASH_BEFORE=$(tail -n +2 cfbs/cfbs.1 | sha256sum)">> $GITHUB_ENV
       - name: Run manual generator
-        run: python3 cfbs/man_generator.py
+        run: export PYTHONPATH=. && python3 cfbs/man_generator.py
       - name: Save commit hash after
         run: |
           echo "MANPAGE_HASH_AFTER=$(tail -n +2 cfbs/cfbs.1 | sha256sum)">> $GITHUB_ENV
