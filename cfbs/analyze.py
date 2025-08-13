@@ -355,6 +355,7 @@ class AnalyzedFiles:
     def __init__(self, reference_version: Union[str, None]):
         self.reference_version = reference_version
 
+        self.unmodified = []
         self.missing = []
         self.modified = []
         self.moved_or_renamed = []
@@ -373,6 +374,10 @@ class AnalyzedFiles:
     def denormalize(self, is_parentpath, masterfiles_dir):
         """Currently irreversible and meant to only be used once after all the files are analyzed."""
 
+        self.unmodified = [
+            mpf_denormalized_path(file, is_parentpath, masterfiles_dir)
+            for file in self.unmodified
+        ]
         self.missing = [
             mpf_denormalized_path(file, is_parentpath, masterfiles_dir)
             for file in self.missing
@@ -420,6 +425,7 @@ class AnalyzedFiles:
         ]
 
     def sort(self):
+        self.unmodified = filepaths_sorted(self.unmodified)
         self.missing = filepaths_sorted(self.missing)
         self.modified = filepaths_sorted(self.modified)
         self.moved_or_renamed = filepaths_sorted(self.moved_or_renamed)
@@ -430,8 +436,13 @@ class AnalyzedFiles:
         )
         self.not_from_any = filepaths_sorted(self.not_from_any)
 
-    def display(self):
+    def display(self, display_unmodified=False):
         print("Reference version:", self.reference_version, "\n")
+
+        if display_unmodified:
+            if len(self.unmodified) > 0:
+                print("Files unmodified from the version:")
+            filepaths_display(self.unmodified)
 
         if len(self.missing) > 0:
             print("Files missing from the version:")
@@ -479,6 +490,7 @@ class AnalyzedFiles:
 
         json_dict["files"] = {}
 
+        json_dict["files"]["unmodified"] = self.unmodified
         json_dict["files"]["missing"] = self.missing
         json_dict["files"]["modified"] = self.modified
         json_dict["files"]["moved_or_renamed"] = self.moved_or_renamed
@@ -682,6 +694,9 @@ def analyze_policyset(
                         other_versions = mpf_checksums_dict[checksum][filepath]
                         # since MPF data is sorted, so is `other_versions`
                         analyzed_files.different.append((filepath, other_versions))
+                    else:
+                        # 1A1B. the file is unmodified and present in the reference version
+                        analyzed_files.unmodified.append(filepath)
                 else:
                     # 1A2. checksum is known but there's no matching filepath with that checksum:
                     # therefore, it must be a rename/move
