@@ -1,0 +1,55 @@
+name: Update cfbs manual
+
+on:
+  push:
+    branches:
+      - master
+  workflow_call:
+  workflow_dispatch: # Enables manual trigger
+
+jobs:
+  update_cfbs_manual:
+    name: Update cfbs manual
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checks-out repository
+        uses: actions/checkout@v4
+        with:
+          ref: "master"
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install argparse-manpage setuptools
+      - name: Set Git user
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+      - name: Save manpage hash before
+        # ignore the first line as it contains the date and we don't want to update the manual if this is the only difference
+        run: |
+          echo "MANPAGE_HASH_BEFORE=$(tail -n +2 cfbs/cfbs.1 | sha256sum)">> $GITHUB_ENV
+      - name: Run manual generator
+        run: python3 cfbs/man_generator.py
+      - name: Save commit hash after
+        run: |
+          echo "MANPAGE_HASH_AFTER=$(tail -n +2 cfbs/cfbs.1 | sha256sum)">> $GITHUB_ENV
+      - name: Create Pull Request
+        if: env.MANPAGE_HASH_BEFORE != env.MANPAGE_HASH_AFTER
+        uses: cfengine/create-pull-request@v6
+        with:
+          title: Updated cfbs manual
+          body: Automated updates to the cfbs manual using [the `update_cfbs_manual` workflow](https://github.com/cfengine/cfbs/blob/master/.github/workflows/update-cfbs-manual.yml).
+          reviewers: |
+            olehermanse
+            larsewi
+            craigcomstock
+            jakub-nt
+          branch: update-manpage
+          branch-suffix: timestamp
