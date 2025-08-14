@@ -42,7 +42,7 @@ jobs:
           echo "MANPAGE_HASH_AFTER=$(tail -n +2 cfbs/cfbs.1 | sha256sum)">> $GITHUB_ENV
       - name: Create Git commit
         if: env.MANPAGE_HASH_BEFORE != env.MANPAGE_HASH_AFTER
-        run: git commit -m "Regenerated man page"
+        run: git add cfbs/cfbs.1 && git commit -m "Regenerated man page"
       - name: Create Pull Request
         if: env.MANPAGE_HASH_BEFORE != env.MANPAGE_HASH_AFTER
         uses: cfengine/create-pull-request@v6
