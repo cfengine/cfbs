@@ -37,9 +37,12 @@ jobs:
           echo "MANPAGE_HASH_BEFORE=$(tail -n +2 cfbs/cfbs.1 | sha256sum)">> $GITHUB_ENV
       - name: Run manual generator
         run: export PYTHONPATH=. && python3 cfbs/man_generator.py
-      - name: Save commit hash after
+      - name: Save manpage hash after
         run: |
           echo "MANPAGE_HASH_AFTER=$(tail -n +2 cfbs/cfbs.1 | sha256sum)">> $GITHUB_ENV
+      - name: Create Git commit
+        if: env.MANPAGE_HASH_BEFORE != env.MANPAGE_HASH_AFTER
+        run: git commit -m "Regenerated man page"
       - name: Create Pull Request
         if: env.MANPAGE_HASH_BEFORE != env.MANPAGE_HASH_AFTER
         uses: cfengine/create-pull-request@v6
