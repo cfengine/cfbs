@@ -59,6 +59,7 @@ from typing import Iterable
 
 from cfbs.cfbs_json import CFBSJson
 from cfbs.cfbs_types import CFBSCommandExitCode, CFBSCommandGitResult
+from cfbs.masterfiles.analyze import most_relevant_version
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     CFBSNetworkError,
@@ -1211,7 +1212,54 @@ def convert_command(non_interactive=False, offline=False):
         % masterfiles_version
     )
     print(
-        "The next conversion step is to handle modified files and files from other versions of masterfiles."
+        "The next conversion step is to handle files from other versions of masterfiles."
+    )
+    if not prompt_user_yesno(non_interactive, "Do you want to continue?"):
+        raise CFBSExitError("User did not proceed, exiting.")
+    other_versions_files = analyzed_files.different
+    if len(other_versions_files) > 0:
+        print(
+            "The following files are taken from other versions of masterfiles (not %s):"
+            % masterfiles_version
+        )
+        other_versions_files = sorted(other_versions_files)
+        files_to_delete = []
+        for other_version_file, other_versions in other_versions_files:
+            # don't display all versions (which is an arbitrarily-shaped sequence), instead choose the most relevant one:
+            relevant_version_text = most_relevant_version(
+                other_versions, masterfiles_version
+            )
+            if len(other_versions) > 1:
+                relevant_version_text += ", ..."
+            print("-", other_version_file, "(%s)" % relevant_version_text)
+
+            files_to_delete.append(other_version_file)
+        print(
+            "This usually indicates that someone made mistakes during past upgrades and it's recommended to delete these."
+        )
+        print(
+            "Your policy set will include the versions from %s instead (if they exist)."
+            % masterfiles_version
+        )
+        print(
+            "(Deletions will be visible in Git history so you can review or revert later)."
+        )
+        if prompt_user_yesno(
+            non_interactive, "Delete files from other versions? (Recommended)"
+        ):
+            print("Deleting %s files." % len(files_to_delete))
+            for file_d in files_to_delete:
+                rm(os.path.join(dir_name, file_d))
+
+            print(
+                "Creating Git commit with deletion of policy files from other versions..."
+            )
+            cfbs_convert_git_commit("Deleted policy files from other versions")
+            print("Done.", end=" ")
+    else:
+        print("There are no files from other versions of masterfiles.")
+    print(
+        "The next conversion step is to handle files which have custom modifications."
     )
     print("This is not implemented yet.")
     return 0
