@@ -237,13 +237,12 @@ def _should_wrap(parent, indent):
 
 def _encode_list_single_line(lst, indent, cursor):
     buf = "["
-    first = True
-    for child in lst:
-        if first:
-            first = False
-        else:
+    last_index = len(lst) - 1
+    for index, child in enumerate(lst):
+        if index > 0:
             buf += ", "
-        buf += _encode(child, indent, cursor + len(buf))
+        will_append_comma = index != last_index
+        buf += _encode(child, indent, cursor + len(buf), will_append_comma)
     buf += "]"
     return buf
 
@@ -251,40 +250,39 @@ def _encode_list_single_line(lst, indent, cursor):
 def _encode_list_multiline(lst, indent):
     indent += INDENT_SIZE
     buf = "[\n" + " " * indent
-    first = True
-    for child in lst:
-        if first:
-            first = False
-        else:
+    last_index = len(lst) - 1
+    for index, child in enumerate(lst):
+        if index > 0:
             buf += ",\n" + " " * indent
-        buf += _encode(child, indent, 0)
+        will_append_comma = index != last_index
+        buf += _encode(child, indent, 0, will_append_comma)
     indent -= INDENT_SIZE
     buf += "\n" + " " * indent + "]"
     return buf
 
 
-def _encode_list(lst, indent, cursor):
+def _encode_list(lst, indent, cursor, will_append_comma):
     if not lst:
         return "[]"
     if not _should_wrap(lst, indent):
         buf = _encode_list_single_line(lst, indent, cursor)
-        if indent + cursor + len(buf) <= MAX_LEN:
+        adjust_for_comma = 1 if will_append_comma else 0
+        if (indent + cursor + len(buf)) <= (MAX_LEN - adjust_for_comma):
             return buf
     return _encode_list_multiline(lst, indent)
 
 
 def _encode_dict_single_line(dct, indent, cursor):
     buf = "{ "
-    first = True
-    for key, value in dct.items():
-        if first:
-            first = False
-        else:
+    last_index = len(dct) - 1
+    for index, (key, value) in enumerate(dct.items()):
+        if index > 0:
             buf += ", "
         if not isinstance(key, str):
             raise ValueError("Illegal key type '" + type(key).__name__ + "'")
         buf += '"' + key + '": '
-        buf += _encode(value, indent, cursor + len(buf))
+        will_append_comma = index != last_index
+        buf += _encode(value, indent, cursor + len(buf), will_append_comma)
     buf += " }"
     return buf
 
@@ -292,32 +290,32 @@ def _encode_dict_single_line(dct, indent, cursor):
 def _encode_dict_multiline(dct, indent):
     indent += INDENT_SIZE
     buf = "{\n" + " " * indent
-    first = True
-    for key, value in dct.items():
-        if first:
-            first = False
-        else:
+    last_index = len(dct) - 1
+    for index, (key, value) in enumerate(dct.items()):
+        if index > 0:
             buf += ",\n" + " " * indent
         if not isinstance(key, str):
             raise ValueError("Illegal key type '" + type(key).__name__ + "'")
         entry = '"' + key + '": '
-        buf += entry + _encode(value, indent, len(entry))
+        will_append_comma = index != last_index
+        buf += entry + _encode(value, indent, len(entry), will_append_comma)
     indent -= INDENT_SIZE
     buf += "\n" + " " * indent + "}"
     return buf
 
 
-def _encode_dict(dct, indent, cursor):
+def _encode_dict(dct, indent, cursor, will_append_comma):
     if not dct:
         return "{}"
     if not _should_wrap(dct, indent):
         buf = _encode_dict_single_line(dct, indent, cursor)
-        if indent + cursor + len(buf) <= MAX_LEN:
+        adjust_for_comma = 1 if will_append_comma else 0
+        if (indent + cursor + len(buf)) <= (MAX_LEN - adjust_for_comma):
             return buf
     return _encode_dict_multiline(dct, indent)
 
 
-def _encode(data, indent, cursor):
+def _encode(data, indent, cursor, will_append_comma):
     if data is None:
         return "null"
     elif data is True:
@@ -330,9 +328,9 @@ def _encode(data, indent, cursor):
         # Use the json module to escape the string with backslashes:
         return json.dumps(data)
     elif isinstance(data, (list, tuple)):
-        return _encode_list(data, indent, cursor)
+        return _encode_list(data, indent, cursor, will_append_comma)
     elif isinstance(data, dict):
-        return _encode_dict(data, indent, cursor)
+        return _encode_dict(data, indent, cursor, will_append_comma)
     else:
         raise ValueError("Illegal value type '" + type(data).__name__ + "'")
 
@@ -341,4 +339,4 @@ def pretty(o, sorting_rules=None):
     if sorting_rules is not None:
         _children_sort(o, None, sorting_rules)
 
-    return _encode(o, 0, 0)
+    return _encode(o, 0, 0, False)
