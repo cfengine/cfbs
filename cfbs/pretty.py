@@ -252,12 +252,12 @@ def _encode_list_multiline(lst, indent):
     indent += INDENT_SIZE
     buf = "[\n" + " " * indent
     first = True
-    for value in lst:
+    for child in lst:
         if first:
             first = False
         else:
             buf += ",\n" + " " * indent
-        buf += _encode(value, indent, 0)
+        buf += _encode(child, indent, 0)
     indent -= INDENT_SIZE
     buf += "\n" + " " * indent + "]"
     return buf
