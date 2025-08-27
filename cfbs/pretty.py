@@ -273,6 +273,22 @@ def _encode_list(lst, indent, cursor):
     return _encode_list_multiline(lst, indent)
 
 
+def _encode_dict_single_line(dct, indent, cursor):
+    buf = "{ "
+    first = True
+    for key, value in dct.items():
+        if first:
+            first = False
+        else:
+            buf += ", "
+        if not isinstance(key, str):
+            raise ValueError("Illegal key type '" + type(key).__name__ + "'")
+        buf += '"' + key + '": '
+        buf += _encode(value, indent, cursor + len(buf))
+    buf += " }"
+    return buf
+
+
 def _encode_dict_multiline(dct, indent):
     indent += INDENT_SIZE
     buf = "{\n" + " " * indent
@@ -295,9 +311,7 @@ def _encode_dict(dct, indent, cursor):
     if not dct:
         return "{}"
     if not _should_wrap(dct, indent):
-        buf = json.dumps(dct)
-        buf = "{ " + buf[1:-1] + " }"
-        assert "\n" not in buf
+        buf = _encode_dict_single_line(dct, indent, cursor)
         if indent + cursor + len(buf) <= MAX_LEN:
             return buf
     return _encode_dict_multiline(dct, indent)
