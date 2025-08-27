@@ -1,7 +1,10 @@
 from collections import OrderedDict
 import os
+from typing import Iterable, List
 
 from cfbs.utils import dict_sorted_by_key, file_sha256
+
+Version = str
 
 
 def initialize_vcf():
@@ -141,5 +144,47 @@ def sort_versions(versions: list, reverse: bool = True):
     )
 
 
-def highest_version(versions):
+def highest_version(versions: Iterable[Version]):
     return max(versions, key=version_as_comparable_list, default=None)
+
+
+def lowest_version(versions: Iterable[Version]):
+    return min(versions, key=version_as_comparable_list, default=None)
+
+
+def is_lower_version(version_a: Version, version_b: Version):
+    """Returns `True` if and only if `version_a` is lower than `version_b`."""
+
+    return version_as_comparable_list(version_a) < version_as_comparable_list(version_b)
+
+
+def most_relevant_version(
+    other_versions: List[Version], reference_version: Version
+) -> Version:
+    """
+    The most relevant version is the highest version among older other versions,
+    or if there are no older other versions, the lowest version among other versions.
+
+    `other_versions` is assumed to be non-empty and not contain `reference_version`."""
+    assert len(other_versions) > 0
+    assert reference_version not in other_versions
+
+    highest_other_version = highest_version(other_versions)
+    lowest_other_version = lowest_version(other_versions)
+    # Unfortunately, Pyright can not infer that these can't be `None` when `other_versions` is non-empty.
+    assert highest_other_version is not None
+    assert lowest_other_version is not None
+
+    if is_lower_version(highest_other_version, reference_version):
+        # all other versions are older
+        return highest_other_version
+    if is_lower_version(reference_version, lowest_other_version):
+        # all other versions are newer
+        return lowest_other_version
+    # there are both older and newer versions
+    lower_other_versions = [
+        o_v for o_v in other_versions if is_lower_version(o_v, reference_version)
+    ]
+    highest_lower = highest_version(lower_other_versions)
+    assert highest_lower is not None
+    return highest_lower
