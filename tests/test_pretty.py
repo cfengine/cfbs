@@ -516,3 +516,86 @@ def test_pretty_sorting_real_examples():
 }"""
 
     assert pretty_string(test_json, cfbs_sorting_rules) == expected
+
+
+def test_pretty_same_as_npm_prettier():
+    # We saw some cases where cfbs pretty and npm prettier did not agree
+    # Testing that this is no longer the case
+
+    test_json = """
+    {
+      "classes": { "My_class": {}, "My_class2": {"comment": "comment body"} }
+    }
+    """
+
+    expected = """{
+  "classes": { "My_class": {}, "My_class2": { "comment": "comment body" } }
+}"""
+
+    assert pretty_string(test_json) == expected
+
+    test_json = """
+    {
+      "filter": {
+        "filter": { "Attribute name": {"operator": "value2"} },
+        "hostFilter": {
+          "includes": {
+            "includeAdditionally": false,
+            "entries": {
+              "ip": ["192.168.56.5"],
+              "hostkey": [],
+              "hostname": ["ubuntu-bionic"],
+              "mac": ["08:00:27:0b:a4:99", "08:00:27:dd:e1:59", "02:9f:d3:59:7e:90"],
+              "ip_mask": ["10.0.2.16/16"]
+            }
+          },
+          "excludes": {
+            "entries": {
+              "ip": [],
+              "hostkey": [],
+              "hostname": [],
+              "mac": [],
+              "ip_mask": []
+            }
+          }
+        },
+        "hostContextExclude": ["class_value"],
+        "hostContextInclude": ["class_value"]
+      }
+    }
+    """
+
+    expected = """{
+  "filter": {
+    "filter": { "Attribute name": { "operator": "value2" } },
+    "hostFilter": {
+      "includes": {
+        "includeAdditionally": false,
+        "entries": {
+          "ip": ["192.168.56.5"],
+          "hostkey": [],
+          "hostname": ["ubuntu-bionic"],
+          "mac": [
+            "08:00:27:0b:a4:99",
+            "08:00:27:dd:e1:59",
+            "02:9f:d3:59:7e:90"
+          ],
+          "ip_mask": ["10.0.2.16/16"]
+        }
+      },
+      "excludes": {
+        "entries": {
+          "ip": [],
+          "hostkey": [],
+          "hostname": [],
+          "mac": [],
+          "ip_mask": []
+        }
+      }
+    },
+    "hostContextExclude": ["class_value"],
+    "hostContextInclude": ["class_value"]
+  }
+}"""
+
+    assert pretty_string(test_json) == expected
