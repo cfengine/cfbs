@@ -266,7 +266,7 @@ def pretty(o, sorting_rules=None):
             return "{}"
         if not _should_wrap(dct, indent):
             buf = json.dumps(dct)
-            buf = "{ " + buf[1 : len(buf) - 1] + " }"
+            buf = "{ " + buf[1:-1] + " }"
             assert "\n" not in buf
             if indent + cursor + len(buf) <= MAX_LEN:
                 return buf
