@@ -261,16 +261,7 @@ def _encode_list(lst, indent, cursor):
     return _encode_list_multiline(lst, indent)
 
 
-def _encode_dict(dct, indent, cursor):
-    if not dct:
-        return "{}"
-    if not _should_wrap(dct, indent):
-        buf = json.dumps(dct)
-        buf = "{ " + buf[1:-1] + " }"
-        assert "\n" not in buf
-        if indent + cursor + len(buf) <= MAX_LEN:
-            return buf
-
+def _encode_dict_multiline(dct, indent):
     indent += INDENT_SIZE
     buf = "{\n" + " " * indent
     first = True
@@ -285,8 +276,19 @@ def _encode_dict(dct, indent, cursor):
         buf += entry + _encode(value, indent, len(entry))
     indent -= INDENT_SIZE
     buf += "\n" + " " * indent + "}"
-
     return buf
+
+
+def _encode_dict(dct, indent, cursor):
+    if not dct:
+        return "{}"
+    if not _should_wrap(dct, indent):
+        buf = json.dumps(dct)
+        buf = "{ " + buf[1:-1] + " }"
+        assert "\n" not in buf
+        if indent + cursor + len(buf) <= MAX_LEN:
+            return buf
+    return _encode_dict_multiline(dct, indent)
 
 
 def _encode(data, indent, cursor):
