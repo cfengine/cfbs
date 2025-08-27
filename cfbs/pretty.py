@@ -235,6 +235,19 @@ def _should_wrap(parent, indent):
     return count >= 2
 
 
+def _encode_list_single_line(lst, indent, cursor):
+    buf = "["
+    first = True
+    for child in lst:
+        if first:
+            first = False
+        else:
+            buf += ", "
+        buf += _encode(child, indent, cursor + len(buf))
+    buf += "]"
+    return buf
+
+
 def _encode_list_multiline(lst, indent):
     indent += INDENT_SIZE
     buf = "[\n" + " " * indent
@@ -254,8 +267,7 @@ def _encode_list(lst, indent, cursor):
     if not lst:
         return "[]"
     if not _should_wrap(lst, indent):
-        buf = json.dumps(lst)
-        assert "\n" not in buf
+        buf = _encode_list_single_line(lst, indent, cursor)
         if indent + cursor + len(buf) <= MAX_LEN:
             return buf
     return _encode_list_multiline(lst, indent)
