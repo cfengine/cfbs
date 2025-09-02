@@ -73,12 +73,14 @@ def checksums_files(
     files_dir_path,
     checksums_dict=None,
     files_dict=None,
-    ignored_path_components=[],
+    ignored_path_components=None,
 ):
     if checksums_dict is None:
         checksums_dict = copy.deepcopy(DEFAULT_CHECKSUMS_DICT)
     if files_dict is None:
         files_dict = copy.deepcopy(DEFAULT_FILES_DICT)
+    if ignored_path_components is None:
+        ignored_path_components = []
 
     for root, _, files in os.walk(files_dir_path):
         for name in files:
