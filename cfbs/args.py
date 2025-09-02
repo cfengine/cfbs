@@ -9,31 +9,33 @@ from cfbs.utils import cache, CFBSExitError
 class ArgsTypesNamespace(argparse.Namespace):
     """Manual type hints to args attributes"""
 
-    command: Optional[str]
-    args: List[str]
-    loglevel: str
-    manual: bool
-    version: bool
-    force: bool
-    non_interactive: bool
-    index: Optional[str]
-    check: bool
-    checksum: Optional[str]
-    keep_order: bool
-    git: Optional[bool]
-    git_user_name: Optional[str]
-    git_user_email: Optional[str]
-    git_commit_message: Optional[str]
-    ignore_versions_json: bool
-    omit_download: bool
-    check_against_git: bool
-    minimum_version: Optional[str]
-    to_json: Optional[str]
-    reference_version: Optional[str]
-    masterfiles_dir: Optional[str]
-    ignored_path_components: Optional[List[str]]
-    offline: bool
-    masterfiles: Optional[str]
+    # PEP 484 style type hints for compatibility with Python 3.5.
+    # This commit can be reverted, and type hints returned to the PEP 526 style type hints, once the supported Python version becomes 3.6+.
+    command = None  # type: Optional[str]
+    args = []  # type: List[str]
+    loglevel = "warning"  # type: str
+    manual = False  # type: bool
+    version = False  # type: bool
+    force = False  # type: bool
+    non_interactive = False  # type: bool
+    index = None  # type: Optional[str]
+    check = False  # type: bool
+    checksum = None  # type: Optional[str]
+    keep_order = False  # type: bool
+    git = None  # type: Optional[bool]
+    git_user_name = None  # type: Optional[str]
+    git_user_email = None  # type: Optional[str]
+    git_commit_message = None  # type: Optional[str]
+    ignore_versions_json = False  # type: bool
+    omit_download = False  # type: bool
+    check_against_git = False  # type: bool
+    minimum_version = None  # type: Optional[str]
+    to_json = None  # type: Optional[str]
+    reference_version = None  # type: Optional[str]
+    masterfiles_dir = None  # type: Optional[str]
+    ignored_path_components = None  # type: Optional[List[str]]
+    offline = False  # type: bool
+    masterfiles = None  # type: Optional[str]
 
 
 def get_args():
