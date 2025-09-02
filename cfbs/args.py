@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import List, Optional
+from typing import List, Optional  # noqa: F401
 
 from cfbs import commands
 from cfbs.utils import cache, CFBSExitError
