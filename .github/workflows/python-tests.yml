@@ -73,10 +73,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Lint with flake8
         run: |
-          flake8 . --ignore=E203,W503,E722,E731 --max-complexity=100 --max-line-length=160
+          python -m flake8 . --ignore=E203,W503,E722,E731 --max-complexity=100 --max-line-length=160
       - name: Test with pytest
         run: |
-          pytest
+          python -m pytest
       - name: Install
         run: |
           python setup.py sdist bdist_wheel
