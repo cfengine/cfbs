@@ -31,7 +31,7 @@ class ArgsTypesNamespace(argparse.Namespace):
     to_json: Optional[str]
     reference_version: Optional[str]
     masterfiles_dir: Optional[str]
-    ignored_path_components: List[str]
+    ignored_path_components: Optional[List[str]]
     offline: bool
     masterfiles: Optional[str]
 
