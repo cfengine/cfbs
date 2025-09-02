@@ -232,7 +232,7 @@ def mpf_normalized_path(path, is_parentpath: bool, masterfiles_dir):
     `path` should be a path inside the masterfiles directory (or inside the parent directory, if `is_parentpath` is `True`).
     """
     # downloaded MPF release information filepaths always have forward slashes
-    norm_path = path.replace(os.sep, "/")
+    norm_path = path.replace(os.sep, "/")  # type: str
 
     if is_parentpath:
         if norm_path.startswith(masterfiles_dir + "/"):
