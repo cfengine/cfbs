@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import List, Union
+from typing import List, Optional
 
 from cfbs import commands
 from cfbs.utils import cache, CFBSExitError
@@ -9,31 +9,31 @@ from cfbs.utils import cache, CFBSExitError
 class ArgsTypesNamespace(argparse.Namespace):
     """Manual type hints to args attributes"""
 
-    command: Union[str, None]
+    command: Optional[str]
     args: List[str]
     loglevel: str
     manual: bool
     version: bool
     force: bool
     non_interactive: bool
-    index: Union[str, None]
+    index: Optional[str]
     check: bool
-    checksum: Union[str, None]
+    checksum: Optional[str]
     keep_order: bool
-    git: Union[bool, None]
-    git_user_name: Union[str, None]
-    git_user_email: Union[str, None]
-    git_commit_message: Union[str, None]
+    git: Optional[bool]
+    git_user_name: Optional[str]
+    git_user_email: Optional[str]
+    git_commit_message: Optional[str]
     ignore_versions_json: bool
     omit_download: bool
     check_against_git: bool
-    minimum_version: Union[str, None]
-    to_json: Union[str, None]
-    reference_version: Union[str, None]
-    masterfiles_dir: Union[str, None]
+    minimum_version: Optional[str]
+    to_json: Optional[str]
+    reference_version: Optional[str]
+    masterfiles_dir: Optional[str]
     ignored_path_components: List[str]
     offline: bool
-    masterfiles: Union[str, None]
+    masterfiles: Optional[str]
 
 
 def get_args():

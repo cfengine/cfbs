@@ -1,4 +1,4 @@
-from typing import List, NamedTuple, Union
+from typing import List, NamedTuple, Optional
 
 CFBSCommandExitCode = int
 
@@ -6,5 +6,5 @@ CFBSCommandExitCode = int
 class CFBSCommandGitResult(NamedTuple):
     return_code: int
     do_commit: bool = True
-    commit_message: Union[str, None] = None
+    commit_message: Optional[str] = None
     commit_files: List[str] = []
