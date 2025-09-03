@@ -1,6 +1,6 @@
 import argparse
 import os
-from typing import List, Union
+from typing import List, Optional  # noqa: F401
 
 from cfbs import commands
 from cfbs.utils import cache, CFBSExitError
@@ -9,31 +9,33 @@ from cfbs.utils import cache, CFBSExitError
 class ArgsTypesNamespace(argparse.Namespace):
     """Manual type hints to args attributes"""
 
-    command: Union[str, None]
-    args: List[str]
-    loglevel: str
-    manual: bool
-    version: bool
-    force: bool
-    non_interactive: bool
-    index: Union[str, None]
-    check: bool
-    checksum: Union[str, None]
-    keep_order: bool
-    git: Union[bool, None]
-    git_user_name: Union[str, None]
-    git_user_email: Union[str, None]
-    git_commit_message: Union[str, None]
-    ignore_versions_json: bool
-    omit_download: bool
-    check_against_git: bool
-    minimum_version: Union[str, None]
-    to_json: Union[str, None]
-    reference_version: Union[str, None]
-    masterfiles_dir: Union[str, None]
-    ignored_path_components: List[str]
-    offline: bool
-    masterfiles: Union[str, None]
+    # PEP 484 style type hints for compatibility with Python 3.5.
+    # This commit can be reverted, and type hints returned to the PEP 526 style type hints, once the supported Python version becomes 3.6+.
+    command = None  # type: Optional[str]
+    args = []  # type: List[str]
+    loglevel = "warning"  # type: str
+    manual = False  # type: bool
+    version = False  # type: bool
+    force = False  # type: bool
+    non_interactive = False  # type: bool
+    index = None  # type: Optional[str]
+    check = False  # type: bool
+    checksum = None  # type: Optional[str]
+    keep_order = False  # type: bool
+    git = None  # type: Optional[bool]
+    git_user_name = None  # type: Optional[str]
+    git_user_email = None  # type: Optional[str]
+    git_commit_message = None  # type: Optional[str]
+    ignore_versions_json = False  # type: bool
+    omit_download = False  # type: bool
+    check_against_git = False  # type: bool
+    minimum_version = None  # type: Optional[str]
+    to_json = None  # type: Optional[str]
+    reference_version = None  # type: Optional[str]
+    masterfiles_dir = None  # type: Optional[str]
+    ignored_path_components = None  # type: Optional[List[str]]
+    offline = False  # type: bool
+    masterfiles = None  # type: Optional[str]
 
 
 def get_args():

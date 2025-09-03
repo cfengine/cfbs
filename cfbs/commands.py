@@ -205,7 +205,7 @@ def init_command(
             "description": description,
             "build": [],
         }
-    )
+    )  # type: OrderedDict[str, str | List | bool]
     if index:
         config["index"] = index
 

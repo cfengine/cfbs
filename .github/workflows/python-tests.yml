@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install flake8 pyright pyflakes pytest setuptools wheel
+          python -m pip install flake8 pyright pytest setuptools wheel
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
         run: |
@@ -38,9 +38,6 @@ jobs:
       - name: Lint with pyright (type checking)
         run: |
           pyright cfbs
-      - name: Lint with pyflakes
-        run: |
-          pyflakes cfbs
       - name: Test with pytest
         run: |
           pytest
@@ -73,10 +70,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Lint with flake8
         run: |
-          flake8 . --ignore=E203,W503,E722,E731 --max-complexity=100 --max-line-length=160
+          python -m flake8 . --ignore=E203,W503,E722,E731 --max-complexity=100 --max-line-length=160
+      - name: Lint with pyright (type checking)
+        run: |
+          python -m pyright cfbs
       - name: Test with pytest
         run: |
-          pytest
+          python -m pytest
       - name: Install
         run: |
           python setup.py sdist bdist_wheel

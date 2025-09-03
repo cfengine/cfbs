@@ -73,12 +73,14 @@ def checksums_files(
     files_dir_path,
     checksums_dict=None,
     files_dict=None,
-    ignored_path_components=[],
+    ignored_path_components=None,
 ):
     if checksums_dict is None:
         checksums_dict = copy.deepcopy(DEFAULT_CHECKSUMS_DICT)
     if files_dict is None:
         files_dict = copy.deepcopy(DEFAULT_FILES_DICT)
+    if ignored_path_components is None:
+        ignored_path_components = []
 
     for root, _, files in os.walk(files_dir_path):
         for name in files:
@@ -230,7 +232,7 @@ def mpf_normalized_path(path, is_parentpath: bool, masterfiles_dir):
     `path` should be a path inside the masterfiles directory (or inside the parent directory, if `is_parentpath` is `True`).
     """
     # downloaded MPF release information filepaths always have forward slashes
-    norm_path = path.replace(os.sep, "/")
+    norm_path = path.replace(os.sep, "/")  # type: str
 
     if is_parentpath:
         if norm_path.startswith(masterfiles_dir + "/"):
