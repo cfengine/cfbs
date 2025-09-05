@@ -1093,7 +1093,7 @@ def analyze_command(
 @cfbs_command("convert")
 def convert_command(non_interactive=False, offline=False):
     def cfbs_convert_cleanup():
-        os.unlink(cfbs_filename())
+        rm(cfbs_filename(), missing_ok=True)
         rm(".git", missing_ok=True)
 
     def cfbs_convert_git_commit(
