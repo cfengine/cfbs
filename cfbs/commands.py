@@ -1134,14 +1134,18 @@ def convert_command(non_interactive=False, offline=False):
     )
 
     print("Analyzing '" + path_string + "'...")
-    analyzed_files, _ = analyze_policyset(
-        path=dir_name,
-        is_parentpath=False,
-        reference_version=None,
-        masterfiles_dir=dir_name,
-        ignored_path_components=None,
-        offline=offline,
-    )
+    try:
+        analyzed_files, _ = analyze_policyset(
+            path=dir_name,
+            is_parentpath=False,
+            reference_version=None,
+            masterfiles_dir=dir_name,
+            ignored_path_components=None,
+            offline=offline,
+        )
+    except:
+        print("Analyzing the policy set failed, aborting conversion.")
+        raise
 
     current_index = CFBSConfig.get_instance().index
     default_version = current_index.get_module_object("masterfiles")["version"]
@@ -1167,7 +1171,20 @@ def convert_command(non_interactive=False, offline=False):
     print("Initializing a new CFBS project...")
     # since there should be no other files than the masterfiles-name directory, there shouldn't be a .git directory
     assert not is_git_repo()
-    r = init_command(masterfiles="no", non_interactive=non_interactive, use_git=True)
+    try:
+        r = init_command(
+            masterfiles="no", non_interactive=non_interactive, use_git=True
+        )
+    except CFBSGitError:
+        cfbs_convert_cleanup()
+        print(
+            "A Git operation failed during initialization of a new CFBS project, aborting conversion."
+        )
+        raise
+    except:
+        print("Initializing a new CFBS project failed, aborting conversion.")
+        cfbs_convert_cleanup()
+        raise
     # the cfbs-init should've created a Git repository
     assert is_git_repo()
     if r != 0:
@@ -1177,19 +1194,33 @@ def convert_command(non_interactive=False, offline=False):
 
     print("Adding masterfiles %s to the project..." % masterfiles_version)
     masterfiles_to_add = ["masterfiles@%s" % masterfiles_version]
-    r = add_command(masterfiles_to_add, added_by="cfbs convert")
+    try:
+        r = add_command(masterfiles_to_add, added_by="cfbs convert")
+    except:
+        print(
+            "Adding the masterfiles module to the project failed, aborting conversion."
+        )
+        cfbs_convert_cleanup()
+        raise
     if r != 0:
-        print("Adding the masterfiles module failed, aborting conversion.")
+        print(
+            "Adding the masterfiles module to the project failed, aborting conversion."
+        )
         cfbs_convert_cleanup()
         return r
 
     print("Adding the policy files...")
     local_module_to_add = [path_string]
-    r = add_command(
-        local_module_to_add,
-        added_by="cfbs convert",
-        explicit_build_steps=["copy ./ ./"],
-    )
+    try:
+        r = add_command(
+            local_module_to_add,
+            added_by="cfbs convert",
+            explicit_build_steps=["copy ./ ./"],
+        )
+    except:
+        print("Adding the policy files module failed, aborting conversion.")
+        cfbs_convert_cleanup()
+        raise
     if r != 0:
         print("Adding the policy files module failed, aborting conversion.")
         cfbs_convert_cleanup()
