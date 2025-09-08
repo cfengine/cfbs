@@ -97,6 +97,81 @@ def get_all_download_urls(min_version=None):
     return download_urls, reported_checksums
 
 
+def get_single_download_url(version):
+    # missing hard-coded (url, checksum)s, taken from above functions
+    if version == "3.10.0":
+        download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0.pkg.tar.gz"
+        reported_checksum = (
+            "7b5e237529e11ce4ae295922dad1a681f13b95f3a7d247d39d3f5088f1a1d7d3"
+        )
+    elif version == "3.9.2":
+        download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.9.2.pkg.tar.gz"
+        reported_checksum = (
+            "ae1a758530d4a4aad5b6812b61fc37ad1b5900b755f88a1ab98da7fd05a9f5cc"
+        )
+    elif version == "3.12.0b1":
+        download_url = "https://cfengine-package-repos.s3.amazonaws.com/community_binaries/Community-3.12.0b1/misc/cfengine-masterfiles-3.12.0b1.pkg.tar.gz"
+        reported_checksum = (
+            "ede305dae7be3edfac04fc5b7f63b46adb3a5b1612f4755e855ee8e6b8d344d7"
+        )
+    elif version == "3.10.0b1":
+        download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0b1.pkg.tar.gz"
+        reported_checksum = (
+            "09291617254705d79dea2531b23dbd0754f09029e90ce0b43b275aa02c1223a3"
+        )
+    else:
+        masterfiles_found = False
+
+        try:
+            data = get_json(ENTERPRISE_RELEASES_URL)
+        except CFBSNetworkError:
+            raise CFBSExitError(
+                "Downloading CFEngine release data failed - check your Wi-Fi / network settings."
+            )
+
+        for release_data in data["releases"]:
+            release_version = release_data["version"]
+
+            if release_version == version:
+                release_url = release_data["URL"]
+                try:
+                    subdata = get_json(release_url)
+                except CFBSNetworkError:
+                    raise CFBSExitError(
+                        "Downloading CFEngine release data for version %s failed - check your Wi-Fi / network settings."
+                        % version
+                    )
+                artifacts_data = subdata["artifacts"]
+
+                if "Additional Assets" not in artifacts_data:
+                    break
+
+                assets_data = artifacts_data["Additional Assets"]
+                masterfiles_data = None
+
+                for asset in assets_data:
+                    if asset["Title"] == "Masterfiles ready-to-install tarball":
+                        masterfiles_data = asset
+
+                if masterfiles_data is None:
+                    break
+
+                download_url = masterfiles_data["URL"]
+                reported_checksum = masterfiles_data["SHA256"]
+
+                masterfiles_found = True
+                break
+
+        if not masterfiles_found:
+            raise CFBSExitError("Download URL of given MPF version was not found")
+
+    # Pyright doesn't understand that these variables are in fact bound when `masterfiles_found` is `True`
+    return (
+        download_url,  # pyright: ignore[reportPossiblyUnboundVariable]
+        reported_checksum,  # pyright: ignore[reportPossiblyUnboundVariable]
+    )
+
+
 def download_versions_from_urls(download_path, download_urls, reported_checksums):
     downloaded_versions = []
 
@@ -136,3 +211,12 @@ def download_all_versions(download_path, min_version=None):
     )
 
     return downloaded_versions
+
+
+def download_single_version(download_path, version):
+    download_url, reported_checksum = get_single_download_url(version)
+
+    download_urls = {version: download_url}
+    reported_checksums = {version: reported_checksum}
+
+    download_versions_from_urls(download_path, download_urls, reported_checksums)
