@@ -75,6 +75,28 @@ def get_download_urls_enterprise(min_version=None):
     return download_urls, reported_checksums
 
 
+def get_all_download_urls(min_version=None):
+    download_urls, reported_checksums = get_download_urls_enterprise(min_version)
+
+    # add masterfiles versions which do not appear in Enterprise releases but appear in Community releases
+    # 3.12.0b1
+    version = "3.12.0b1"
+    if version_is_at_least(version, min_version):
+        download_url = "https://cfengine-package-repos.s3.amazonaws.com/community_binaries/Community-3.12.0b1/misc/cfengine-masterfiles-3.12.0b1.pkg.tar.gz"
+        digest = "ede305dae7be3edfac04fc5b7f63b46adb3a5b1612f4755e855ee8e6b8d344d7"
+        download_urls[version] = download_url
+        reported_checksums[version] = digest
+    # 3.10.0b1
+    version = "3.10.0b1"
+    if version_is_at_least(version, min_version):
+        download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0b1.pkg.tar.gz"
+        digest = "09291617254705d79dea2531b23dbd0754f09029e90ce0b43b275aa02c1223a3"
+        download_urls[version] = download_url
+        reported_checksums[version] = digest
+
+    return download_urls, reported_checksums
+
+
 def download_versions_from_urls(download_path, download_urls, reported_checksums):
     downloaded_versions = []
 
@@ -107,23 +129,7 @@ def download_versions_from_urls(download_path, download_urls, reported_checksums
 
 
 def download_all_versions(download_path, min_version=None):
-    download_urls, reported_checksums = get_download_urls_enterprise(min_version)
-
-    # add masterfiles versions which do not appear in Enterprise releases but appear in Community releases
-    # 3.12.0b1
-    version = "3.12.0b1"
-    if version_is_at_least(version, min_version):
-        download_url = "https://cfengine-package-repos.s3.amazonaws.com/community_binaries/Community-3.12.0b1/misc/cfengine-masterfiles-3.12.0b1.pkg.tar.gz"
-        digest = "ede305dae7be3edfac04fc5b7f63b46adb3a5b1612f4755e855ee8e6b8d344d7"
-        download_urls[version] = download_url
-        reported_checksums[version] = digest
-    # 3.10.0b1
-    version = "3.10.0b1"
-    if version_is_at_least(version, min_version):
-        download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0b1.pkg.tar.gz"
-        digest = "09291617254705d79dea2531b23dbd0754f09029e90ce0b43b275aa02c1223a3"
-        download_urls[version] = download_url
-        reported_checksums[version] = digest
+    download_urls, reported_checksums = get_all_download_urls(min_version)
 
     downloaded_versions = download_versions_from_urls(
         download_path, download_urls, reported_checksums
