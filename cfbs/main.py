@@ -145,6 +145,7 @@ def _main() -> int:
         "clean",
         "update",
         "input",
+        "convert",
     ):
         raise CFBSUserError(
             "The option --non-interactive is not for cfbs %s" % (args.command)
