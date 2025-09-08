@@ -60,12 +60,15 @@ from typing import Iterable
 from cfbs.cfbs_json import CFBSJson
 from cfbs.cfbs_types import CFBSCommandExitCode, CFBSCommandGitResult
 from cfbs.masterfiles.analyze import most_relevant_version
+from cfbs.masterfiles.download import download_single_version
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     CFBSNetworkError,
     CFBSUserError,
     CFBSValidationError,
+    cfbs_dir,
     cfbs_filename,
+    display_diff,
     is_cfbs_repo,
     read_json,
     CFBSExitError,
@@ -1278,7 +1281,7 @@ def convert_command(non_interactive=False, offline=False):
         if prompt_user_yesno(
             non_interactive, "Delete files from other versions? (Recommended)"
         ):
-            print("Deleting %s files." % len(files_to_delete))
+            print("Deleting %s files..." % len(files_to_delete))
             for file_d in files_to_delete:
                 rm(os.path.join(dir_name, file_d))
 
@@ -1292,7 +1295,67 @@ def convert_command(non_interactive=False, offline=False):
     print(
         "The next conversion step is to handle files which have custom modifications."
     )
-    print("This is not implemented yet.")
+    if not prompt_user_yesno(non_interactive, "Do you want to continue?"):
+        raise CFBSExitError("User did not proceed, exiting.")
+    print("The following files have custom modifications:")
+    modified_files = analyzed_files.modified
+    for modified_file in modified_files:
+        print("-", modified_file)
+    for i, modified_file in enumerate(modified_files, start=1):
+        # program failures in the middle of this loop would be very user-unfriendly,
+        # so we will catch exceptions and continue the conversion when handling errors
+        print("\nFile", i, "diff -", modified_file + ":")
+        mpf_dir_path = os.path.join(cfbs_dir(), "masterfiles")
+        mpf_version_dir_path = os.path.join(
+            mpf_dir_path, masterfiles_version, "tarball", "masterfiles"
+        )
+        mpf_filepath = os.path.join(mpf_version_dir_path, modified_file)
+        if not os.path.exists(mpf_version_dir_path):
+            try:
+                download_single_version(mpf_dir_path, masterfiles_version)
+            except Exception as e:
+                print(
+                    "Downloading original masterfiles failed (%s), continuing conversion - displaying file diffs will fail."
+                    % str(e)
+                )
+        try:
+            display_diff(mpf_filepath, os.path.join(dir_name, modified_file))
+        except:
+            log.warning(
+                "Displaying a diff between your file and the default file failed, continuing without displaying a diff..."
+            )
+        if i == 1:
+            print(
+                "Above you can see the differences between your file and the default file."
+            )
+            print(
+                "As much as possible, we recommend getting rid of these custom modifications."
+            )
+            print(
+                "Usually, the same thing can be achieved by adding a variable to def.json, or through adding your own policy file (inside 'services/')."
+            )
+        prompt_str = "\nChoose an option:\n"
+        prompt_str += "1) Drop modifications - They are not important, or can be achieved in another way.\n"
+        prompt_str += "2) Keep modified file - File is kept as is, and can be handled later. Can make future upgrades more complicated.\n"
+        prompt_str += "3) (Not implemented yet) Keep patch file - "
+        prompt_str += "File is converted into a patch file (diff) that hopefully will apply to future versions as well.\n"
+
+        response = prompt_user(non_interactive, prompt_str, ["1", "2"], "1")
+
+        if response == "1":
+            print("Deleting './%s'..." % modified_file)
+            rm(os.path.join(dir_name, modified_file))
+            commit_message = "Deleted './%s'" % modified_file
+            print("Creating Git commit - %s..." % commit_message)
+            try:
+                cfbs_convert_git_commit(commit_message)
+            except:
+                log.warning("Git commit failed, continuing without committing...")
+        if response == "2":
+            print("Keeping file as is, nothing to do.")
+
+    print("Conversion finished successfully.")
+
     return 0
 
 
