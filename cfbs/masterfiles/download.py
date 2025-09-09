@@ -7,6 +7,33 @@ from cfbs.utils import CFBSNetworkError, fetch_url, get_json, mkdir, CFBSExitErr
 ENTERPRISE_RELEASES_URL = "https://cfengine.com/release-data/enterprise/releases.json"
 
 
+COMMUNITY_ONLY_VERSIONS = ["3.12.0b1", "3.10.0b1"]
+"""Masterfiles versions which do not appear in Enterprise releases but appear in Community releases."""
+
+MISSING_DATA_VERSIONS = ["3.10.0", "3.9.2"]
+"""Rationale for each version:
+* 3.10.0:\\
+    For some reason, the `"Masterfiles ready-to-install tarball"` is a .tar.gz tarball, rather than a .pkg.tar.gz tarball.
+    However, an unlisted analoguous URL for the .pkg.tar.gz tarball does exist.
+* 3.9.2:\\
+    No masterfiles are listed in the release data, but an unlisted analoguous URL does exist."""
+
+HARDCODED_VERSIONS = COMMUNITY_ONLY_VERSIONS + MISSING_DATA_VERSIONS
+
+HARDCODED_URLS = {
+    "3.12.0b1": "https://cfengine-package-repos.s3.amazonaws.com/community_binaries/Community-3.12.0b1/misc/cfengine-masterfiles-3.12.0b1.pkg.tar.gz",
+    "3.10.0b1": "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0b1.pkg.tar.gz",
+    "3.10.0": "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0.pkg.tar.gz",
+    "3.9.2": "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.9.2.pkg.tar.gz",
+}
+HARDCODED_CHECKSUMS = {
+    "3.12.0b1": "ede305dae7be3edfac04fc5b7f63b46adb3a5b1612f4755e855ee8e6b8d344d7",
+    "3.10.0b1": "09291617254705d79dea2531b23dbd0754f09029e90ce0b43b275aa02c1223a3",
+    "3.10.0": "7b5e237529e11ce4ae295922dad1a681f13b95f3a7d247d39d3f5088f1a1d7d3",
+    "3.9.2": "ae1a758530d4a4aad5b6812b61fc37ad1b5900b755f88a1ab98da7fd05a9f5cc",
+}
+
+
 def get_download_urls_enterprise(min_version=None):
     download_urls = {}
     reported_checksums = {}
@@ -26,20 +53,9 @@ def get_download_urls_enterprise(min_version=None):
         if not version_is_at_least(version, min_version):
             continue
 
-        if version == "3.10.0":
-            # for 3.10.0, for some reason, the "Masterfiles ready-to-install tarball" is a .tar.gz tarball, rather than a .pkg.tar.gz tarball
-            # download the .pkg.tar.gz tarball from an unlisted analoguous URL instead
-            download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0.pkg.tar.gz"
-            digest = "7b5e237529e11ce4ae295922dad1a681f13b95f3a7d247d39d3f5088f1a1d7d3"
-            download_urls[version] = download_url
-            reported_checksums[version] = digest
-            continue
-        if version == "3.9.2":
-            # for 3.9.2, no masterfiles are listed, but an unlisted analoguous URL exists
-            download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.9.2.pkg.tar.gz"
-            digest = "ae1a758530d4a4aad5b6812b61fc37ad1b5900b755f88a1ab98da7fd05a9f5cc"
-            download_urls[version] = download_url
-            reported_checksums[version] = digest
+        if version in MISSING_DATA_VERSIONS:
+            download_urls[version] = HARDCODED_URLS[version]
+            reported_checksums[version] = HARDCODED_CHECKSUMS[version]
             continue
 
         release_url = release_data["URL"]
@@ -78,92 +94,64 @@ def get_download_urls_enterprise(min_version=None):
 def get_all_download_urls(min_version=None):
     download_urls, reported_checksums = get_download_urls_enterprise(min_version)
 
-    # add masterfiles versions which do not appear in Enterprise releases but appear in Community releases
-    # 3.12.0b1
-    version = "3.12.0b1"
-    if version_is_at_least(version, min_version):
-        download_url = "https://cfengine-package-repos.s3.amazonaws.com/community_binaries/Community-3.12.0b1/misc/cfengine-masterfiles-3.12.0b1.pkg.tar.gz"
-        digest = "ede305dae7be3edfac04fc5b7f63b46adb3a5b1612f4755e855ee8e6b8d344d7"
-        download_urls[version] = download_url
-        reported_checksums[version] = digest
-    # 3.10.0b1
-    version = "3.10.0b1"
-    if version_is_at_least(version, min_version):
-        download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0b1.pkg.tar.gz"
-        digest = "09291617254705d79dea2531b23dbd0754f09029e90ce0b43b275aa02c1223a3"
-        download_urls[version] = download_url
-        reported_checksums[version] = digest
+    for version in COMMUNITY_ONLY_VERSIONS:
+        if version_is_at_least(version, min_version):
+            download_urls[version] = HARDCODED_URLS[version]
+            reported_checksums[version] = HARDCODED_CHECKSUMS[version]
 
     return download_urls, reported_checksums
 
 
 def get_single_download_url(version):
-    # missing hard-coded (url, checksum)s, taken from above functions
-    if version == "3.10.0":
-        download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0.pkg.tar.gz"
-        reported_checksum = (
-            "7b5e237529e11ce4ae295922dad1a681f13b95f3a7d247d39d3f5088f1a1d7d3"
+    if version in HARDCODED_VERSIONS:
+        download_url = HARDCODED_URLS[version]
+        reported_checksum = HARDCODED_CHECKSUMS[version]
+        return (download_url, reported_checksum)
+
+    masterfiles_found = False
+
+    try:
+        data = get_json(ENTERPRISE_RELEASES_URL)
+    except CFBSNetworkError:
+        raise CFBSExitError(
+            "Downloading CFEngine release data failed - check your Wi-Fi / network settings."
         )
-    elif version == "3.9.2":
-        download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.9.2.pkg.tar.gz"
-        reported_checksum = (
-            "ae1a758530d4a4aad5b6812b61fc37ad1b5900b755f88a1ab98da7fd05a9f5cc"
-        )
-    elif version == "3.12.0b1":
-        download_url = "https://cfengine-package-repos.s3.amazonaws.com/community_binaries/Community-3.12.0b1/misc/cfengine-masterfiles-3.12.0b1.pkg.tar.gz"
-        reported_checksum = (
-            "ede305dae7be3edfac04fc5b7f63b46adb3a5b1612f4755e855ee8e6b8d344d7"
-        )
-    elif version == "3.10.0b1":
-        download_url = "https://cfengine-package-repos.s3.amazonaws.com/tarballs/cfengine-masterfiles-3.10.0b1.pkg.tar.gz"
-        reported_checksum = (
-            "09291617254705d79dea2531b23dbd0754f09029e90ce0b43b275aa02c1223a3"
-        )
-    else:
-        masterfiles_found = False
 
-        try:
-            data = get_json(ENTERPRISE_RELEASES_URL)
-        except CFBSNetworkError:
-            raise CFBSExitError(
-                "Downloading CFEngine release data failed - check your Wi-Fi / network settings."
-            )
+    for release_data in data["releases"]:
+        release_version = release_data["version"]
 
-        for release_data in data["releases"]:
-            release_version = release_data["version"]
+        if release_version == version:
+            release_url = release_data["URL"]
+            try:
+                subdata = get_json(release_url)
+            except CFBSNetworkError:
+                raise CFBSExitError(
+                    "Downloading CFEngine release data for version %s failed - check your Wi-Fi / network settings."
+                    % version
+                )
+            artifacts_data = subdata["artifacts"]
 
-            if release_version == version:
-                release_url = release_data["URL"]
-                try:
-                    subdata = get_json(release_url)
-                except CFBSNetworkError:
-                    raise CFBSExitError(
-                        "Downloading CFEngine release data for version %s failed - check your Wi-Fi / network settings."
-                        % version
-                    )
-                artifacts_data = subdata["artifacts"]
-
-                if "Additional Assets" not in artifacts_data:
-                    break
-
-                assets_data = artifacts_data["Additional Assets"]
-                masterfiles_data = None
-
-                for asset in assets_data:
-                    if asset["Title"] == "Masterfiles ready-to-install tarball":
-                        masterfiles_data = asset
-
-                if masterfiles_data is None:
-                    break
-
-                download_url = masterfiles_data["URL"]
-                reported_checksum = masterfiles_data["SHA256"]
-
-                masterfiles_found = True
+            if "Additional Assets" not in artifacts_data:
                 break
 
-        if not masterfiles_found:
-            raise CFBSExitError("Download URL of given MPF version was not found")
+            assets_data = artifacts_data["Additional Assets"]
+            masterfiles_data = None
+
+            for asset in assets_data:
+                if asset["Title"] == "Masterfiles ready-to-install tarball":
+                    masterfiles_data = asset
+
+            if masterfiles_data is None:
+                break
+
+            download_url = masterfiles_data["URL"]
+            reported_checksum = masterfiles_data["SHA256"]
+
+            masterfiles_found = True
+            break
+
+    if not masterfiles_found:
+        raise CFBSExitError("Download URL of given MPF version was not found")
 
     # Pyright doesn't understand that these variables are in fact bound when `masterfiles_found` is `True`
     return (
