@@ -1310,24 +1310,28 @@ def convert_command(non_interactive=False, offline=False):
             mpf_dir_path, masterfiles_version, "tarball", "masterfiles"
         )
         mpf_filepath = os.path.join(mpf_version_dir_path, modified_file)
+        display_diffs = True
         if not os.path.exists(mpf_version_dir_path):
             try:
                 download_single_version(mpf_dir_path, masterfiles_version)
             except Exception as e:
                 print(
-                    "Downloading original masterfiles failed (%s), continuing conversion - displaying file diffs will fail."
+                    "Downloading original masterfiles failed (%s), continuing conversion without displaying file diffs."
                     % str(e)
                 )
-        try:
-            display_diff(mpf_filepath, os.path.join(dir_name, modified_file))
-        except:
-            log.warning(
-                "Displaying a diff between your file and the default file failed, continuing without displaying a diff..."
-            )
+                display_diffs = False
+        if display_diffs:
+            try:
+                display_diff(mpf_filepath, os.path.join(dir_name, modified_file))
+            except:
+                log.warning(
+                    "Displaying a diff between your file and the default file failed, continuing without displaying a diff..."
+                )
         if i == 1:
-            print(
-                "Above you can see the differences between your file and the default file."
-            )
+            if display_diffs:
+                print(
+                    "Above you can see the differences between your file and the default file."
+                )
             print(
                 "As much as possible, we recommend getting rid of these custom modifications."
             )
