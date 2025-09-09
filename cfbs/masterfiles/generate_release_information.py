@@ -1,5 +1,5 @@
 from cfbs.masterfiles.analyze import version_is_at_least
-from cfbs.masterfiles.download_all_versions import download_all_versions
+from cfbs.masterfiles.download import download_all_versions
 from cfbs.masterfiles.generate_vcf_download import generate_vcf_download
 from cfbs.masterfiles.generate_vcf_git_checkout import generate_vcf_git_checkout
 from cfbs.masterfiles.check_download_matches_git import check_download_matches_git

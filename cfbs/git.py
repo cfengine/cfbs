@@ -49,7 +49,7 @@ def ls_remote(remote, branch):
 
 
 def is_git_repo(path=None):
-    """Is the given path a Git repository?)
+    """Is the given path a Git repository?
 
     :param:`path` defaults to CWD (if `None`)
 
