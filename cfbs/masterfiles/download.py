@@ -72,10 +72,8 @@ def get_download_urls_enterprise(min_version=None):
             # happens for 3.9.0b1, 3.8.0b1, 3.6.1, 3.6.0
             continue
 
-        assets_data = artifacts_data["Additional Assets"]
         masterfiles_data = None
-
-        for asset in assets_data:
+        for asset in artifacts_data["Additional Assets"]:
             if asset["Title"] == "Masterfiles ready-to-install tarball":
                 masterfiles_data = asset
 
@@ -108,8 +106,6 @@ def get_single_download_url(version):
         reported_checksum = HARDCODED_CHECKSUMS[version]
         return (download_url, reported_checksum)
 
-    masterfiles_found = False
-
     try:
         data = get_json(ENTERPRISE_RELEASES_URL)
     except CFBSNetworkError:
@@ -134,30 +130,14 @@ def get_single_download_url(version):
             if "Additional Assets" not in artifacts_data:
                 break
 
-            assets_data = artifacts_data["Additional Assets"]
-            masterfiles_data = None
-
-            for asset in assets_data:
+            for asset in artifacts_data["Additional Assets"]:
                 if asset["Title"] == "Masterfiles ready-to-install tarball":
-                    masterfiles_data = asset
+                    download_url = asset["URL"]
+                    reported_checksum = asset["SHA256"]
 
-            if masterfiles_data is None:
-                break
+                    return (download_url, reported_checksum)
 
-            download_url = masterfiles_data["URL"]
-            reported_checksum = masterfiles_data["SHA256"]
-
-            masterfiles_found = True
-            break
-
-    if not masterfiles_found:
-        raise CFBSExitError("Download URL of given MPF version was not found")
-
-    # Pyright doesn't understand that these variables are in fact bound when `masterfiles_found` is `True`
-    return (
-        download_url,  # pyright: ignore[reportPossiblyUnboundVariable]
-        reported_checksum,  # pyright: ignore[reportPossiblyUnboundVariable]
-    )
+    raise CFBSExitError("Download URL of given MPF version was not found")
 
 
 def download_versions_from_urls(download_path, download_urls, reported_checksums):
