@@ -42,7 +42,7 @@ def update_input_data(module, input_data) -> bool:
 
     def _update_keys(input_def, input_data, keys):
         """
-        Update keys that can be safily updated in input data.
+        Update keys that can be safely updated in input data.
         """
         changes_made = False
         for key in keys:
