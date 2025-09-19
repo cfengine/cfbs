@@ -204,7 +204,7 @@ The modules inside `build`, `provides`, and `index` use these fields:
   For modules in `provides`, must refer to other modules in `provides` or `index` (default one if not specified).
   For modules in `build`, must refer to other modules in `build`.
 - `added_by` (string): Information about how the module was added to `build`.
-  Name of the module which added it as a dependency, or `"cfbs add"` if the user added the module itself.
+  Name of the module which added it as a dependency, or name of the used command (`"cfbs add"`, `"cfbs init"`, `"cfbs convert"`) if the user added the module itself.
   Optional in `build` modules, not accepted in `provides` or `index`.
 - `steps` (array of strings): The operations performed (in order) to build the module.
   See the section below on build steps.
