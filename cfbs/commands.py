@@ -948,19 +948,26 @@ def help_command():
 
 
 def _print_module_info(data):
+    def human_readable(key: str):
+        if key == "repo":
+            return "Repository"
+        if key == "url":
+            return "URL"
+        return key.title().replace("_", " ")
+
     ordered_keys = [
         "module",
-        "version",
-        "status",
-        "by",
-        "tags",
-        "repo",
-        "index",
-        "commit",
-        "subdirectory",
-        "dependencies",
-        "added_by",
         "description",
+        "tags",
+        "dependencies",
+        "index",
+        "subdirectory",
+        "url",
+        "repo",
+        "version",
+        "commit",
+        "by",
+        "status",
     ]
     for key in ordered_keys:
         if key in data:
@@ -968,12 +975,12 @@ def _print_module_info(data):
                 value = ", ".join(data[key])
             else:
                 value = data[key]
-            print("{}: {}".format(key.title().replace("_", " "), value))
+            print("{}: {}".format(human_readable(key), value))
 
 
 @cfbs_command("show")
 @cfbs_command("info")
-def info_command(modules):
+def info_command(modules: List[str]):
     if not modules:
         raise CFBSExitError(
             "info/show command requires one or more module names as arguments"
@@ -996,14 +1003,14 @@ def info_command(modules):
         if in_build:
             # prefer information from the local source
             data = next(m for m in build if m["name"] == module)
-            data["status"] = "Added"
+            status_text = "Added"
         elif module in index:
             data = index[module]
             if "alias" in data:
                 alias = module
                 module = data["alias"]
                 data = index[module]
-            data["status"] = "Added" if in_build else "Not added"
+            status_text = "Added" if in_build else "Not added"
         else:
             if not module.startswith("./"):
                 module = "./" + module
@@ -1011,7 +1018,38 @@ def info_command(modules):
             if data is None:
                 print("Path {} exists but is not yet added as a module.".format(module))
                 continue
-            data["status"] = "Added"
+            status_text = "Added"
+
+        if status_text == "Added":
+            if "added_by" in data:
+                if data["added_by"] == "cfbs convert":
+                    status_text = "Added during 'cfbs convert'"
+                elif data["added_by"] == "cfbs init":
+                    if "url" in data:
+                        status_text = "Added from URL (not from default index)"
+                    else:
+                        status_text = "Added from name"
+                    status_text += " during 'cfbs init'"
+                elif data["added_by"].startswith("cfbs "):
+                    # normally "cfbs add" - written more generally as a safer fallback
+                    if "url" in data:
+                        status_text = (
+                            "Added by 'cfbs add <url>', not from default index"
+                        )
+                    else:
+                        status_text = "Added by 'cfbs add <module-name>'"
+                else:
+                    status_text = "Added by %s as a dependency" % data["added_by"]
+
+            if "input" in data:
+                input_path = os.path.join(data["name"], "input.json")
+                if not input_path.startswith("./"):
+                    input_path = "./" + input_path
+                if os.path.isfile(input_path):
+                    status_text += ", has input in %s" % input_path
+                else:
+                    status_text += ", supports input (but has no input yet)"
+        data["status"] = status_text
         data["module"] = (module + "({})".format(alias)) if alias else module
         _print_module_info(data)
     print()  # extra line for ease of reading
