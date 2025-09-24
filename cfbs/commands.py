@@ -802,9 +802,7 @@ def validate_command(paths=None, index_arg=None):
     return validate_config(config)
 
 
-def _download_dependencies(
-    config, prefer_offline=False, redownload=False, ignore_versions=False
-):
+def _download_dependencies(config, redownload=False, ignore_versions=False):
     # TODO: This function should be split in 2:
     #       1. Code for downloading things into ~/.cfengine
     #       2. Code for copying things into ./out
@@ -913,7 +911,7 @@ def build_command(ignore_versions=False):
         # We want the cfbs build command to be as backwards compatible as possible,
         # so we try building anyway and don't return error(s)
     init_out_folder()
-    _download_dependencies(config, prefer_offline=True, ignore_versions=ignore_versions)
+    _download_dependencies(config, ignore_versions=ignore_versions)
     r = perform_build(config)
     return r
 
