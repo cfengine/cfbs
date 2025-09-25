@@ -802,14 +802,17 @@ def validate_command(paths=None, index_arg=None):
     return validate_config(config)
 
 
-def _download_dependencies(config, redownload=False, ignore_versions=False):
+def _download_dependencies(config: CFBSConfig, redownload=False, ignore_versions=False):
     # TODO: This function should be split in 2:
     #       1. Code for downloading things into ~/.cfengine
     #       2. Code for copying things into ./out
     print("\nModules:")
     counter = 1
     max_length = config.longest_module_key_length("name")
-    for module in config.get("build", []):
+    build = config.get("build")
+    if build is None:
+        return
+    for module in build:
         name = module["name"]
         if name.startswith("./"):
             local_module_copy(module, counter, max_length)

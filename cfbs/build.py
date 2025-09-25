@@ -13,6 +13,7 @@ elsewhere, like validation and downloading modules.
 import os
 import logging as log
 import shutil
+from cfbs.cfbs_config import CFBSConfig
 from cfbs.utils import (
     canonify,
     cp,
@@ -306,12 +307,12 @@ def _perform_build_step(module, i, step, max_length):
         _perform_replace_step(n, to_replace, version, filename)
 
 
-def perform_build(config) -> int:
+def perform_build(config: CFBSConfig) -> int:
     if not config.get("build"):
         raise CFBSExitError("No 'build' key found in the configuration")
 
     # mini-validation
-    for module in config.get("build", []):
+    for module in config["build"]:
         for step in module["steps"]:
             operation, args = split_build_step(step)
 
@@ -341,7 +342,7 @@ def perform_build(config) -> int:
 
     print("\nSteps:")
     module_name_length = config.longest_module_key_length("name")
-    for module in config.get("build", []):
+    for module in config["build"]:
         for i, step in enumerate(module["steps"]):
             _perform_build_step(module, i, step, module_name_length)
     assert os.path.isdir("./out/masterfiles/")
