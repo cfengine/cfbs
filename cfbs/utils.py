@@ -10,7 +10,7 @@ import urllib.request  # needed on some platforms
 import urllib.error
 from collections import OrderedDict
 from shutil import rmtree
-from typing import Union
+from typing import Iterable, Union
 
 from cfbs.pretty import pretty
 
@@ -180,21 +180,21 @@ def item_index(iterable, item, extra_at_end=True):
             return -1
 
 
-def strip_right(string, ending):
+def strip_right(string: str, ending) -> str:
     # can be replaced with str.removesuffix from Python 3.9 onwards
     if not string.endswith(ending):
         return string
     return string[0 : -len(ending)]
 
 
-def strip_left(string, beginning):
+def strip_left(string: str, beginning) -> str:
     # can be replaced with str.removeprefix from Python 3.9 onwards
     if not string.startswith(beginning):
         return string
     return string[len(beginning) :]
 
 
-def strip_right_any(string, suffixes):
+def strip_right_any(string: str, suffixes: Iterable[str]) -> str:
     for suffix in suffixes:
         if string.endswith(suffix):
             return string[0 : -len(suffix)]
@@ -202,7 +202,7 @@ def strip_right_any(string, suffixes):
     return string
 
 
-def strip_left_any(string, prefixes):
+def strip_left_any(string: str, prefixes: Iterable[str]) -> str:
     for prefix in prefixes:
         if string.startswith(prefix):
             return string[len(prefix) :]

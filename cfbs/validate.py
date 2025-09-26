@@ -196,6 +196,9 @@ def validate_module_name_content(name):
         proper_name = strip_left(proper_name, "./")
         proper_name = strip_right_any(proper_name, ("/", ".cf", ".json"))
 
+        # only validate the local module's name, not the entire path to it
+        proper_name = proper_name.split("/")[-1]
+
         # allow underscores, only for local modules
         proper_name = proper_name.replace("_", "-")
 
@@ -205,7 +208,7 @@ def validate_module_name_content(name):
             "Module name contains illegal characters (only lowercase ASCII alphanumeric characters are legal)",
         )
 
-    log.debug("Validated name of module %s" % name)
+    log.debug("Successfully validated name of module %s" % name)
 
 
 def validate_config_raise_exceptions(config, empty_build_list_ok=False):
