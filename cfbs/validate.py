@@ -208,7 +208,7 @@ def validate_module_name_content(name):
             "Module name contains illegal characters (only lowercase ASCII alphanumeric characters are legal)",
         )
 
-    log.debug("Validated name of module %s" % name)
+    log.debug("Successfully validated name of module %s" % name)
 
 
 def validate_config_raise_exceptions(config, empty_build_list_ok=False):
