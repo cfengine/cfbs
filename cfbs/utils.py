@@ -102,6 +102,15 @@ def sh(cmd: str, directory=None):
     _sh("%s" % cmd)
 
 
+def display_diff(path_A, path_B):
+    """Also displays `stderr`."""
+    cmd = "diff -u " + path_A + " " + path_B
+    # `diff`'s exit code is 1 for success when there's a difference, so don't use `check=True`
+    cp = subprocess.run(cmd, shell=True)
+    if cp.returncode not in (0, 1):
+        raise
+
+
 def mkdir(path: str, exist_ok=True):
     os.makedirs(path, exist_ok=exist_ok)
 
