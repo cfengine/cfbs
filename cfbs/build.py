@@ -123,188 +123,199 @@ def _perform_replacement(n, a, b, filename):
         raise CFBSExitError("Failed to write to '%s'" % (filename,))
 
 
-def _perform_build_step(module, i, step, max_length):
-    operation, args = split_build_step(step)
-    name = module["name"]
-    source = module["_directory"]
-    counter = module["_counter"]
-    destination = "out/masterfiles"
+def _perform_copy_step(args, source, destination, prefix):
+    src, dst = args
+    if dst in [".", "./"]:
+        dst = ""
+    print("%s copy '%s' 'masterfiles/%s'" % (prefix, src, dst))
+    src, dst = os.path.join(source, src), os.path.join(destination, dst)
+    cp(src, dst)
 
-    prefix = "%03d %s :" % (counter, pad_right(name, max_length))
 
-    assert operation in AVAILABLE_BUILD_STEPS  # Should already be validated
-    if operation == "copy":
-        src, dst = args
-        if dst in [".", "./"]:
-            dst = ""
-        print("%s copy '%s' 'masterfiles/%s'" % (prefix, src, dst))
-        src, dst = os.path.join(source, src), os.path.join(destination, dst)
-        cp(src, dst)
-    elif operation == "run":
-        shell_command = " ".join(args)
-        print("%s run '%s'" % (prefix, shell_command))
-        sh(shell_command, source)
-    elif operation == "delete":
-        files = [args] if type(args) is str else args
-        assert len(files) > 0
-        as_string = " ".join(["'%s'" % f for f in files])
-        print("%s delete %s" % (prefix, as_string))
-        for file in files:
-            if not rm(os.path.join(source, file), True):
-                print(
-                    "Warning: tried to delete '%s' but path did not exist."
-                    % os.path.join(source, file)
-                )
-    elif operation == "json":
-        src, dst = args
-        if dst in [".", "./"]:
-            dst = ""
-        print("%s json '%s' 'masterfiles/%s'" % (prefix, src, dst))
-        if not os.path.isfile(os.path.join(source, src)):
-            raise CFBSExitError("'%s' is not a file" % src)
-        src, dst = os.path.join(source, src), os.path.join(destination, dst)
-        extras, original = read_json(src), read_json(dst)
-        if not extras:
-            print("Warning: '%s' looks empty, adding nothing" % os.path.basename(src))
-        if original:
-            merged = merge_json(original, extras)
-            if os.path.basename(dst) == "def.json":
-                merged = deduplicate_def_json(merged)
-        else:
-            merged = extras
-        write_json(dst, merged)
-    elif operation == "append":
-        src, dst = args
-        if dst in [".", "./"]:
-            dst = ""
-        print("%s append '%s' 'masterfiles/%s'" % (prefix, src, dst))
-        src, dst = os.path.join(source, src), os.path.join(destination, dst)
-        if not os.path.exists(dst):
-            touch(dst)
-        assert os.path.isfile(dst)
-        sh("cat '%s' >> '%s'" % (src, dst))
-    elif operation == "directory":
-        src, dst = args
-        if dst in [".", "./"]:
-            dst = ""
-        print("{} directory '{}' 'masterfiles/{}'".format(prefix, src, dst))
-        dstarg = dst  # save this for adding .cf files to inputs
-        src, dst = os.path.join(source, src), os.path.join(destination, dst)
-        defjson = os.path.join(destination, "def.json")
-        merged = read_json(defjson)
-        if not merged:
-            merged = {}
-        for root, _, files in os.walk(src):
-            for f in files:
-                if f == "def.json":
-                    extra = read_json(os.path.join(root, f))
-                    if extra:
-                        merged = merge_json(merged, extra)
-                        merged = deduplicate_def_json(merged)
-                else:
-                    s = os.path.join(root, f)
-                    d = os.path.join(destination, dstarg, root[len(src) :], f)
-                    log.debug("Copying '%s' to '%s'" % (s, d))
-                    cp(s, d)
-        write_json(defjson, merged)
-    elif operation == "input":
-        src, dst = args
-        if dst in [".", "./"]:
-            dst = ""
-        print("%s input '%s' 'masterfiles/%s'" % (prefix, src, dst))
-        if src.startswith(name + "/"):
-            log.warning(
-                "Deprecated 'input' build step behavior - it should be: 'input ./input.json def.json'"
+def _perform_run_step(args, source, prefix):
+    shell_command = " ".join(args)
+    print("%s run '%s'" % (prefix, shell_command))
+    sh(shell_command, source)
+
+
+def _perform_delete_step(args, source, prefix):
+    files = [args] if type(args) is str else args
+    assert len(files) > 0
+    as_string = " ".join(["'%s'" % f for f in files])
+    print("%s delete %s" % (prefix, as_string))
+    for file in files:
+        if not rm(os.path.join(source, file), True):
+            print(
+                "Warning: tried to delete '%s' but path did not exist."
+                % os.path.join(source, file)
             )
-            # We'll translate it to what it should be
-            # TODO: Consider removing this behavior for cfbs 4?
-            src = "." + src[len(name) :]
-        src = os.path.join(name, src)
-        dst = os.path.join(destination, dst)
-        if not os.path.isfile(os.path.join(src)):
-            log.warning(
-                "Input data '%s' does not exist: Skipping build step."
-                % os.path.basename(src)
-            )
-            return
-        extras, original = read_json(src), read_json(dst)
-        extras = _generate_augment(name, extras)
-        log.debug("Generated augment: %s", pretty(extras))
-        if not extras:
-            raise CFBSExitError(
-                "Input data '%s' is incomplete: Skipping build step."
-                % os.path.basename(src)
-            )
-        if original:
-            log.debug("Original def.json: %s", pretty(original))
-            merged = merge_json(original, extras)
+
+
+def _perform_json_step(args, source, destination, prefix):
+    src, dst = args
+    if dst in [".", "./"]:
+        dst = ""
+    print("%s json '%s' 'masterfiles/%s'" % (prefix, src, dst))
+    if not os.path.isfile(os.path.join(source, src)):
+        raise CFBSExitError("'%s' is not a file" % src)
+    src, dst = os.path.join(source, src), os.path.join(destination, dst)
+    extras, original = read_json(src), read_json(dst)
+    if not extras:
+        print("Warning: '%s' looks empty, adding nothing" % os.path.basename(src))
+    if original:
+        merged = merge_json(original, extras)
+        if os.path.basename(dst) == "def.json":
             merged = deduplicate_def_json(merged)
-        else:
-            merged = extras
-        log.debug("Merged def.json: %s", pretty(merged))
-        write_json(dst, merged)
-    elif operation == "policy_files":
-        files = []
-        for file in args:
-            if file.startswith("./"):
-                file = file[2:]
-            if file.endswith(".cf"):
-                files.append(file)
-            elif file.endswith("/"):
-                cf_files = find("out/masterfiles/" + file, extension=".cf")
-                files += (strip_left(f, "out/masterfiles/") for f in cf_files)
+    else:
+        merged = extras
+    write_json(dst, merged)
+
+
+def _perform_append_step(args, source, destination, prefix):
+    src, dst = args
+    if dst in [".", "./"]:
+        dst = ""
+    print("%s append '%s' 'masterfiles/%s'" % (prefix, src, dst))
+    src, dst = os.path.join(source, src), os.path.join(destination, dst)
+    if not os.path.exists(dst):
+        touch(dst)
+    assert os.path.isfile(dst)
+    sh("cat '%s' >> '%s'" % (src, dst))
+
+
+def _perform_directory_step(args, source, destination, prefix):
+    src, dst = args
+    if dst in [".", "./"]:
+        dst = ""
+    print("{} directory '{}' 'masterfiles/{}'".format(prefix, src, dst))
+    dstarg = dst  # save this for adding .cf files to inputs
+    src, dst = os.path.join(source, src), os.path.join(destination, dst)
+    defjson = os.path.join(destination, "def.json")
+    merged = read_json(defjson)
+    if not merged:
+        merged = {}
+    for root, _, files in os.walk(src):
+        for f in files:
+            if f == "def.json":
+                extra = read_json(os.path.join(root, f))
+                if extra:
+                    merged = merge_json(merged, extra)
+                    merged = deduplicate_def_json(merged)
             else:
-                raise CFBSExitError(
-                    "Unsupported filetype '%s' for build step '%s': "
-                    % (file, operation)
-                    + "Expected directory (*/) of policy file (*.cf)"
-                )
-        print("%s policy_files '%s'" % (prefix, "' '".join(files) if files else ""))
-        augment = {"inputs": files}
-        log.debug("Generated augment: %s" % pretty(augment))
-        path = os.path.join(destination, "def.json")
-        original = read_json(path)
-        log.debug("Original def.json: %s" % pretty(original))
-        if original:
-            merged = merge_json(original, augment)
-            merged = deduplicate_def_json(merged)
+                s = os.path.join(root, f)
+                d = os.path.join(destination, dstarg, root[len(src) :], f)
+                log.debug("Copying '%s' to '%s'" % (s, d))
+                cp(s, d)
+    write_json(defjson, merged)
+
+
+def _perform_input_step(args, name, destination, prefix):
+    src, dst = args
+    if dst in [".", "./"]:
+        dst = ""
+    print("%s input '%s' 'masterfiles/%s'" % (prefix, src, dst))
+    if src.startswith(name + "/"):
+        log.warning(
+            "Deprecated 'input' build step behavior - it should be: 'input ./input.json def.json'"
+        )
+        # We'll translate it to what it should be
+        # TODO: Consider removing this behavior for cfbs 4?
+        src = "." + src[len(name) :]
+    src = os.path.join(name, src)
+    dst = os.path.join(destination, dst)
+    if not os.path.isfile(os.path.join(src)):
+        log.warning(
+            "Input data '%s' does not exist: Skipping build step."
+            % os.path.basename(src)
+        )
+        return
+    extras, original = read_json(src), read_json(dst)
+    extras = _generate_augment(name, extras)
+    log.debug("Generated augment: %s", pretty(extras))
+    if not extras:
+        raise CFBSExitError(
+            "Input data '%s' is incomplete: Skipping build step."
+            % os.path.basename(src)
+        )
+    if original:
+        log.debug("Original def.json: %s", pretty(original))
+        merged = merge_json(original, extras)
+        merged = deduplicate_def_json(merged)
+    else:
+        merged = extras
+    log.debug("Merged def.json: %s", pretty(merged))
+    write_json(dst, merged)
+
+
+def _perform_policy_files_step(operation, args, destination, prefix):
+    files = []
+    for file in args:
+        if file.startswith("./"):
+            file = file[2:]
+        if file.endswith(".cf"):
+            files.append(file)
+        elif file.endswith("/"):
+            cf_files = find("out/masterfiles/" + file, extension=".cf")
+            files += (strip_left(f, "out/masterfiles/") for f in cf_files)
         else:
-            merged = augment
-        log.debug("Merged def.json: %s", pretty(merged))
-        write_json(path, merged)
-    elif operation == "bundles":
-        bundles = args
-        print("%s bundles '%s'" % (prefix, "' '".join(bundles) if bundles else ""))
-        augment = {"vars": {"control_common_bundlesequence_end": bundles}}
-        log.debug("Generated augment: %s" % pretty(augment))
-        path = os.path.join(destination, "def.json")
-        original = read_json(path)
-        log.debug("Original def.json: %s" % pretty(original))
-        if original:
-            merged = merge_json(original, augment)
-            merged = deduplicate_def_json(merged)
-        else:
-            merged = augment
-        log.debug("Merged def.json: %s", pretty(merged))
-        write_json(path, merged)
-    elif operation == "replace":
-        assert len(args) == 4
-        print("%s replace '%s'" % (prefix, "' '".join(args)))
-        # New build step so let's be a bit strict about validating it:
-        validate_build_step(name, module, i, operation, args, strict=True)
-        n, a, b, file = args
-        file = os.path.join(destination, file)
-        _perform_replacement(n, a, b, file)
-    elif operation == "replace_version":
-        assert len(args) == 3
-        # New build step so let's be a bit strict about validating it:
-        validate_build_step(name, module, i, operation, args, strict=True)
-        print("%s replace_version '%s'" % (prefix, "' '".join(args)))
-        n = args[0]
-        to_replace = args[1]
-        filename = os.path.join(destination, args[2])
-        version = module["version"]
-        _perform_replacement(n, to_replace, version, filename)
+            raise CFBSExitError(
+                "Unsupported filetype '%s' for build step '%s': " % (file, operation)
+                + "Expected directory (*/) of policy file (*.cf)"
+            )
+    print("%s policy_files '%s'" % (prefix, "' '".join(files) if files else ""))
+    augment = {"inputs": files}
+    log.debug("Generated augment: %s" % pretty(augment))
+    path = os.path.join(destination, "def.json")
+    original = read_json(path)
+    log.debug("Original def.json: %s" % pretty(original))
+    if original:
+        merged = merge_json(original, augment)
+        merged = deduplicate_def_json(merged)
+    else:
+        merged = augment
+    log.debug("Merged def.json: %s", pretty(merged))
+    write_json(path, merged)
+
+
+def _perform_bundles_step(args, prefix, destination):
+    bundles = args
+    print("%s bundles '%s'" % (prefix, "' '".join(bundles) if bundles else ""))
+    augment = {"vars": {"control_common_bundlesequence_end": bundles}}
+    log.debug("Generated augment: %s" % pretty(augment))
+    path = os.path.join(destination, "def.json")
+    original = read_json(path)
+    log.debug("Original def.json: %s" % pretty(original))
+    if original:
+        merged = merge_json(original, augment)
+        merged = deduplicate_def_json(merged)
+    else:
+        merged = augment
+    log.debug("Merged def.json: %s", pretty(merged))
+    write_json(path, merged)
+
+
+def _perform_replace_step(module, i, operation, args, name, destination, prefix):
+    assert len(args) == 4
+    print("%s replace '%s'" % (prefix, "' '".join(args)))
+    # New build step so let's be a bit strict about validating it:
+    validate_build_step(name, module, i, operation, args, strict=True)
+    n, a, b, file = args
+    file = os.path.join(destination, file)
+    _perform_replacement(n, a, b, file)
+
+
+def _perform_replace_version_step(
+    module, i, operation, args, name, destination, prefix
+):
+    assert len(args) == 3
+    # New build step so let's be a bit strict about validating it:
+    validate_build_step(name, module, i, operation, args, strict=True)
+    print("%s replace_version '%s'" % (prefix, "' '".join(args)))
+    n = args[0]
+    to_replace = args[1]
+    filename = os.path.join(destination, args[2])
+    version = module["version"]
+    _perform_replacement(n, to_replace, version, filename)
 
 
 def perform_build(config: CFBSConfig) -> int:
@@ -341,10 +352,44 @@ def perform_build(config: CFBSConfig) -> int:
                     )
 
     print("\nSteps:")
-    module_name_length = config.longest_module_key_length("name")
+    max_length = config.longest_module_key_length("name")
     for module in config["build"]:
         for i, step in enumerate(module["steps"]):
-            _perform_build_step(module, i, step, module_name_length)
+            operation, args = split_build_step(step)
+            name = module["name"]
+            source = module["_directory"]
+            counter = module["_counter"]
+            destination = "out/masterfiles"
+
+            prefix = "%03d %s :" % (counter, pad_right(name, max_length))
+
+            if operation == "copy":
+                _perform_copy_step(args, source, destination, prefix)
+            elif operation == "run":
+                _perform_run_step(args, source, prefix)
+            elif operation == "delete":
+                _perform_delete_step(args, source, prefix)
+            elif operation == "json":
+                _perform_json_step(args, source, destination, prefix)
+            elif operation == "append":
+                _perform_append_step(args, source, destination, prefix)
+            elif operation == "directory":
+                _perform_directory_step(args, source, destination, prefix)
+            elif operation == "input":
+                _perform_input_step(args, name, destination, prefix)
+            elif operation == "policy_files":
+                _perform_policy_files_step(operation, args, destination, prefix)
+            elif operation == "bundles":
+                _perform_bundles_step(args, prefix, destination)
+            elif operation == "replace":
+                _perform_replace_step(
+                    module, i, operation, args, name, destination, prefix
+                )
+            elif operation == "replace_version":
+                _perform_replace_version_step(
+                    module, i, operation, args, name, destination, prefix
+                )
+
     assert os.path.isdir("./out/masterfiles/")
     shutil.copyfile("./cfbs.json", "./out/masterfiles/cfbs.json")
     if os.path.isfile("out/masterfiles/def.json"):
