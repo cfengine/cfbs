@@ -247,7 +247,7 @@ def _perform_input_step(args, name, destination, prefix):
     write_json(dst, merged)
 
 
-def _perform_policy_files_step(operation, args, destination, prefix):
+def _perform_policy_files_step(args, destination, prefix):
     files = []
     for file in args:
         if file.startswith("./"):
@@ -259,7 +259,7 @@ def _perform_policy_files_step(operation, args, destination, prefix):
             files += (strip_left(f, "out/masterfiles/") for f in cf_files)
         else:
             raise CFBSExitError(
-                "Unsupported filetype '%s' for build step '%s': " % (file, operation)
+                "Unsupported filetype '%s' for build step 'policy_files': " % file
                 + "Expected directory (*/) of policy file (*.cf)"
             )
     print("%s policy_files '%s'" % (prefix, "' '".join(files) if files else ""))
@@ -294,22 +294,20 @@ def _perform_bundles_step(args, prefix, destination):
     write_json(path, merged)
 
 
-def _perform_replace_step(module, i, operation, args, name, destination, prefix):
+def _perform_replace_step(module, i, args, name, destination, prefix):
     assert len(args) == 4
     print("%s replace '%s'" % (prefix, "' '".join(args)))
     # New build step so let's be a bit strict about validating it:
-    validate_build_step(name, module, i, operation, args, strict=True)
+    validate_build_step(name, module, i, "replace", args, strict=True)
     n, a, b, file = args
     file = os.path.join(destination, file)
     _perform_replacement(n, a, b, file)
 
 
-def _perform_replace_version_step(
-    module, i, operation, args, name, destination, prefix
-):
+def _perform_replace_version_step(module, i, args, name, destination, prefix):
     assert len(args) == 3
     # New build step so let's be a bit strict about validating it:
-    validate_build_step(name, module, i, operation, args, strict=True)
+    validate_build_step(name, module, i, "replace_version", args, strict=True)
     print("%s replace_version '%s'" % (prefix, "' '".join(args)))
     n = args[0]
     to_replace = args[1]
@@ -358,9 +356,9 @@ def perform_build(config: CFBSConfig) -> int:
             operation, args = split_build_step(step)
             name = module["name"]
             source = module["_directory"]
-            counter = module["_counter"]
             destination = "out/masterfiles"
 
+            counter = module["_counter"]
             prefix = "%03d %s :" % (counter, pad_right(name, max_length))
 
             if operation == "copy":
@@ -378,16 +376,14 @@ def perform_build(config: CFBSConfig) -> int:
             elif operation == "input":
                 _perform_input_step(args, name, destination, prefix)
             elif operation == "policy_files":
-                _perform_policy_files_step(operation, args, destination, prefix)
+                _perform_policy_files_step(args, destination, prefix)
             elif operation == "bundles":
                 _perform_bundles_step(args, prefix, destination)
             elif operation == "replace":
-                _perform_replace_step(
-                    module, i, operation, args, name, destination, prefix
-                )
+                _perform_replace_step(module, i, args, name, destination, prefix)
             elif operation == "replace_version":
                 _perform_replace_version_step(
-                    module, i, operation, args, name, destination, prefix
+                    module, i, args, name, destination, prefix
                 )
 
     assert os.path.isdir("./out/masterfiles/")
