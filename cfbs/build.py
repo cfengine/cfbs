@@ -80,7 +80,7 @@ def _generate_augment(module_name, input_data):
     return augment
 
 
-def _perform_replace_step(n, a, b, filename):
+def _perform_replacement(n, a, b, filename):
     assert n and a and b and filename
     assert a not in b
 
@@ -294,7 +294,7 @@ def _perform_build_step(module, i, step, max_length):
         validate_build_step(name, module, i, operation, args, strict=True)
         n, a, b, file = args
         file = os.path.join(destination, file)
-        _perform_replace_step(n, a, b, file)
+        _perform_replacement(n, a, b, file)
     elif operation == "replace_version":
         assert len(args) == 3
         # New build step so let's be a bit strict about validating it:
@@ -304,7 +304,7 @@ def _perform_build_step(module, i, step, max_length):
         to_replace = args[1]
         filename = os.path.join(destination, args[2])
         version = module["version"]
-        _perform_replace_step(n, to_replace, version, filename)
+        _perform_replacement(n, to_replace, version, filename)
 
 
 def perform_build(config: CFBSConfig) -> int:
