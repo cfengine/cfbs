@@ -902,7 +902,7 @@ def download_command(force, ignore_versions=False):
 
 
 @cfbs_command("build")
-def build_command(ignore_versions=False):
+def build_command(ignore_versions=False, diffs_filename=None):
     config = CFBSConfig.get_instance()
     r = validate_config(config)
     if r != 0:
@@ -915,7 +915,7 @@ def build_command(ignore_versions=False):
         # so we try building anyway and don't return error(s)
     init_out_folder()
     _download_dependencies(config, ignore_versions=ignore_versions)
-    r = perform_build(config)
+    r = perform_build(config, diffs_filename)
     return r
 
 

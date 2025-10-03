@@ -17,13 +17,16 @@ from cfbs.cfbs_config import CFBSConfig
 from cfbs.utils import (
     canonify,
     cp,
+    cp_dry_itemize,
     deduplicate_def_json,
+    file_diff_text,
     find,
     merge_json,
     mkdir,
     pad_right,
     read_json,
     rm,
+    save_file,
     sh,
     strip_left,
     touch,
@@ -129,7 +132,67 @@ def _perform_copy_step(args, source, destination, prefix):
         dst = ""
     print("%s copy '%s' 'masterfiles/%s'" % (prefix, src, dst))
     src, dst = os.path.join(source, src), os.path.join(destination, dst)
+
+    step_diffs_data = ""
+
+    itemization = cp_dry_itemize(src, dst)
+    noop_overwrites_relpaths = []
+    actual_overwrites_relpaths = []
+    for item_string, file_relpath in itemization:
+        if item_string[1] != "f":
+            # only consider regular files
+            continue
+        if item_string[0] == "." or len(item_string) < 3:
+            # the first character being a dot means that it's a no-op overwrite (possibly except file attributes)
+            # explanation for the `< 3` comparison:
+            # if all attributes are unchanged, the rsync item string will use spaces instead of dots and they will have been parsed away earlier
+            noop_overwrites_relpaths.append(file_relpath)
+            continue
+        if item_string[2] == "+":
+            # the copied file is new
+            continue
+        if item_string[2] == "c":
+            # the copied file has a different checksum
+            actual_overwrites_relpaths.append(file_relpath)
+            continue
+        elif item_string[2] == ".":
+            # the copied regular file doesn't have a different checksum
+            noop_overwrites_relpaths.append(file_relpath)
+        log.debug("Novel item string: %s %s" % (item_string, file_relpath))
+    for file_relpath in actual_overwrites_relpaths:
+        if os.path.isfile(src):
+            fileA = src
+        else:
+            fileA = os.path.join(src, file_relpath)
+        if os.path.isfile(dst):
+            fileB = dst
+        else:
+            fileB = os.path.join(dst, file_relpath)
+        file_diff_data = file_diff_text(fileA, fileB)
+        step_diffs_data += file_diff_data
+    if len(noop_overwrites_relpaths) > 0:
+        warning_message = (
+            "Identical file overwrites occured during copy.\n"
+            + " Check your modules and their build steps to ascertain whether this is intentional.\n"
+            + " In most cases, the cause is a file from a latter module already being provided by an earlier module (commonly stock masterfiles).\n"
+            + " In that case, the file is best deleted from the latter module(s).\n"
+            + " Identical overwrites count: %s\n" % len(noop_overwrites_relpaths)
+        )
+        # display affected files, without flooding the output
+        if len(noop_overwrites_relpaths) < 20:
+            for overwrite_noop in noop_overwrites_relpaths:
+                warning_message += "  " + overwrite_noop + "\n"
+        else:
+            for overwrite_noop in noop_overwrites_relpaths[:9]:
+                warning_message += "  " + overwrite_noop + "\n"
+            warning_message += "   ...\n"
+            for overwrite_noop in noop_overwrites_relpaths[-9:]:
+                warning_message += "  " + overwrite_noop + "\n"
+        # display all the messages as one warning
+        log.warning(warning_message)
     cp(src, dst)
+
+    return step_diffs_data
 
 
 def _perform_run_step(args, source, prefix):
@@ -316,7 +379,7 @@ def _perform_replace_version_step(module, i, args, name, destination, prefix):
     _perform_replacement(n, to_replace, version, filename)
 
 
-def perform_build(config: CFBSConfig) -> int:
+def perform_build(config: CFBSConfig, diffs_filename=None) -> int:
     if not config.get("build"):
         raise CFBSExitError("No 'build' key found in the configuration")
 
@@ -349,6 +412,8 @@ def perform_build(config: CFBSConfig) -> int:
                         % (step, expected, actual)
                     )
 
+    diffs_data = ""
+
     print("\nSteps:")
     max_length = config.longest_module_key_length("name")
     for module in config["build"]:
@@ -362,7 +427,8 @@ def perform_build(config: CFBSConfig) -> int:
             prefix = "%03d %s :" % (counter, pad_right(name, max_length))
 
             if operation == "copy":
-                _perform_copy_step(args, source, destination, prefix)
+                step_diffs_data = _perform_copy_step(args, source, destination, prefix)
+                diffs_data += step_diffs_data
             elif operation == "run":
                 _perform_run_step(args, source, prefix)
             elif operation == "delete":
@@ -385,6 +451,15 @@ def perform_build(config: CFBSConfig) -> int:
                 _perform_replace_version_step(
                     module, i, args, name, destination, prefix
                 )
+
+    if diffs_filename is not None:
+        try:
+            save_file(diffs_filename, diffs_data)
+        except IsADirectoryError:
+            print("")
+            log.warning(
+                "An existing directory was provided as the '--diffs' file path - writing the diffs file for the build failed - continuing build..."
+            )
 
     assert os.path.isdir("./out/masterfiles/")
     shutil.copyfile("./cfbs.json", "./out/masterfiles/cfbs.json")
