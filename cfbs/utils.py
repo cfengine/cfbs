@@ -1,3 +1,5 @@
+import difflib
+import logging as log
 import os
 import re
 import sys
@@ -10,7 +12,7 @@ import urllib.request  # needed on some platforms
 import urllib.error
 from collections import OrderedDict
 from shutil import rmtree
-from typing import Iterable, Union
+from typing import Iterable, List, Tuple, Union
 
 from cfbs.pretty import pretty
 
@@ -111,6 +113,24 @@ def display_diff(path_A, path_B):
         raise
 
 
+def file_diff(filepath_A, filepath_B):
+    with open(filepath_A) as f:
+        lines_A = f.readlines()
+    with open(filepath_B) as f:
+        lines_B = f.readlines()
+
+    u_diff = difflib.unified_diff(lines_A, lines_B, filepath_A, filepath_B)
+
+    return u_diff
+
+
+def file_diff_text(filepath_A, filepath_B):
+    u_diff = file_diff(filepath_A, filepath_B)
+    diff_text = "".join(u_diff)
+
+    return diff_text
+
+
 def mkdir(path: str, exist_ok=True):
     os.makedirs(path, exist_ok=exist_ok)
 
@@ -145,6 +165,40 @@ def cp(src, dst):
         sh("rsync -r %s %s" % (src, dst))
         return
     sh("rsync -r %s/ %s" % (src, dst))
+
+
+def cp_dry_itemize(src: str, dst: str) -> List[Tuple[str, str]]:
+    above = os.path.dirname(dst)
+    if not os.path.exists(above):
+        mkdir(above)
+    if dst.endswith("/") and not os.path.exists(dst):
+        mkdir(dst)
+    if os.path.isfile(src):
+        result = subprocess.run(
+            "rsync -rniic %s %s" % (src, dst),
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+        )
+    else:
+        result = subprocess.run(
+            "rsync -rniic %s/ %s" % (src, dst),
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+        )
+    lines = result.stdout.decode("utf-8").split("\n")
+    itemization = []
+    for line in lines:
+        terms = line.split()
+        if len(terms) == 2:
+            item_string = terms[0]
+            file_relpath = terms[1]
+            itemization.append((item_string, file_relpath))
+        elif len(terms) > 0:
+            log.debug("Abnormal rsync output line: '%s'" % terms)
+
+    return itemization
 
 
 def pad_left(s, n):

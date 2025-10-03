@@ -27,6 +27,7 @@ class ArgsTypesNamespace(argparse.Namespace):
     git_user_email = None  # type: Optional[str]
     git_commit_message = None  # type: Optional[str]
     ignore_versions_json = False  # type: bool
+    diffs = None  # type: Optional[str]
     omit_download = False  # type: bool
     check_against_git = False  # type: bool
     minimum_version = None  # type: Optional[str]
@@ -160,6 +161,13 @@ def get_arg_parser(whitespace_for_manual=False):
         "--ignore-versions-json",
         help="Ignore versions.json. Necessary in case of a custom index or testing changes to the default index.",
         action="store_true",
+    )
+    parser.add_argument(
+        "--diffs",
+        help="Write diffs of files overwritten with a copy build step during 'cfbs build' to the specified file",
+        nargs="?",
+        const="diffs.txt",
+        default=None,
     )
     parser.add_argument(
         "--omit-download",
