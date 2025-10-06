@@ -86,7 +86,7 @@ class CFBSValidationError(Exception):
 def _sh(cmd: str):
     # print(cmd)
     try:
-        subprocess.run(
+        return subprocess.run(
             cmd,
             shell=True,
             check=True,
@@ -99,9 +99,8 @@ def _sh(cmd: str):
 
 def sh(cmd: str, directory=None):
     if directory:
-        _sh("cd %s && %s" % (directory, cmd))
-        return
-    _sh("%s" % cmd)
+        return _sh("cd %s && %s" % (directory, cmd))
+    return _sh(cmd)
 
 
 def display_diff(path_A, path_B):
@@ -162,9 +161,8 @@ def cp(src, dst):
     if dst.endswith("/") and not os.path.exists(dst):
         mkdir(dst)
     if os.path.isfile(src):
-        sh("rsync -r %s %s" % (src, dst))
-        return
-    sh("rsync -r %s/ %s" % (src, dst))
+        return sh("rsync -r %s %s" % (src, dst))
+    return sh("rsync -r %s/ %s" % (src, dst))
 
 
 def cp_dry_itemize(src: str, dst: str) -> List[Tuple[str, str]]:
@@ -174,19 +172,9 @@ def cp_dry_itemize(src: str, dst: str) -> List[Tuple[str, str]]:
     if dst.endswith("/") and not os.path.exists(dst):
         mkdir(dst)
     if os.path.isfile(src):
-        result = subprocess.run(
-            "rsync -rniic %s %s" % (src, dst),
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-        )
+        result = sh("rsync -rniic %s %s" % (src, dst))
     else:
-        result = subprocess.run(
-            "rsync -rniic %s/ %s" % (src, dst),
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-        )
+        result = sh("rsync -rniic %s/ %s" % (src, dst))
     lines = result.stdout.decode("utf-8").split("\n")
     itemization = []
     for line in lines:
