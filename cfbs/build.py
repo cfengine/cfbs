@@ -454,9 +454,12 @@ def perform_build(config: CFBSConfig, diffs_filename=None) -> int:
 
     if diffs_filename is not None:
         try:
+            print(
+                "\nWriting diffs of non-identical file overwrites to '%s'..."
+                % diffs_filename
+            )
             save_file(diffs_filename, diffs_data)
         except IsADirectoryError:
-            print("")
             log.warning(
                 "An existing directory was provided as the '--diffs' file path - writing the diffs file for the build failed - continuing build..."
             )
