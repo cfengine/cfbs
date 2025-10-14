@@ -166,6 +166,10 @@ def cp(src, dst):
 
 
 def cp_dry_itemize(src: str, dst: str) -> List[Tuple[str, str]]:
+    """Emulates a dry run of `cfbs.utils.cp` and itemizes files to be copied.
+
+    Returns a list of `rsync --itemize` strings (described in the rsync manual) with their corresponding paths.
+    """
     above = os.path.dirname(dst)
     if not os.path.exists(above):
         mkdir(above)
@@ -187,6 +191,38 @@ def cp_dry_itemize(src: str, dst: str) -> List[Tuple[str, str]]:
             log.debug("Abnormal rsync output line: '%s'" % terms)
 
     return itemization
+
+
+def cp_dry_overwrites(src: str, dst: str) -> Tuple[List[str], List[str]]:
+    """Returns paths of files that would be overwritten by `cfbs.utils.cp`, grouping identical and non-identical file overwrites separately."""
+    noop_overwrites_relpaths = []
+    modifying_overwrites_relpaths = []
+
+    itemization = cp_dry_itemize(src, dst)
+
+    for item_string, file_relpath in itemization:
+        if item_string[1] != "f":
+            # only consider regular files
+            continue
+        if item_string[0] == "." or len(item_string) < 3:
+            # the first character being a dot means that it's a no-op overwrite (possibly except file attributes)
+            # explanation for the `< 3` comparison:
+            # if all attributes are unchanged, the rsync item string will use spaces instead of dots and they will have been parsed away earlier
+            noop_overwrites_relpaths.append(file_relpath)
+            continue
+        if item_string[2] == "+":
+            # the copied file is new
+            continue
+        if item_string[2] == "c":
+            # the copied file has a different checksum
+            modifying_overwrites_relpaths.append(file_relpath)
+            continue
+        elif item_string[2] == ".":
+            # the copied regular file doesn't have a different checksum
+            noop_overwrites_relpaths.append(file_relpath)
+        log.debug("Novel item string: %s %s" % (item_string, file_relpath))
+
+    return noop_overwrites_relpaths, modifying_overwrites_relpaths
 
 
 def pad_left(s, n):

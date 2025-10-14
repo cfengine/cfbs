@@ -17,7 +17,7 @@ from cfbs.cfbs_config import CFBSConfig
 from cfbs.utils import (
     canonify,
     cp,
-    cp_dry_itemize,
+    cp_dry_overwrites,
     deduplicate_def_json,
     file_diff_text,
     find,
@@ -135,31 +135,10 @@ def _perform_copy_step(args, source, destination, prefix):
 
     step_diffs_data = ""
 
-    itemization = cp_dry_itemize(src, dst)
-    noop_overwrites_relpaths = []
-    actual_overwrites_relpaths = []
-    for item_string, file_relpath in itemization:
-        if item_string[1] != "f":
-            # only consider regular files
-            continue
-        if item_string[0] == "." or len(item_string) < 3:
-            # the first character being a dot means that it's a no-op overwrite (possibly except file attributes)
-            # explanation for the `< 3` comparison:
-            # if all attributes are unchanged, the rsync item string will use spaces instead of dots and they will have been parsed away earlier
-            noop_overwrites_relpaths.append(file_relpath)
-            continue
-        if item_string[2] == "+":
-            # the copied file is new
-            continue
-        if item_string[2] == "c":
-            # the copied file has a different checksum
-            actual_overwrites_relpaths.append(file_relpath)
-            continue
-        elif item_string[2] == ".":
-            # the copied regular file doesn't have a different checksum
-            noop_overwrites_relpaths.append(file_relpath)
-        log.debug("Novel item string: %s %s" % (item_string, file_relpath))
-    for file_relpath in actual_overwrites_relpaths:
+    noop_overwrites_relpaths, modifying_overwrites_relpaths = cp_dry_overwrites(
+        src, dst
+    )
+    for file_relpath in modifying_overwrites_relpaths:
         if os.path.isfile(src):
             fileA = src
         else:
