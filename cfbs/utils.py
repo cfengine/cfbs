@@ -1,3 +1,5 @@
+import difflib
+import logging as log
 import os
 import re
 import sys
@@ -10,7 +12,7 @@ import urllib.request  # needed on some platforms
 import urllib.error
 from collections import OrderedDict
 from shutil import rmtree
-from typing import Iterable, Union
+from typing import Iterable, List, Tuple, Union
 
 from cfbs.pretty import pretty
 
@@ -84,7 +86,7 @@ class CFBSValidationError(Exception):
 def _sh(cmd: str):
     # print(cmd)
     try:
-        subprocess.run(
+        return subprocess.run(
             cmd,
             shell=True,
             check=True,
@@ -97,9 +99,8 @@ def _sh(cmd: str):
 
 def sh(cmd: str, directory=None):
     if directory:
-        _sh("cd %s && %s" % (directory, cmd))
-        return
-    _sh("%s" % cmd)
+        return _sh("cd %s && %s" % (directory, cmd))
+    return _sh(cmd)
 
 
 def display_diff(path_A, path_B):
@@ -109,6 +110,24 @@ def display_diff(path_A, path_B):
     cp = subprocess.run(cmd, shell=True)
     if cp.returncode not in (0, 1):
         raise
+
+
+def file_diff(filepath_A, filepath_B):
+    with open(filepath_A) as f:
+        lines_A = f.readlines()
+    with open(filepath_B) as f:
+        lines_B = f.readlines()
+
+    u_diff = difflib.unified_diff(lines_A, lines_B, filepath_A, filepath_B)
+
+    return u_diff
+
+
+def file_diff_text(filepath_A, filepath_B):
+    u_diff = file_diff(filepath_A, filepath_B)
+    diff_text = "".join(u_diff)
+
+    return diff_text
 
 
 def mkdir(path: str, exist_ok=True):
@@ -142,9 +161,68 @@ def cp(src, dst):
     if dst.endswith("/") and not os.path.exists(dst):
         mkdir(dst)
     if os.path.isfile(src):
-        sh("rsync -r %s %s" % (src, dst))
-        return
-    sh("rsync -r %s/ %s" % (src, dst))
+        return sh("rsync -r %s %s" % (src, dst))
+    return sh("rsync -r %s/ %s" % (src, dst))
+
+
+def cp_dry_itemize(src: str, dst: str) -> List[Tuple[str, str]]:
+    """Emulates a dry run of `cfbs.utils.cp` and itemizes files to be copied.
+
+    Returns a list of `rsync --itemize` strings (described in the rsync manual) with their corresponding paths.
+    """
+    above = os.path.dirname(dst)
+    if not os.path.exists(above):
+        mkdir(above)
+    if dst.endswith("/") and not os.path.exists(dst):
+        mkdir(dst)
+    if os.path.isfile(src):
+        result = sh("rsync -rniic %s %s" % (src, dst))
+    else:
+        result = sh("rsync -rniic %s/ %s" % (src, dst))
+    lines = result.stdout.decode("utf-8").split("\n")
+    itemization = []
+    for line in lines:
+        terms = line.split()
+        if len(terms) == 2:
+            item_string = terms[0]
+            file_relpath = terms[1]
+            itemization.append((item_string, file_relpath))
+        elif len(terms) > 0:
+            log.debug("Abnormal rsync output line: '%s'" % terms)
+
+    return itemization
+
+
+def cp_dry_overwrites(src: str, dst: str) -> Tuple[List[str], List[str]]:
+    """Returns paths of files that would be overwritten by `cfbs.utils.cp`, grouping identical and non-identical file overwrites separately."""
+    noop_overwrites_relpaths = []
+    modifying_overwrites_relpaths = []
+
+    itemization = cp_dry_itemize(src, dst)
+
+    for item_string, file_relpath in itemization:
+        if item_string[1] != "f":
+            # only consider regular files
+            continue
+        if item_string[0] == "." or len(item_string) < 3:
+            # the first character being a dot means that it's a no-op overwrite (possibly except file attributes)
+            # explanation for the `< 3` comparison:
+            # if all attributes are unchanged, the rsync item string will use spaces instead of dots and they will have been parsed away earlier
+            noop_overwrites_relpaths.append(file_relpath)
+            continue
+        if item_string[2] == "+":
+            # the copied file is new
+            continue
+        if item_string[2] == "c":
+            # the copied file has a different checksum
+            modifying_overwrites_relpaths.append(file_relpath)
+            continue
+        elif item_string[2] == ".":
+            # the copied regular file doesn't have a different checksum
+            noop_overwrites_relpaths.append(file_relpath)
+        log.debug("Novel item string: %s %s" % (item_string, file_relpath))
+
+    return noop_overwrites_relpaths, modifying_overwrites_relpaths
 
 
 def pad_left(s, n):

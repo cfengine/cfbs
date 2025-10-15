@@ -1,9 +1,9 @@
-.TH CFBS "1" "2025\-08\-14" "cfbs" "CFEngine Build System manual"
+.TH CFBS "1" "2025\-10\-03" "cfbs" "CFEngine Build System manual"
 .SH NAME
 cfbs \- combines multiple modules into 1 policy set to deploy on your infrastructure. Modules can be custom promise types, JSON files which enable certain functionality, or reusable CFEngine policy. The modules you use can be written by the CFEngine team, others in the community, your colleagues, or yourself.
 .SH SYNOPSIS
 .B cfbs
-[-h] [--loglevel LOGLEVEL] [-M] [--version] [--force] [--non-interactive] [--index INDEX] [--check] [--checksum CHECKSUM] [--keep-order] [--git {yes,no}] [--git-user-name GIT_USER_NAME] [--git-user-email GIT_USER_EMAIL] [--git-commit-message GIT_COMMIT_MESSAGE] [--ignore-versions-json] [--omit-download] [--check-against-git] [--from MINIMUM_VERSION] [--to-json [TO_JSON]] [--reference-version REFERENCE_VERSION] [--masterfiles-dir MASTERFILES_DIR] [--ignored-path-components [IGNORED_PATH_COMPONENTS ...]] [--offline] [--masterfiles MASTERFILES] [cmd] [args ...]
+[-h] [--loglevel LOGLEVEL] [-M] [--version] [--force] [--non-interactive] [--index INDEX] [--check] [--checksum CHECKSUM] [--keep-order] [--git {yes,no}] [--git-user-name GIT_USER_NAME] [--git-user-email GIT_USER_EMAIL] [--git-commit-message GIT_COMMIT_MESSAGE] [--ignore-versions-json] [--diffs [DIFFS]] [--omit-download] [--check-against-git] [--from MINIMUM_VERSION] [--to-json [TO_JSON]] [--reference-version REFERENCE_VERSION] [--masterfiles-dir MASTERFILES_DIR] [--ignored-path-components [IGNORED_PATH_COMPONENTS ...]] [--offline] [--masterfiles MASTERFILES] [cmd] [args ...]
 .SH DESCRIPTION
 CFEngine Build System.
 
@@ -71,6 +71,10 @@ Specify git commit message
 .TP
 \fB\-\-ignore\-versions\-json\fR
 Ignore versions.json. Necessary in case of a custom index or testing changes to the default index.
+
+.TP
+\fB\-\-diffs\fR \fI\,[DIFFS]\/\fR
+Write diffs of files overwritten with a copy build step during 'cfbs build' to the specified file
 
 .TP
 \fB\-\-omit\-download\fR

@@ -138,6 +138,11 @@ def _main() -> int:
             % args.command
         )
 
+    if args.diffs and args.command != "build":
+        raise CFBSUserError(
+            "The option --diffs is only for 'cfbs build', not 'cfbs %s'" % args.command
+        )
+
     if args.non_interactive and args.command not in (
         "init",
         "add",
@@ -213,7 +218,9 @@ def _main() -> int:
     if args.command == "download":
         return commands.download_command(args.force)
     if args.command == "build":
-        return commands.build_command(ignore_versions=args.ignore_versions_json)
+        return commands.build_command(
+            ignore_versions=args.ignore_versions_json, diffs_filename=args.diffs
+        )
     if args.command == "install":
         return commands.install_command(args.args)
     if args.command == "update":
