@@ -148,11 +148,11 @@ def _get_git_repo_commit_sha(repo_path):
         return f.read().strip()
 
 
-def _clone_and_checkout(url, path, commit):
+def _clone_and_checkout(url, path, treeish):
     # NOTE: If any of these shell (git) commands fail, we will exit
     if not os.path.exists(os.path.join(path, ".git")):
         sh("git clone --no-checkout %s %s" % (url, path))
-    sh("git checkout " + commit, directory=path)
+    sh("git checkout " + treeish, directory=path)
 
 
 def clone_url_repo(repo_url: str):
