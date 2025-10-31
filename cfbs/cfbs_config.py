@@ -161,6 +161,10 @@ class CFBSConfig(CFBSJson):
             if "@" in url and (url.rindex("@") > url.rindex(".")):
                 # commit specified in the url
                 url, commit = url.rsplit("@", 1)
+                if "@" in url and (url.rindex("@") > url.rindex(".")):
+                    raise CFBSUserError(
+                        "Cannot specify more than one commit for one add URL"
+                    )
                 if not is_a_commit_hash(commit):
                     raise CFBSExitError("'%s' is not a commit reference" % commit)
 
