@@ -150,6 +150,7 @@ class CFBSConfig(CFBSJson):
         checksum=None,
         explicit_build_steps=None,
     ):
+        """The `url` argument can optionally also have the form `<url>@<commit>`."""
         url_commit = None
         if url.endswith(SUPPORTED_ARCHIVES):
             config_path, url_commit = fetch_archive(url, checksum)
