@@ -25,6 +25,7 @@ from cfbs.cfbs_types import CFBSCommandGitResult
 from cfbs.utils import (
     CFBSExitError,
     CFBSUserError,
+    is_a_commit_hash,
     read_file,
     write_json,
     load_bundlenames,
@@ -154,11 +155,15 @@ class CFBSConfig(CFBSJson):
             config_path, url_commit = fetch_archive(url, checksum)
         else:
             assert url.startswith(SUPPORTED_URI_SCHEMES)
-            config_path, url_commit = clone_url_repo(url)
 
-        if "@" in url and (url.rindex("@") > url.rindex(".")):
-            assert url.split("@")[-1] == url_commit
-            url = url[0 : url.rindex("@")]
+            commit = None
+            if "@" in url and (url.rindex("@") > url.rindex(".")):
+                # commit specified in the url
+                url, commit = url.rsplit("@", 1)
+                if not is_a_commit_hash(commit):
+                    raise CFBSExitError("'%s' is not a commit reference" % commit)
+
+            config_path, url_commit = clone_url_repo(url, commit)
 
         remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
 

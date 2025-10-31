@@ -11,6 +11,7 @@ and what is on the file system (in ~/.cfengine and ./out).
 import os
 import re
 import shutil
+from typing import Optional
 
 from cfbs.utils import (
     cfbs_dir,
@@ -155,15 +156,9 @@ def _clone_and_checkout(url, path, treeish):
     sh("git checkout " + treeish, directory=path)
 
 
-def clone_url_repo(repo_url: str):
+def clone_url_repo(repo_url: str, commit: Optional[str] = None):
     assert repo_url.startswith(SUPPORTED_URI_SCHEMES)
-
-    commit = None
-    if "@" in repo_url and (repo_url.rindex("@") > repo_url.rindex(".")):
-        # commit specified in the url
-        repo_url, commit = repo_url.rsplit("@", 1)
-        if not is_a_commit_hash(commit):
-            raise CFBSExitError("'%s' is not a commit reference" % commit)
+    assert "@" not in repo_url or (repo_url.rindex("@") < repo_url.rindex("."))
 
     downloads = os.path.join(cfbs_dir(), "downloads")
 
