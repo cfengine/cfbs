@@ -11,6 +11,7 @@ and what is on the file system (in ~/.cfengine and ./out).
 import os
 import re
 import shutil
+from typing import Optional
 
 from cfbs.utils import (
     cfbs_dir,
@@ -148,22 +149,20 @@ def _get_git_repo_commit_sha(repo_path):
         return f.read().strip()
 
 
-def _clone_and_checkout(url, path, commit):
+def _clone_and_checkout(url, path, treeish):
     # NOTE: If any of these shell (git) commands fail, we will exit
     if not os.path.exists(os.path.join(path, ".git")):
         sh("git clone --no-checkout %s %s" % (url, path))
-    sh("git checkout " + commit, directory=path)
+    sh("git checkout " + treeish, directory=path)
 
 
-def clone_url_repo(repo_url: str):
+def clone_url_repo(repo_url: str, commit: Optional[str] = None):
+    """Clones a Git repository at `repo_url` URL, optionally checking out the `commit` commit.
+
+    Returns path to the `cfbs.json` located in the cloned Git repository, and the Git commit hash.
+    """
     assert repo_url.startswith(SUPPORTED_URI_SCHEMES)
-
-    commit = None
-    if "@" in repo_url and (repo_url.rindex("@") > repo_url.rindex(".")):
-        # commit specified in the url
-        repo_url, commit = repo_url.rsplit("@", 1)
-        if not is_a_commit_hash(commit):
-            raise CFBSExitError("'%s' is not a commit reference" % commit)
+    assert "@" not in repo_url or (repo_url.rindex("@") < repo_url.rindex("."))
 
     downloads = os.path.join(cfbs_dir(), "downloads")
 

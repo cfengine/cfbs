@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 from cfbs.pretty import pretty
+from cfbs.utils import CFBSUserError
 
 
 def is_module_added_manually(added_by: str):
@@ -24,6 +25,10 @@ class Module:
         """Initialize from argument with format `NAME[@VERSION]`"""
         assert isinstance(arg, str)
         if "@" in arg:
+            if arg.count("@") > 1:
+                raise CFBSUserError(
+                    "Cannot specify more than one version of the same module"
+                )
             self.name, self.version = arg.split("@")
         else:
             self.name = arg

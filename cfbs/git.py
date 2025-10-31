@@ -33,6 +33,7 @@ def git_exists():
 def ls_remote(remote, branch):
     """Returns the hash of the commit that the current HEAD of a given branch
     on a given remote is pointing to.
+    Returns `None` in case of error (e.g. the branch does not exist).
 
     :param remote: the remote to list
     :param branch: the branch on the remote

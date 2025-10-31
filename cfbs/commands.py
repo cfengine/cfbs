@@ -262,7 +262,6 @@ def init_command(
     """
     CFBSConfig.reload()
 
-    branch = None
     to_add = []
     if masterfiles is None:
         if prompt_user_yesno(
@@ -282,16 +281,8 @@ def init_command(
         log.debug("--masterfiles=%s appears to be a version number" % masterfiles)
         to_add = ["masterfiles@%s" % masterfiles]
     elif masterfiles != "no":
-        """This appears to be a branch. Thus we'll add masterfiles normally
-        and try to do the necessary modifications needed afterwards. I.e.
-        changing the 'repo' attribute to be 'url' and changing the commit to
-        be the current HEAD of the upstream branch."""
-
         log.debug("--masterfiles=%s appears to be a branch" % masterfiles)
         branch = masterfiles
-        to_add = ["masterfiles"]
-
-    if branch is not None:
         remote = "https://github.com/cfengine/masterfiles"
         commit = ls_remote(remote, branch)
         if commit is None:
