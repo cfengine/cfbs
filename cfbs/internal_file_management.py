@@ -157,6 +157,10 @@ def _clone_and_checkout(url, path, treeish):
 
 
 def clone_url_repo(repo_url: str, commit: Optional[str] = None):
+    """Clones a Git repository at `repo_url` URL, optionally checking out the `commit` commit.
+
+    Returns path to the `cfbs.json` located in the cloned Git repository, and the Git commit hash.
+    """
     assert repo_url.startswith(SUPPORTED_URI_SCHEMES)
     assert "@" not in repo_url or (repo_url.rindex("@") < repo_url.rindex("."))
 
