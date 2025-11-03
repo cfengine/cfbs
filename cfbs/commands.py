@@ -631,7 +631,7 @@ def update_command(to_update):
             )
 
             module_name = old_module["name"]
-            provides = remote_config.get_provides()
+            provides = remote_config.get_provides(old_module.get("added_by"))
 
             if not module_name or module_name not in provides:
                 continue

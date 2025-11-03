@@ -13,13 +13,14 @@ TODOs:
 from collections import OrderedDict
 from copy import deepcopy
 import logging as log
+from typing import Optional
 
 from cfbs.index import Index
 from cfbs.pretty import pretty, TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.utils import CFBSValidationError, read_json, CFBSExitError
 
 
-def _construct_provided_module(name, data, url, commit, added_by="cfbs add"):
+def _construct_provided_module(name, data, url, commit, added_by):
     # At this point the @commit part should be removed from url so:
     # either url should not have an @,
     # or the @ should be for user@host.something
@@ -47,7 +48,8 @@ def _construct_provided_module(name, data, url, commit, added_by="cfbs add"):
             "missing required key 'steps' in module definition: %s" % pretty(data)
         )
     module["steps"] = data["steps"]
-    module["added_by"] = added_by
+    if added_by is not None:
+        module["added_by"] = added_by
     return module
 
 
@@ -172,7 +174,7 @@ class CFBSJson:
     def __contains__(self, key):
         return key in self._data
 
-    def get_provides(self, added_by="cfbs add"):
+    def get_provides(self, added_by: Optional[str]):
         modules = OrderedDict()
         assert self._data is not None
         if "provides" not in self._data:
