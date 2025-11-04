@@ -960,6 +960,7 @@ def _print_module_info(data):
         "url",
         "repo",
         "version",
+        "branch",
         "commit",
         "by",
         "status",

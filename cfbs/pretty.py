@@ -21,6 +21,7 @@ MODULE_KEYS = (
     "index",
     "version",
     "commit",
+    "branch",
     "subdirectory",
     "dependencies",
     "added_by",

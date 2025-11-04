@@ -70,6 +70,7 @@ class Module:
         return (
             "name",
             "version",
+            "branch",
             "commit",
             "added_by",
             "steps",

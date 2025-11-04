@@ -194,6 +194,10 @@ The modules inside `build`, `provides`, and `index` use these fields:
 - `commit` (string): Commit hash used when we download and snapshot the version of a module.
   Used in `index` and modules added from an index.
   Must be updated together with `version`.
+- `branch` (string): Branch name used when updating modules added by URL.
+  Optional - if specified, the branch will be used during `cfbs update` instead of the default branch.
+  Requires the `url` field to be specified.
+  If the `branch` field is specified, the `commit` field must also be specified.
 - `subdirectory` (string): Used if the module is inside a subdirectory of a repo.
   See for example [the `cfbs.json` of our modules repo](https://github.com/cfengine/modules/blob/master/cfbs.json).
   Not used for local modules (policy files or folders) - the name is the path to the module in this case.

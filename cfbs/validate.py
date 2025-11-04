@@ -502,6 +502,17 @@ def _validate_module_commit(name, module):
         raise CFBSValidationError(name, '"commit" must be a commit reference')
 
 
+def _validate_module_branch(name, module):
+    assert "branch" in module
+    branch = module["branch"]
+    if type(branch) is not str:
+        raise CFBSValidationError(name, '"branch" must be of type string')
+    if not module["url"]:
+        raise CFBSValidationError(name, '"branch" key requires the "url" key')
+    if not module["commit"]:
+        raise CFBSValidationError(name, '"branch" key requires the "commit" key')
+
+
 def _validate_module_subdirectory(name, module):
     assert "subdirectory" in module
     if type(module["subdirectory"]) is not str:
@@ -741,6 +752,8 @@ def validate_single_module(context, name, module, config, local_check=False):
         _validate_module_version(name, module)
     if "commit" in module:
         _validate_module_commit(name, module)
+    if "branch" in module:
+        _validate_module_branch(name, module)
     if "subdirectory" in module:
         _validate_module_subdirectory(name, module)
     if "steps" in module:
