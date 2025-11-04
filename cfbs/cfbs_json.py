@@ -62,7 +62,7 @@ class CFBSJson:
         index_argument=None,
         data=None,
         url=None,
-        url_commit=None,
+        url_commit: Optional[str] = None,
         url_branch=None,
     ):
         assert path

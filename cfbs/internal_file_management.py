@@ -13,6 +13,7 @@ import re
 import shutil
 from typing import Optional
 
+from cfbs.git import ls_remote
 from cfbs.utils import (
     cfbs_dir,
     cp,
@@ -156,8 +157,9 @@ def _clone_and_checkout(url, path, treeish):
     sh("git checkout " + treeish, directory=path)
 
 
-def clone_url_repo(repo_url: str, commit: Optional[str] = None):
-    """Clones a Git repository at `repo_url` URL, optionally checking out the `commit` commit.
+def clone_url_repo(repo_url: str, reference: Optional[str] = None):
+    """Clones a Git repository at `repo_url` URL, optionally checking out the `reference` commit or branch.
+    If `reference` is `None`, the repository's default branch will be used for the checkout.
 
     Returns path to the `cfbs.json` located in the cloned Git repository, and the Git commit hash.
     """
@@ -170,7 +172,19 @@ def clone_url_repo(repo_url: str, commit: Optional[str] = None):
     repo_dir = os.path.join(downloads, repo_path)
     os.makedirs(repo_dir, exist_ok=True)
 
-    if commit is not None:
+    # always store versions of the repository in cfbs/downloads by commit hash
+    # therefore for branches, first find the commit it points to
+    if reference is not None:
+        if is_a_commit_hash(reference):
+            commit = reference
+        else:
+            # `reference` is a branch
+            commit = ls_remote(repo_url, reference)
+            if commit is None:
+                raise CFBSExitError(
+                    "Failed to find branch %s at %s" % (reference, repo_url)
+                )
+
         commit_path = os.path.join(repo_dir, commit)
         _clone_and_checkout(repo_url, commit_path, commit)
     else:

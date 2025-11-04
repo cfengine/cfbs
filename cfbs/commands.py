@@ -113,7 +113,6 @@ from cfbs.git import (
     git_configure_and_initialize,
     is_git_repo,
     CFBSGitError,
-    ls_remote,
 )
 
 from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
@@ -281,16 +280,12 @@ def init_command(
         log.debug("--masterfiles=%s appears to be a version number" % masterfiles)
         to_add = ["masterfiles@%s" % masterfiles]
     elif masterfiles != "no":
-        log.debug("--masterfiles=%s appears to be a branch" % masterfiles)
-        branch = masterfiles
-        remote = "https://github.com/cfengine/masterfiles"
-        commit = ls_remote(remote, branch)
-        if commit is None:
-            raise CFBSExitError(
-                "Failed to find branch or tag %s at remote %s" % (branch, remote)
-            )
-        log.debug("Current commit for masterfiles branch %s is %s" % (branch, commit))
-        to_add = ["%s@%s" % (remote, commit), "masterfiles"]
+        log.debug(
+            "--masterfiles=%s appears to be a branch or a commit hash" % masterfiles
+        )
+        # add masterfiles from URL, instead of index by name
+        MPF_REPO_URL = "https://github.com/cfengine/masterfiles"
+        to_add = ["%s@%s" % (MPF_REPO_URL, masterfiles), "masterfiles"]
     if to_add:
         result = add_command(to_add, added_by="cfbs init")
         if result != 0:
@@ -625,9 +620,10 @@ def update_command(to_update):
             log.warning("Module '%s' not in build. Skipping its update." % update.name)
             continue
         if "url" in old_module:
-            path, commit = clone_url_repo(old_module["url"])
+            branch = old_module.get("branch")
+            path, commit = clone_url_repo(old_module["url"], branch)
             remote_config = CFBSJson(
-                path=path, url=old_module["url"], url_commit=commit
+                path=path, url=old_module["url"], url_commit=commit, url_branch=branch
             )
 
             module_name = old_module["name"]
