@@ -718,7 +718,7 @@ def update_command(to_update):
             )
         raise CFBSValidationError(
             "The cfbs.json was invalid before update, "
-            + "but updating modules did not fix it - aborting update"
+            + "but updating modules did not fix it - aborting update "
             + "(see validation error messages above)"
         )
     config.save()
