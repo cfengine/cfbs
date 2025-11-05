@@ -1,0 +1,21 @@
+{
+  "name": "Example project",
+  "description": "Example description",
+  "type": "policy-set",
+  "git": true,
+  "build": [
+    {
+      "name": "test-library-parsed-local-users",
+      "description": "Parse local users from /etc/passwd on the system with their attributes from /etc/shadow",
+      "url": "https://github.com/cfengine/test-cfbs-static-repo/",
+      "commit": "f702461f319e170db05bcb61f867b440b5cbd013",
+      "branch": "update-test-branch",
+      "subdirectory": "test_library_parsed_etc_passwd_shadow",
+      "added_by": "cfbs add",
+      "steps": [
+        "copy ./test_library_parsed_etc_passwd_shadow.cf services/local-users/test_library_parsed_etc_passwd_shadow/",
+        "json cfbs/def.json def.json"
+      ]
+    }
+  ]
+}
