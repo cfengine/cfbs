@@ -249,3 +249,16 @@ def git_check_tracked_changes(scope=["all"]):
         raise CFBSGitError(
             "Failed to run 'git status -s -u' to check for changes."
         ) from cpe
+
+
+def treeish_exists(treeish, repo_path):
+    command = [
+        "git",
+        "rev-parse",
+        "--verify",
+        "--end-of-options",
+        treeish + r"^{object}",
+    ]
+    result = run(command, cwd=repo_path, stdout=DEVNULL, stderr=DEVNULL, check=False)
+
+    return result.returncode == 0

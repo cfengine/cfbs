@@ -13,7 +13,7 @@ import re
 import shutil
 from typing import Optional
 
-from cfbs.git import ls_remote
+from cfbs.git import ls_remote, treeish_exists
 from cfbs.utils import (
     cfbs_dir,
     cp,
@@ -141,6 +141,9 @@ def _clone_and_checkout(url, path, treeish):
     # NOTE: If any of these shell (git) commands fail, we will exit
     if not os.path.exists(os.path.join(path, ".git")):
         sh("git clone --no-checkout %s %s" % (url, path))
+    if not treeish_exists(treeish, path):
+        raise CFBSExitError("%s not found in %s" % (treeish, url))
+
     sh("git checkout " + treeish, directory=path)
 
 
