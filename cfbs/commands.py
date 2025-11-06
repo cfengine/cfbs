@@ -597,12 +597,11 @@ def update_command(to_update):
     update_objects = []
     for update in to_update:
         old_module = config.get_module_from_build(update.name)
-        assert (
-            old_module is not None
-        ), 'We\'ve already checked that modules are in config["build"]'
 
-        custom_index = old_module is not None and "index" in old_module
-        index = Index(old_module["index"]) if custom_index else config.index
+        if old_module is not None and "index" in old_module:
+            index = Index(old_module["index"])
+        else:
+            index = config.index
 
         if not old_module:
             index.translate_alias(update)
@@ -614,8 +613,7 @@ def update_command(to_update):
             )
             continue
 
-        custom_index = old_module is not None and "index" in old_module
-        index = Index(old_module["index"]) if custom_index else config.index
+        index = Index(old_module["index"]) if "index" in old_module else config.index
 
         if not old_module:
             index.translate_alias(update)
