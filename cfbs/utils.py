@@ -12,7 +12,7 @@ import urllib.request  # needed on some platforms
 import urllib.error
 from collections import OrderedDict
 from shutil import rmtree
-from typing import Iterable, List, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 from cfbs.pretty import pretty
 
@@ -532,7 +532,9 @@ def fetch_url(url, target, checksum=None):
         ) from e
 
 
-def is_a_commit_hash(commit):
+def is_a_commit_hash(commit: Optional[str]):
+    if commit is None:
+        return False
     return bool(SHA1_RE.match(commit) or SHA256_RE.match(commit))
 
 

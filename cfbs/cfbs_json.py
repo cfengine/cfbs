@@ -20,7 +20,7 @@ from cfbs.pretty import pretty, TOP_LEVEL_KEYS, MODULE_KEYS
 from cfbs.utils import CFBSValidationError, read_json, CFBSExitError
 
 
-def _construct_provided_module(name, data, url, commit, added_by):
+def _construct_provided_module(name, data, url, commit, branch, added_by):
     # At this point the @commit part should be removed from url so:
     # either url should not have an @,
     # or the @ should be for user@host.something
@@ -35,6 +35,8 @@ def _construct_provided_module(name, data, url, commit, added_by):
     module["description"] = data["description"]
     module["url"] = url
     module["commit"] = commit
+    if branch is not None:
+        module["branch"] = branch
     subdirectory = data.get("subdirectory")
     if subdirectory:
         module["subdirectory"] = subdirectory
@@ -60,12 +62,16 @@ class CFBSJson:
         index_argument=None,
         data=None,
         url=None,
-        url_commit=None,
+        url_commit: Optional[str] = None,
+        url_branch=None,
     ):
         assert path
         self.path = path
+
         self.url = url
         self.url_commit = url_commit
+        self.url_branch = url_branch
+
         if data:
             self._data = data
         else:
@@ -184,7 +190,7 @@ class CFBSJson:
             )
         for k, v in self._data["provides"].items():
             module = _construct_provided_module(
-                k, v, self.url, self.url_commit, added_by
+                k, v, self.url, self.url_commit, self.url_branch, added_by
             )
             modules[k] = module
         return modules
@@ -194,7 +200,7 @@ class CFBSJson:
         if "provides" in self._data and name in self._data["provides"]:
             module = self._data["provides"][name]
             return _construct_provided_module(
-                name, module, self.url, self.url_commit, added_by
+                name, module, self.url, self.url_commit, self.url_branch, added_by
             )
         if name in self.index:
             return self.index.get_module_object(name, added_by)

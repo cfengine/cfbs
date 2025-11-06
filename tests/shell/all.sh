@@ -48,5 +48,7 @@ bash tests/shell/041_add_multidep.sh
 bash tests/shell/042_update_from_url.sh
 bash tests/shell/043_replace_version.sh
 bash tests/shell/044_replace.sh
+bash tests/shell/045_update_from_url_branch_uptodate.sh
+bash tests/shell/046_update_from_url_branch.sh
 
 echo "All cfbs shell tests completed successfully!"

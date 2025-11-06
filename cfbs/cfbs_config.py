@@ -150,27 +150,32 @@ class CFBSConfig(CFBSJson):
         checksum=None,
         explicit_build_steps=None,
     ):
-        """The `url` argument can optionally also have the form `<url>@<commit>`."""
+        """The `url` argument can optionally also have the form `<url>@<commit or branch>`."""
         url_commit = None
+        url_branch = None
         if url.endswith(SUPPORTED_ARCHIVES):
             config_path, url_commit = fetch_archive(url, checksum)
         else:
             assert url.startswith(SUPPORTED_URI_SCHEMES)
 
-            commit = None
+            reference = None
             if "@" in url and (url.rindex("@") > url.rindex(".")):
-                # commit specified in the url
-                url, commit = url.rsplit("@", 1)
+                # commit or branch specified together with the URL
+                url, reference = url.rsplit("@", 1)
                 if "@" in url and (url.rindex("@") > url.rindex(".")):
                     raise CFBSUserError(
-                        "Cannot specify more than one commit for one add URL"
+                        "Cannot specify more than one commit or branch for one add URL"
                     )
-                if not is_a_commit_hash(commit):
-                    raise CFBSExitError("'%s' is not a commit reference" % commit)
+            config_path, url_commit = clone_url_repo(url, reference)
 
-            config_path, url_commit = clone_url_repo(url, commit)
+            # a branch name and a commit hash are distinguished as follows:
+            # if the reference matches the form of a commit hash, it is assumed to be a commit hash, otherwise it is assumed to be a branch name
+            if not is_a_commit_hash(reference):
+                url_branch = reference
 
-        remote_config = CFBSJson(path=config_path, url=url, url_commit=url_commit)
+        remote_config = CFBSJson(
+            path=config_path, url=url, url_commit=url_commit, url_branch=url_branch
+        )
 
         provides = remote_config.get_provides(added_by)
         add_all = True

@@ -13,6 +13,7 @@ import re
 import shutil
 from typing import Optional
 
+from cfbs.git import ls_remote, treeish_exists
 from cfbs.utils import (
     cfbs_dir,
     cp,
@@ -136,28 +137,19 @@ def _get_path_from_url(url):
     return path
 
 
-def _get_git_repo_commit_sha(repo_path):
-    assert os.path.isdir(os.path.join(repo_path, ".git"))
-
-    with open(os.path.join(repo_path, ".git", "HEAD"), "r") as f:
-        head_ref_info = f.read()
-
-    assert head_ref_info.startswith("ref: ")
-    head_ref = head_ref_info[5:].strip()
-
-    with open(os.path.join(repo_path, ".git", head_ref)) as f:
-        return f.read().strip()
-
-
 def _clone_and_checkout(url, path, treeish):
     # NOTE: If any of these shell (git) commands fail, we will exit
     if not os.path.exists(os.path.join(path, ".git")):
         sh("git clone --no-checkout %s %s" % (url, path))
+    if not treeish_exists(treeish, path):
+        raise CFBSExitError("%s not found in %s" % (treeish, url))
+
     sh("git checkout " + treeish, directory=path)
 
 
-def clone_url_repo(repo_url: str, commit: Optional[str] = None):
-    """Clones a Git repository at `repo_url` URL, optionally checking out the `commit` commit.
+def clone_url_repo(repo_url: str, reference: Optional[str] = None):
+    """Clones a Git repository at `repo_url` URL, optionally checking out the `reference` commit or branch.
+    If `reference` is `None`, the repository's default branch will be used for the checkout.
 
     Returns path to the `cfbs.json` located in the cloned Git repository, and the Git commit hash.
     """
@@ -170,20 +162,23 @@ def clone_url_repo(repo_url: str, commit: Optional[str] = None):
     repo_dir = os.path.join(downloads, repo_path)
     os.makedirs(repo_dir, exist_ok=True)
 
-    if commit is not None:
-        commit_path = os.path.join(repo_dir, commit)
-        _clone_and_checkout(repo_url, commit_path, commit)
-    else:
-        master_path = os.path.join(repo_dir, "master")
-        sh("git clone %s %s" % (repo_url, master_path))
-        commit = _get_git_repo_commit_sha(master_path)
+    if reference is None:
+        reference = "HEAD"
 
-        commit_path = os.path.join(repo_dir, commit)
-        if os.path.exists(commit_path):
-            # Already cloned in the commit dir, just remove the 'master' clone
-            sh("rm -rf %s" % master_path)
-        else:
-            sh("mv %s %s" % (master_path, commit_path))
+    # always store versions of the repository in cfbs/downloads by commit hash
+    # therefore for branches, first find the commit it points to
+    if is_a_commit_hash(reference):
+        commit = reference
+    else:
+        # `reference` is a branch
+        commit = ls_remote(repo_url, reference)
+        if commit is None:
+            raise CFBSExitError(
+                "Failed to find branch %s at %s" % (reference, repo_url)
+            )
+
+    commit_path = os.path.join(repo_dir, commit)
+    _clone_and_checkout(repo_url, commit_path, commit)
 
     json_path = os.path.join(commit_path, "cfbs.json")
     if os.path.exists(json_path):
