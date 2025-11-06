@@ -613,8 +613,7 @@ def update_command(to_update):
             )
             continue
 
-        custom_index = old_module is not None and "index" in old_module
-        index = Index(old_module["index"]) if custom_index else config.index
+        index = Index(old_module["index"]) if "index" in old_module else config.index
 
         if not old_module:
             index.translate_alias(update)
