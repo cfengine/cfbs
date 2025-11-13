@@ -1127,6 +1127,7 @@ def convert_command(non_interactive=False, offline=False):
     def cfbs_convert_git_commit(
         commit_message: str, add_scope: Union[str, Iterable[str]] = "all"
     ):
+        print("Creating Git commit...")
         try:
             git_commit_maybe_prompt(commit_message, non_interactive, scope=add_scope)
         except CFBSGitError:
@@ -1263,7 +1264,6 @@ def convert_command(non_interactive=False, offline=False):
         for unmodified_mpf_file in analyzed_files.unmodified:
             rm(os.path.join(dir_name, unmodified_mpf_file))
 
-        print("Creating Git commit...")
         cfbs_convert_git_commit("Deleted unmodified policy files")
 
     print(
@@ -1310,9 +1310,6 @@ def convert_command(non_interactive=False, offline=False):
             for file_d in files_to_delete:
                 rm(os.path.join(dir_name, file_d))
 
-            print(
-                "Creating Git commit with deletion of policy files from other versions..."
-            )
             cfbs_convert_git_commit("Deleted policy files from other versions")
             print("Done.", end=" ")
     else:
@@ -1374,10 +1371,8 @@ def convert_command(non_interactive=False, offline=False):
         if response == "1":
             print("Deleting './%s'..." % modified_file)
             rm(os.path.join(dir_name, modified_file))
-            commit_message = "Deleted './%s'" % modified_file
-            print("Creating Git commit - %s..." % commit_message)
             try:
-                cfbs_convert_git_commit(commit_message)
+                cfbs_convert_git_commit("Deleted './%s'" % modified_file)
             except:
                 log.warning("Git commit failed, continuing without committing...")
         if response == "2":
