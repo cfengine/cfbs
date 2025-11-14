@@ -15,7 +15,7 @@ from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProce
 from typing import Iterable, Union
 
 from cfbs.prompts import prompt_user
-from cfbs.utils import CFBSExitError, are_paths_equal
+from cfbs.utils import CFBSExitError, are_paths_equal, cli_tool_present
 
 
 class CFBSGitError(Exception):
@@ -23,11 +23,7 @@ class CFBSGitError(Exception):
 
 
 def git_exists():
-    try:
-        check_call(["git", "--version"], stdout=DEVNULL)
-        return True
-    except FileNotFoundError:
-        return False
+    return cli_tool_present("git")
 
 
 def ls_remote(remote, branch):
