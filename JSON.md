@@ -281,6 +281,10 @@ In `cfbs.json`'s `"steps"`, the build step name must be separated from the rest 
 - `replace_version <n> <to_replace> <filename>`
   - Replace the string inside the file with the version number of that module.
   - Works identically to `replace`, except the string to replace with, i.e. the version number, is found automatically.
+- `patch <patch_file>`
+  - Apply a unified diff patch file.
+    The patches apply to built files in `out/masterfiles`.
+    Paths inside the .patch file should be given relative to `out/masterfiles`.
 
 When `def.json` is modified during a `json`, `input`, `directory`, `bundles`, or `policy_files` build step, the values of some lists of strings are deduplicated, when this does not make any difference in behavior.
 These cases are:

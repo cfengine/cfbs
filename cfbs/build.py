@@ -13,9 +13,12 @@ elsewhere, like validation and downloading modules.
 import os
 import logging as log
 import shutil
+import subprocess
 from cfbs.cfbs_config import CFBSConfig
 from cfbs.utils import (
+    CFBSUserError,
     canonify,
+    cli_tool_present,
     cp,
     cp_dry_overwrites,
     deduplicate_def_json,
@@ -124,6 +127,27 @@ def _perform_replacement(n, a, b, filename):
             f.write(new_content)
     except:
         raise CFBSExitError("Failed to write to '%s'" % (filename,))
+
+
+def _apply_masterfiles_patch(patch_path):
+    if not cli_tool_present("patch"):
+        raise CFBSUserError("Working with .patch files requires the 'patch' utility")
+
+    if not os.path.isfile(patch_path):
+        raise CFBSExitError("Patch at path '%s' not found" % patch_path)
+
+    patch_path = os.path.relpath(patch_path, "out/masterfiles")
+
+    # reasoning for used flags:
+    # * `-t`: do not interactively ask the user for another path if the patch fails to apply due to the path not being found
+    # * `-p0`: use paths in the form specified in the .patch files
+    cmd = "patch -u -t -p0 -i" + patch_path
+    # the cwd needs to be the base path of the relative paths specified in the .patch files
+    # currently, the output of the patch command is displayed
+    cp = subprocess.run(cmd, shell=True, cwd="out/masterfiles")
+
+    if cp.returncode != 0:
+        raise CFBSExitError("Failed to apply patch '%s'" % patch_path)
 
 
 def _perform_copy_step(args, source, destination, prefix):
@@ -358,6 +382,19 @@ def _perform_replace_version_step(module, i, args, name, destination, prefix):
     _perform_replacement(n, to_replace, version, filename)
 
 
+def _perform_patch_step(module, i, args, name, source, prefix):
+    assert len(args) == 1
+
+    patch_relpath = args[0]
+    print("%s patch '%s'" % (prefix, patch_relpath))
+    # New build step so let's be a bit strict about validating it:
+    validate_build_step(name, module, i, "patch", args, strict=True)
+
+    patch_path = os.path.join(source, patch_relpath)
+
+    _apply_masterfiles_patch(patch_path)
+
+
 def perform_build(config: CFBSConfig, diffs_filename=None) -> int:
     if not config.get("build"):
         raise CFBSExitError("No 'build' key found in the configuration")
@@ -430,6 +467,8 @@ def perform_build(config: CFBSConfig, diffs_filename=None) -> int:
                 _perform_replace_version_step(
                     module, i, args, name, destination, prefix
                 )
+            elif operation == "patch":
+                _perform_patch_step(module, i, args, name, source, prefix)
 
     if diffs_filename is not None:
         try:
