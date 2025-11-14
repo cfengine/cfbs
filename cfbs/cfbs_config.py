@@ -24,6 +24,7 @@ from typing import List, Optional
 from cfbs.cfbs_types import CFBSCommandGitResult
 from cfbs.utils import (
     CFBSExitError,
+    CFBSProgrammerError,
     CFBSUserError,
     is_a_commit_hash,
     read_file,
@@ -263,6 +264,25 @@ class CFBSConfig(CFBSJson):
         if dependencies:
             dependencies += self._find_dependencies(dependencies, exclude)
         return dependencies
+
+    def _module_by_name(self, name):
+        for module in self["build"]:
+            if module["name"] == name:
+                return module
+
+        raise CFBSProgrammerError("Module of name %s not found" % name)
+
+    def add_patch_step(self, module_name, patch_filepath):
+        """Adds a patch step to a module's `"steps"` list, and saves the `CFBSConfig`.
+
+        API note: currently only used for a local module.
+
+        Error handling:
+        * excepts when module of `module_name` is not present."""
+        module = self._module_by_name(module_name)
+        step = "patch " + patch_filepath
+        module["steps"].append(step)
+        self.save()
 
     def _add_policy_files_build_step(self, module):
         name = module["name"]
