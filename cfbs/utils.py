@@ -103,6 +103,17 @@ def sh(cmd: str, directory=None):
     return _sh(cmd)
 
 
+def cli_tool_present(name: str):
+    """Returns whether the CLI tool `name` exists on the system."""
+    try:
+        subprocess.check_call(
+            ["command -v " + name], stdout=subprocess.DEVNULL, shell=True
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def display_diff(path_A, path_B):
     """Also displays `stderr`."""
     cmd = "diff -u " + path_A + " " + path_B
