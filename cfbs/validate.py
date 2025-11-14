@@ -57,6 +57,7 @@ AVAILABLE_BUILD_STEPS = {
     "bundles": "1+",
     "replace": 4,  # n, a, b, filename
     "replace_version": 3,  # n, string to replace, filename
+    "patch": 1,
 }
 
 # Constants / regexes / limits for validating build steps:
@@ -356,6 +357,12 @@ def validate_build_step(name, module, i, operation, args, strict=False):
         validate_build_step(
             name, module, i, "replace", [n, to_replace, version, filename], strict
         )
+    elif operation == "patch":
+        # TODO: consider what this should validate (CFE-4607):
+        # * perhaps check that the patch file exists here instead of in `apply_patch`?
+        # * what kinds of paths should be legal?
+        # * more validation?
+        pass
     else:
         # TODO: Add more validation of other build steps.
         pass
