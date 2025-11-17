@@ -1337,6 +1337,7 @@ def convert_command(non_interactive=False, offline=False):
             mpf_dir_path, masterfiles_version, "tarball", "masterfiles"
         )
         mpf_filepath = os.path.join(mpf_version_dir_path, modified_file)
+        modified_file_path = os.path.join(dir_name, modified_file)
         display_diffs = True
         if not os.path.exists(mpf_version_dir_path):
             try:
@@ -1349,7 +1350,7 @@ def convert_command(non_interactive=False, offline=False):
                 display_diffs = False
         if display_diffs:
             try:
-                display_diff(mpf_filepath, os.path.join(dir_name, modified_file))
+                display_diff(mpf_filepath, modified_file_path)
             except:
                 log.warning(
                     "Displaying a diff between your file and the default file failed, continuing without displaying a diff..."
@@ -1374,7 +1375,7 @@ def convert_command(non_interactive=False, offline=False):
 
         if response == "1":
             print("Deleting './%s'..." % modified_file)
-            rm(os.path.join(dir_name, modified_file))
+            rm(modified_file_path)
             try:
                 cfbs_convert_git_commit("Deleted './%s'" % modified_file)
             except:
@@ -1386,12 +1387,9 @@ def convert_command(non_interactive=False, offline=False):
             patches_dir = "custom-masterfiles-patches"
             patches_module = "./" + patches_dir + "/"
 
-            actual_path_modified_file = os.path.join(dir_name, modified_file)
-            actual_path_original_file = mpf_filepath
-
             file_diff_data = file_diff_text(
-                actual_path_original_file,
-                actual_path_modified_file,
+                mpf_filepath,
+                modified_file_path,
                 modified_file,
                 modified_file,
             )
@@ -1442,7 +1440,7 @@ def convert_command(non_interactive=False, offline=False):
                 config.add_patch_step(patches_module, patch_filename)
 
             print("Deleting './%s'..." % modified_file)
-            rm(actual_path_modified_file)
+            rm(modified_file_path)
 
             try:
                 cfbs_convert_git_commit(
