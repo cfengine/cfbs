@@ -1425,6 +1425,7 @@ def convert_command(non_interactive=False, offline=False):
                         explicit_build_steps=["patch " + patch_filename],
                     )
                     # `explicit_build_steps=[]` would fail validation
+                    # TODO: rewrite this to temporarily avoid validation to fix the poor Git history for the first file converted to a patch file
                 except Exception as e:
                     log.warning(
                         "Adding the patches local module failed (%s), continuing..."
