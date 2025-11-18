@@ -103,6 +103,17 @@ def sh(cmd: str, directory=None):
     return _sh(cmd)
 
 
+def cli_tool_present(name: str):
+    """Returns whether the CLI tool `name` exists on the system."""
+    try:
+        subprocess.check_call(
+            ["command -v " + name], stdout=subprocess.DEVNULL, shell=True
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def display_diff(path_A, path_B):
     """Also displays `stderr`."""
     cmd = "diff -u " + path_A + " " + path_B
@@ -112,19 +123,24 @@ def display_diff(path_A, path_B):
         raise
 
 
-def file_diff(filepath_A, filepath_B):
+def file_diff(filepath_A, filepath_B, target_A=None, target_B=None):
     with open(filepath_A) as f:
         lines_A = f.readlines()
     with open(filepath_B) as f:
         lines_B = f.readlines()
 
-    u_diff = difflib.unified_diff(lines_A, lines_B, filepath_A, filepath_B)
+    if target_A is None:
+        target_A = filepath_A
+    if target_B is None:
+        target_B = filepath_B
+
+    u_diff = difflib.unified_diff(lines_A, lines_B, target_A, target_B)
 
     return u_diff
 
 
-def file_diff_text(filepath_A, filepath_B):
-    u_diff = file_diff(filepath_A, filepath_B)
+def file_diff_text(filepath_A, filepath_B, target_A=None, target_B=None):
+    u_diff = file_diff(filepath_A, filepath_B, target_A, target_B)
     diff_text = "".join(u_diff)
 
     return diff_text

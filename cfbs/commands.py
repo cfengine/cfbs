@@ -69,9 +69,12 @@ from cfbs.utils import (
     cfbs_dir,
     cfbs_filename,
     display_diff,
+    file_diff_text,
     is_cfbs_repo,
+    mkdir,
     read_json,
     CFBSExitError,
+    save_file,
     strip_right,
     pad_right,
     CFBSProgrammerError,
@@ -1127,6 +1130,7 @@ def convert_command(non_interactive=False, offline=False):
     def cfbs_convert_git_commit(
         commit_message: str, add_scope: Union[str, Iterable[str]] = "all"
     ):
+        print("Creating Git commit...")
         try:
             git_commit_maybe_prompt(commit_message, non_interactive, scope=add_scope)
         except CFBSGitError:
@@ -1263,7 +1267,6 @@ def convert_command(non_interactive=False, offline=False):
         for unmodified_mpf_file in analyzed_files.unmodified:
             rm(os.path.join(dir_name, unmodified_mpf_file))
 
-        print("Creating Git commit...")
         cfbs_convert_git_commit("Deleted unmodified policy files")
 
     print(
@@ -1310,9 +1313,6 @@ def convert_command(non_interactive=False, offline=False):
             for file_d in files_to_delete:
                 rm(os.path.join(dir_name, file_d))
 
-            print(
-                "Creating Git commit with deletion of policy files from other versions..."
-            )
             cfbs_convert_git_commit("Deleted policy files from other versions")
             print("Done.", end=" ")
     else:
@@ -1322,6 +1322,8 @@ def convert_command(non_interactive=False, offline=False):
     )
     if not prompt_user_yesno(non_interactive, "Do you want to continue?"):
         raise CFBSExitError("User did not proceed, exiting.")
+
+    first_patch_conversion = True
     print("The following files have custom modifications:")
     modified_files = analyzed_files.modified
     for modified_file in modified_files:
@@ -1335,6 +1337,7 @@ def convert_command(non_interactive=False, offline=False):
             mpf_dir_path, masterfiles_version, "tarball", "masterfiles"
         )
         mpf_filepath = os.path.join(mpf_version_dir_path, modified_file)
+        modified_file_path = os.path.join(dir_name, modified_file)
         display_diffs = True
         if not os.path.exists(mpf_version_dir_path):
             try:
@@ -1347,7 +1350,7 @@ def convert_command(non_interactive=False, offline=False):
                 display_diffs = False
         if display_diffs:
             try:
-                display_diff(mpf_filepath, os.path.join(dir_name, modified_file))
+                display_diff(mpf_filepath, modified_file_path)
             except:
                 log.warning(
                     "Displaying a diff between your file and the default file failed, continuing without displaying a diff..."
@@ -1366,22 +1369,85 @@ def convert_command(non_interactive=False, offline=False):
         prompt_str = "\nChoose an option:\n"
         prompt_str += "1) Drop modifications - They are not important, or can be achieved in another way.\n"
         prompt_str += "2) Keep modified file - File is kept as is, and can be handled later. Can make future upgrades more complicated.\n"
-        prompt_str += "3) (Not implemented yet) Keep patch file - "
-        prompt_str += "File is converted into a patch file (diff) that hopefully will apply to future versions as well.\n"
+        prompt_str += "3) Keep patch file - File is converted into a patch file (diff) that hopefully will apply to future versions as well.\n"
 
-        response = prompt_user(non_interactive, prompt_str, ["1", "2"], "1")
+        response = prompt_user(non_interactive, prompt_str, ["1", "2", "3"], "1")
 
         if response == "1":
             print("Deleting './%s'..." % modified_file)
-            rm(os.path.join(dir_name, modified_file))
-            commit_message = "Deleted './%s'" % modified_file
-            print("Creating Git commit - %s..." % commit_message)
+            rm(modified_file_path)
             try:
-                cfbs_convert_git_commit(commit_message)
+                cfbs_convert_git_commit("Deleted './%s'" % modified_file)
             except:
                 log.warning("Git commit failed, continuing without committing...")
         if response == "2":
             print("Keeping file as is, nothing to do.")
+        if response == "3":
+            print("Converting './%s' into a patch file..." % modified_file)
+            patches_dir = "custom-masterfiles-patches"
+            patches_module = "./" + patches_dir + "/"
+
+            file_diff_data = file_diff_text(
+                mpf_filepath,
+                modified_file_path,
+                modified_file,
+                modified_file,
+            )
+
+            patch_filename = modified_file.replace("/", "_") + ".patch"
+            patch_path = os.path.join(patches_dir, patch_filename)
+            # append a number if there are multiple files with the same filename
+            i = 1
+            while os.path.exists(patch_path):
+                patch_filename = (
+                    modified_file.replace("/", "_") + "-" + str(i) + ".patch"
+                )
+                patch_path = os.path.join(patches_dir, patch_filename)
+                i += 1
+
+            # saving the .patch file should be done before creating the patches module
+            try:
+                save_file(patch_path, file_diff_data)
+            except:
+                log.warning(
+                    "Saving the patch file failed - keeping the modified file as is instead and continuing..."
+                )
+                continue
+
+            # make the patches local module on first use
+            if first_patch_conversion:
+                print("Adding patches local module...")
+                mkdir(patches_dir)
+
+                config = CFBSConfig.get_instance()
+                # `explicit_build_steps=[]` would fail validation, therefore also add the first build step during the module's creation
+                config.add_command(
+                    [patches_module],
+                    added_by="cfbs convert",
+                    explicit_build_steps=["patch " + patch_filename],
+                )
+                config.save()
+            else:
+                config = CFBSConfig.get_instance()
+                config.add_patch_step(patches_module, patch_filename)
+
+            print("Deleting './%s'..." % modified_file)
+            rm(modified_file_path)
+
+            try:
+                if first_patch_conversion:
+                    cfbs_convert_git_commit(
+                        "Added patches local module, converted './%s' into a .patch file"
+                        % modified_file
+                    )
+                else:
+                    cfbs_convert_git_commit(
+                        "Converted './%s' into a .patch file" % modified_file
+                    )
+            except:
+                log.warning("Git commit failed, continuing without committing...")
+
+            first_patch_conversion = False
 
     print("Conversion finished successfully.")
 
