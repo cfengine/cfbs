@@ -1418,21 +1418,13 @@ def convert_command(non_interactive=False, offline=False):
             if not patches_module_present:
                 print("Adding patches local module...")
                 mkdir(patches_dir)
-                try:
-                    r = add_command(
-                        [patches_module],
-                        added_by="cfbs convert",
-                        explicit_build_steps=["patch " + patch_filename],
-                    )
-                    # `explicit_build_steps=[]` would fail validation
-                    # TODO: rewrite this to temporarily avoid validation to fix the poor Git history for the first file converted to a patch file
-                except Exception as e:
-                    log.warning(
-                        "Adding the patches local module failed (%s), continuing..."
-                        % str(e)
-                    )
-                if r != 0:
-                    log.warning("Adding the patches local module failed, continuing...")
+                add_command(
+                    [patches_module],
+                    added_by="cfbs convert",
+                    explicit_build_steps=["patch " + patch_filename],
+                )
+                # `explicit_build_steps=[]` would fail validation
+                # TODO: rewrite this to temporarily avoid validation to fix the poor Git history for the first file converted to a patch file
 
                 # no need to `cfbs_convert_git_commit` here, the `add_command` will Git commit the added patches local module
                 patches_module_present = True
