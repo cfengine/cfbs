@@ -1323,7 +1323,7 @@ def convert_command(non_interactive=False, offline=False):
     if not prompt_user_yesno(non_interactive, "Do you want to continue?"):
         raise CFBSExitError("User did not proceed, exiting.")
 
-    patches_module_present = False
+    first_patch_conversion = True
     print("The following files have custom modifications:")
     modified_files = analyzed_files.modified
     for modified_file in modified_files:
@@ -1415,19 +1415,18 @@ def convert_command(non_interactive=False, offline=False):
                 continue
 
             # make the patches local module on first use
-            if not patches_module_present:
+            if first_patch_conversion:
                 print("Adding patches local module...")
                 mkdir(patches_dir)
-                add_command(
+
+                config = CFBSConfig.get_instance()
+                # `explicit_build_steps=[]` would fail validation, therefore also add the first build step during the module's creation
+                config.add_command(
                     [patches_module],
                     added_by="cfbs convert",
                     explicit_build_steps=["patch " + patch_filename],
                 )
-                # `explicit_build_steps=[]` would fail validation
-                # TODO: rewrite this to temporarily avoid validation to fix the poor Git history for the first file converted to a patch file
-
-                # no need to `cfbs_convert_git_commit` here, the `add_command` will Git commit the added patches local module
-                patches_module_present = True
+                config.save()
             else:
                 config = CFBSConfig.get_instance()
                 config.add_patch_step(patches_module, patch_filename)
@@ -1436,11 +1435,19 @@ def convert_command(non_interactive=False, offline=False):
             rm(modified_file_path)
 
             try:
-                cfbs_convert_git_commit(
-                    "Converted './%s' into a .patch file" % modified_file
-                )
+                if first_patch_conversion:
+                    cfbs_convert_git_commit(
+                        "Added patches local module, converted './%s' into a .patch file"
+                        % modified_file
+                    )
+                else:
+                    cfbs_convert_git_commit(
+                        "Converted './%s' into a .patch file" % modified_file
+                    )
             except:
                 log.warning("Git commit failed, continuing without committing...")
+
+            first_patch_conversion = False
 
     print("Conversion finished successfully.")
 
