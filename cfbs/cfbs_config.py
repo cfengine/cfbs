@@ -367,6 +367,23 @@ class CFBSConfig(CFBSJson):
             self._add_policy_files_build_step(module)
             self._add_bundles_build_step(module, policy_files)
 
+    def _handle_absolute_module(self, module):
+        name = module["name"]
+        if not (
+            name.startswith("/") and name.endswith("/") and "absolute" in module["tags"]
+        ):
+            log.debug("Module '%s' does not appear to be an absolute module" % name)
+            return
+
+        pattern = "%s/**/*.cf" % name
+        policy_files = glob.glob(pattern, recursive=True)
+
+        # TODO: handle absolute modules with autorun tag
+
+        # TODO: check that these build steps are written correctly
+        self._add_policy_files_build_step(module)
+        self._add_bundles_build_step(module, policy_files)
+
     def _add_without_dependencies(self, modules, use_default_build_steps=True):
         """Note: `use_default_build_steps` is only relevant for local modules."""
         if not use_default_build_steps:
@@ -392,6 +409,7 @@ class CFBSConfig(CFBSJson):
             )
             self["build"].append(module)
             self._handle_local_module(module, use_default_build_steps)
+            self._handle_absolute_module(module)
 
             assert "added_by" in module
             added_by = module["added_by"]

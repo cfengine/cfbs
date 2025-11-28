@@ -33,7 +33,7 @@ SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
 SUPPORTED_URI_SCHEMES = ("https://", "ssh://", "git://")
 
 
-def local_module_name(module_path):
+def local_module_name(module_path: str):
     assert os.path.exists(module_path)
     module = module_path
 
@@ -60,6 +60,27 @@ def local_module_name(module_path):
     else:
         if not os.path.isdir(module):
             raise CFBSExitError("'%s' must be either a directory or a file" % module)
+
+    return module
+
+
+def absolute_module_name(module_path: str):
+    assert os.path.exists(module_path)
+    module = module_path
+    assert module.startswith("/")
+
+    for illegal in ["//", "..", " ", "\n", "\t", " "]:
+        if illegal in module:
+            raise CFBSExitError("Module path cannot contain %s" % repr(illegal))
+
+    if not module.endswith("/"):
+        module = module + "/"
+    while "/./" in module:
+        module = module.replace("/./", "/")
+
+    assert os.path.exists(module)
+    if not os.path.isdir(module):
+        raise CFBSExitError("'%s' must be a directory" % module)
 
     return module
 
@@ -115,6 +136,12 @@ def local_module_copy(module, counter, max_length):
         "%03d %s @ local                                    (Copied)"
         % (counter, pad_right(name, max_length))
     )
+
+
+def absolute_module_copy(module, counter, max_length):
+    # TODO: handle building an absolute module
+    # directory copy, Git checkout, etc.
+    return
 
 
 def _get_path_from_url(url):

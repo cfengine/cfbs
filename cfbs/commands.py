@@ -104,6 +104,7 @@ from cfbs.validate import (
     validate_single_module,
 )
 from cfbs.internal_file_management import (
+    absolute_module_copy,
     clone_url_repo,
     SUPPORTED_URI_SCHEMES,
     fetch_archive,
@@ -120,7 +121,7 @@ from cfbs.git import (
 
 from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import prompt_user, prompt_user_yesno
-from cfbs.module import Module, is_module_added_manually
+from cfbs.module import Module, is_module_absolute, is_module_added_manually
 from cfbs.masterfiles.generate_release_information import generate_release_information
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
@@ -634,8 +635,11 @@ def update_command(to_update):
                 continue
 
             new_module = provides[module_name]
+        elif is_module_absolute(old_module["name"]):
+            # TODO: update an absolute module
+            # check the HEAD at path, update commit
+            new_module = old_module
         else:
-
             if "version" not in old_module:
                 log.warning(
                     "Module '%s' not updatable. Skipping its update."
@@ -806,6 +810,10 @@ def _download_dependencies(config: CFBSConfig, redownload=False, ignore_versions
             local_module_copy(module, counter, max_length)
             counter += 1
             continue
+        if name.startswith("/"):
+            absolute_module_copy(module, counter, max_length)
+            counter += 1
+            continue
         if "commit" not in module:
             raise CFBSExitError("module %s must have a commit property" % name)
         commit = module["commit"]
@@ -902,6 +910,7 @@ def build_command(ignore_versions=False, diffs_filename=None):
         # We want the cfbs build command to be as backwards compatible as possible,
         # so we try building anyway and don't return error(s)
     init_out_folder()
+    # TODO: handle build of absolute module
     _download_dependencies(config, ignore_versions=ignore_versions)
     r = perform_build(config, diffs_filename)
     return r

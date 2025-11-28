@@ -258,3 +258,15 @@ def treeish_exists(treeish, repo_path):
     result = run(command, cwd=repo_path, stdout=DEVNULL, stderr=DEVNULL, check=False)
 
     return result.returncode == 0
+
+
+def head_commit_hash(repo_path):
+    result = run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_path,
+        stdout=PIPE,
+        stderr=DEVNULL,
+        check=True,
+    )
+
+    return result.stdout.decode("utf-8").strip()
