@@ -50,5 +50,6 @@ bash tests/shell/043_replace_version.sh
 bash tests/shell/044_replace.sh
 bash tests/shell/045_update_from_url_branch_uptodate.sh
 bash tests/shell/046_update_from_url_branch.sh
+# TODO: add 047 test for a usual absolute module flow: init, add, build, update, build - including a sample directory
 
 echo "All cfbs shell tests completed successfully!"

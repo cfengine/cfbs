@@ -31,14 +31,17 @@ TODOs:
 """
 
 import logging as log
+import os
 import re
 from collections import OrderedDict
 from typing import List, Tuple
 
-from cfbs.module import is_module_local
+from cfbs.git import is_git_repo, treeish_exists
+from cfbs.module import is_module_absolute, is_module_local
 from cfbs.utils import (
     is_a_commit_hash,
     strip_left,
+    strip_right,
     strip_right_any,
     CFBSExitError,
     CFBSValidationError,
@@ -169,16 +172,50 @@ def _validate_top_level_keys(config):
             )
 
 
+def validate_absolute_module(name_path, module):
+    if not (os.path.exists(name_path) and os.path.isdir(name_path)):
+        raise CFBSValidationError(
+            name_path,
+            "Absolute module's directory does not exist",
+        )
+
+    if not is_git_repo(name_path):
+        raise CFBSValidationError(name_path, "Absolute module is not a Git repository")
+
+    if not module["commit"]:
+        raise CFBSValidationError(
+            name_path, 'Absolute modules require the "commit" key'
+        )
+    commit = module["commit"]
+
+    # TODO: unless a branch / tag name is a valid "commit" field value, this needs to be checked differently
+    if not treeish_exists(commit, name_path):
+        raise CFBSValidationError(
+            name_path,
+            "Git repository of the absolute module does not contain the specified commit",
+        )
+
+
 def validate_module_name_content(name):
     MAX_MODULE_NAME_LENGTH = 64
 
-    if len(name) > MAX_MODULE_NAME_LENGTH:
-        raise CFBSValidationError(
-            name,
-            "Module name is too long (over "
-            + str(MAX_MODULE_NAME_LENGTH)
-            + " characters)",
-        )
+    if is_module_absolute(name):
+        for component in name.split("/"):
+            if len(component) > MAX_MODULE_NAME_LENGTH:
+                raise CFBSValidationError(
+                    name,
+                    "Path component '%s' in module name is too long (over " % component
+                    + str(MAX_MODULE_NAME_LENGTH)
+                    + " characters)",
+                )
+    else:
+        if len(name) > MAX_MODULE_NAME_LENGTH:
+            raise CFBSValidationError(
+                name,
+                "Module name is too long (over "
+                + str(MAX_MODULE_NAME_LENGTH)
+                + " characters)",
+            )
 
     # lowercase ASCII alphanumericals, starting with a letter, and possible singular dashes in the middle
     r = "[a-z][a-z0-9]*(-[a-z0-9]+)*"
@@ -200,8 +237,32 @@ def validate_module_name_content(name):
         # only validate the local module's name, not the entire path to it
         proper_name = proper_name.split("/")[-1]
 
-        # allow underscores, only for local modules
+        # allow underscores, only for local and absolute modules
         proper_name = proper_name.replace("_", "-")
+
+    if is_module_absolute(name):
+        if not name.startswith("/"):
+            raise CFBSValidationError(
+                name, "Absolute module names should begin with `/`"
+            )
+
+        if not name.endswith("/"):
+            raise CFBSValidationError(
+                name,
+                "Absolute module names should end with `/`",
+            )
+        proper_name = strip_right(proper_name, "/")
+        # TODO: more validation of the entire path instead of just the name (final component), since the module "name" is actually a path
+        proper_name = proper_name.split("/")[-1]
+
+        # allow underscores, only for local and absolute modules
+        proper_name = proper_name.replace("_", "-")
+
+    if len(proper_name) == 0:
+        raise CFBSValidationError(
+            name,
+            "Module name proper is empty",
+        )
 
     if not re.fullmatch(r, proper_name):
         raise CFBSValidationError(
@@ -395,6 +456,7 @@ def _validate_module_alias(name, module, context, config):
 
 def _validate_module_name(name: str, module):
     assert "name" in module
+    # NOTE: this assert fails for an empty module name, preventing the latter `if not module["name"]` check, TODO re-write
     assert name
     assert type(name) is str
     assert module["name"]
@@ -777,6 +839,9 @@ def validate_single_module(context, name, module, config, local_check=False):
     # Validate module name content also when there's no explicit "name" field (for "index" and "provides" project types)
     if "name" not in module:
         validate_module_name_content(name)
+
+    if is_module_absolute(name):
+        validate_absolute_module(name, module)
 
 
 def _validate_config_for_build_field(config, empty_build_list_ok=False):
