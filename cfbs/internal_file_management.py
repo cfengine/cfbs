@@ -232,7 +232,7 @@ def fetch_archive(
     # TODO: use Python modules instead of CLI tools?
     if archive_type.startswith(_SUPPORTED_TAR_TYPES):
         if shutil.which("tar"):
-            sh("cd %s; tar -xf %s" % (content_dir, archive_path))
+            sh("cd %s; tar -xzf %s" % (content_dir, archive_path))
         else:
             raise CFBSExitError("Working with .tar archives requires the 'tar' utility")
     elif archive_type == (".zip"):
