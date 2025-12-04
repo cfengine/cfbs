@@ -70,7 +70,7 @@ def _generate_augment(module_name, input_data):
         if not isinstance(variable, dict) or any(
             key not in variable for key in ("variable", "response")
         ):
-            return None
+            continue
 
         name = variable["variable"]
         namespace = variable.get("namespace", "cfbs")
