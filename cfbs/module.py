@@ -15,6 +15,13 @@ def is_module_local(name: str):
     return name.startswith("./")
 
 
+def is_module_absolute(name: str):
+    """A module might contain `"absolute"` in its `"tags"` but this is not required.
+    The source of truth for whether the module is absolute is whether it starts with `/`.
+    """
+    return name.startswith("/")
+
+
 class Module:
     """Class representing a module in cfbs.json"""
 
