@@ -39,7 +39,12 @@ from cfbs.internal_file_management import (
 )
 from cfbs.pretty import pretty, CFBS_DEFAULT_SORTING_RULES
 from cfbs.cfbs_json import CFBSJson
-from cfbs.module import Module, is_module_added_manually, is_module_local
+from cfbs.module import (
+    Module,
+    is_module_added_manually,
+    is_module_local,
+    is_module_absolute,
+)
 from cfbs.prompts import prompt_user, prompt_user_yesno
 from cfbs.validate import validate_single_module
 
@@ -337,8 +342,12 @@ class CFBSConfig(CFBSJson):
             name.startswith("./")
             and name.endswith((".cf", "/"))
             and "local" in module["tags"]
+        ) and not (
+            name.startswith("/") and name.endswith("/") and "absolute" in module["tags"]
         ):
-            log.debug("Module '%s' does not appear to be a local module" % name)
+            log.debug(
+                "Module '%s' do not appear to be a local or absolute module" % name
+            )
             return
 
         if name.endswith(".cf"):
@@ -486,6 +495,12 @@ class CFBSConfig(CFBSJson):
                     "URI scheme not supported. The supported URI schemes are: "
                     + ", ".join(SUPPORTED_URI_SCHEMES)
                 )
+            for m in to_add:
+                if is_module_absolute(m):
+                    if not os.path.exists(m):
+                        raise CFBSUserError("Absolute path module doesn't exist")
+                    if not os.path.isdir(m):
+                        raise CFBSUserError("Absolute path module is not a dir")
             self._add_modules(to_add, added_by, checksum, explicit_build_steps)
 
         added = {m["name"] for m in self["build"]}.difference(before)

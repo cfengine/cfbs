@@ -28,12 +28,14 @@ from cfbs.utils import (
     CFBSExitError,
 )
 
+from cfbs.git import git_clean_reset
+
 _SUPPORTED_TAR_TYPES = (".tar.gz", ".tgz")
 SUPPORTED_ARCHIVES = (".zip",) + _SUPPORTED_TAR_TYPES
 SUPPORTED_URI_SCHEMES = ("https://", "ssh://", "git://")
 
 
-def local_module_name(module_path):
+def local_module_name(module_path: str):
     assert os.path.exists(module_path)
     module = module_path
 
@@ -60,6 +62,27 @@ def local_module_name(module_path):
     else:
         if not os.path.isdir(module):
             raise CFBSExitError("'%s' must be either a directory or a file" % module)
+
+    return module
+
+
+def absolute_module_name(module_path: str):
+    assert os.path.exists(module_path)
+    module = module_path
+    assert module.startswith("/")
+
+    for illegal in ["//", "..", " ", "\n", "\t", " "]:
+        if illegal in module:
+            raise CFBSExitError("Module path cannot contain %s" % repr(illegal))
+
+    if not module.endswith("/"):
+        module = module + "/"
+    while "/./" in module:
+        module = module.replace("/./", "/")
+
+    assert os.path.exists(module)
+    if not os.path.isdir(module):
+        raise CFBSExitError("'%s' must be a directory" % module)
 
     return module
 
@@ -114,6 +137,23 @@ def local_module_copy(module, counter, max_length):
     print(
         "%03d %s @ local                                    (Copied)"
         % (counter, pad_right(name, max_length))
+    )
+
+
+def absolute_module_copy(module, counter, max_length):
+    assert "commit" in module
+    name = module["name"]
+    pretty_name = _prettify_name(name)
+    target = "out/steps/%03d_%s_local/" % (counter, pretty_name)
+    module["_directory"] = target
+    module["_counter"] = counter
+
+    cp(name, target)
+    git_clean_reset(target, module["commit"])
+
+    print(
+        "%03d %s @ %s                                  (Copied)"
+        % (counter, pad_right(name, max_length), module["commit"][:7])
     )
 
 

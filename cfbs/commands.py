@@ -104,6 +104,7 @@ from cfbs.validate import (
     validate_single_module,
 )
 from cfbs.internal_file_management import (
+    absolute_module_copy,
     clone_url_repo,
     SUPPORTED_URI_SCHEMES,
     fetch_archive,
@@ -116,11 +117,12 @@ from cfbs.git import (
     git_configure_and_initialize,
     is_git_repo,
     CFBSGitError,
+    head_commit_hash,
 )
 
 from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import prompt_user, prompt_user_yesno
-from cfbs.module import Module, is_module_added_manually
+from cfbs.module import Module, is_module_absolute, is_module_added_manually
 from cfbs.masterfiles.generate_release_information import generate_release_information
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
@@ -634,6 +636,9 @@ def update_command(to_update):
                 continue
 
             new_module = provides[module_name]
+        elif is_module_absolute(old_module["name"]):
+            new_module = index.get_module_object(update.name)
+            new_module["commit"] = head_commit_hash(old_module["name"])
         else:
 
             if "version" not in old_module:
@@ -804,6 +809,10 @@ def _download_dependencies(config: CFBSConfig, redownload=False, ignore_versions
         name = module["name"]
         if name.startswith("./"):
             local_module_copy(module, counter, max_length)
+            counter += 1
+            continue
+        if name.startswith("/"):
+            absolute_module_copy(module, counter, max_length)
             counter += 1
             continue
         if "commit" not in module:
