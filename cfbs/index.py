@@ -3,9 +3,10 @@ import os
 from collections import OrderedDict
 from typing import List, Optional, Union
 
-from cfbs.module import Module
+from cfbs.git import head_commit_hash, is_git_repo
+from cfbs.module import Module, is_module_absolute
 from cfbs.utils import CFBSNetworkError, get_or_read_json, CFBSExitError, get_json
-from cfbs.internal_file_management import local_module_name
+from cfbs.internal_file_management import absolute_module_name, local_module_name
 
 _DEFAULT_INDEX = (
     "https://raw.githubusercontent.com/cfengine/build-index/master/cfbs.json"
@@ -48,6 +49,30 @@ def _local_module_data_subdir(
         "description": "Local subdirectory added using cfbs command line",
         "tags": ["local"],
         "steps": build_steps,
+        # TODO: turn this into an argument, for when it's not "cfbs add" adding the module
+        "added_by": "cfbs add",
+    }
+
+
+def _absolute_module_data(module_name: str, version: Optional[str]):
+    assert module_name.startswith("/")
+    assert module_name.endswith("/")
+
+    if version is not None:
+        commit_hash = version
+    elif is_git_repo(module_name):
+        commit_hash = head_commit_hash(module_name)
+    else:
+        commit_hash = ""
+
+    dst = os.path.join("services", "cfbs", module_name[1:])
+    build_steps = ["directory ./ {}".format(dst)]
+    return {
+        "description": "Module added via absolute path to a Git repository directory",
+        "tags": ["absolute"],
+        "steps": build_steps,
+        "commit": commit_hash,
+        # TODO: turn this into an argument, for when it's not "cfbs add" adding the module
         "added_by": "cfbs add",
     }
 
@@ -65,6 +90,14 @@ def _generate_local_module_object(
         return _local_module_data_cf_file(module_name)
     if module_name.endswith(".json"):
         return _local_module_data_json_file(module_name)
+
+
+def _generate_absolute_module_object(module_name: str, version: Optional[str]):
+    assert module_name.startswith("/")
+    assert module_name.endswith("/")
+    assert os.path.isdir(module_name)
+
+    return _absolute_module_data(module_name, version)
 
 
 class Index:
@@ -171,7 +204,10 @@ class Index:
                 module.name = data["alias"]
         else:
             if os.path.exists(module.name):
-                module.name = local_module_name(module.name)
+                if is_module_absolute(module.name):
+                    module.name = absolute_module_name(module.name)
+                else:
+                    module.name = local_module_name(module.name)
 
     def get_module_object(
         self,
@@ -187,6 +223,13 @@ class Index:
 
         if name.startswith("./"):
             object = _generate_local_module_object(name, explicit_build_steps)
+        elif is_module_absolute(name):
+            if not os.path.isdir(name):
+                pass
+            object = _generate_absolute_module_object(name, version)
+            # currently, the argument of cfbs-add is split by `@` in the `Module` constructor
+            # due to that, this hack is used to prevent creating the "version" field
+            module = Module(name).to_dict()
         else:
             object = self[name]
             if version:

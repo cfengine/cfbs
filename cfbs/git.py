@@ -11,6 +11,7 @@ See git_magic.py for more git related code.
 import os
 import itertools
 import tempfile
+import shutil
 from subprocess import check_call, check_output, run, PIPE, DEVNULL, CalledProcessError
 from typing import Iterable, Union
 
@@ -258,3 +259,26 @@ def treeish_exists(treeish, repo_path):
     result = run(command, cwd=repo_path, stdout=DEVNULL, stderr=DEVNULL, check=False)
 
     return result.returncode == 0
+
+
+def head_commit_hash(repo_path):
+    result = run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_path,
+        stdout=PIPE,
+        stderr=DEVNULL,
+        check=True,
+    )
+
+    return result.stdout.decode("utf-8").strip()
+
+
+# Ensure reproducibility when copying git repositories
+# 1. hard reset to specific commit
+# 2. remove untracked files
+# 3. remove .git directory
+def git_clean_reset(repo_path, commit):
+    run(["git", "reset", "--hard", commit], cwd=repo_path, check=True, stdout=DEVNULL)
+    run(["git", "clean", "-fxd"], cwd=repo_path, check=True, stdout=DEVNULL)
+    git_dir = os.path.join(repo_path, ".git")
+    shutil.rmtree(git_dir, ignore_errors=True)
