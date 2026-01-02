@@ -43,7 +43,7 @@ def generate_release_information(omit_download=False, check=False, min_version=N
         print("The masterfiles downloaded from github.com and cfengine.com match.")
     else:
         print("Release information successfully generated.")
-        print("See the results in ./versions.json, ./checksums.json, and ./files.json")
+        print("See the results in ./masterfiles/")
         print(
             "(Run again with --check-against-git to download and compare with files "
             + "from git, and generate -git.json files)"
