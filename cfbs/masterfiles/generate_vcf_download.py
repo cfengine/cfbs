@@ -28,6 +28,6 @@ def generate_vcf_download(dir_path, downloaded_versions):
         versions_dict, checksums_dict, files_dict
     )
 
-    write_json("versions.json", versions_dict)
-    write_json("checksums.json", checksums_dict)
-    write_json("files.json", files_dict)
+    write_json("./masterfiles/versions.json", versions_dict)
+    write_json("./masterfiles/checksums.json", checksums_dict)
+    write_json("./masterfiles/files.json", files_dict)
