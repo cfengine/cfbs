@@ -1,8 +1,14 @@
 import os
 import shutil
 
-from cfbs.masterfiles.analyze import version_is_at_least
-from cfbs.utils import CFBSNetworkError, fetch_url, get_json, mkdir, CFBSExitError
+from cfbs.utils import (
+    CFBSNetworkError,
+    fetch_url,
+    get_json,
+    mkdir,
+    CFBSExitError,
+    version_is_at_least,
+)
 
 ENTERPRISE_RELEASES_URL = "https://cfengine.com/release-data/enterprise/releases.json"
 

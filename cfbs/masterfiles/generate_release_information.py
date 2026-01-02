@@ -1,9 +1,8 @@
-from cfbs.masterfiles.analyze import version_is_at_least
 from cfbs.masterfiles.download import download_all_versions
 from cfbs.masterfiles.generate_vcf_download import generate_vcf_download
 from cfbs.masterfiles.generate_vcf_git_checkout import generate_vcf_git_checkout
 from cfbs.masterfiles.check_download_matches_git import check_download_matches_git
-from cfbs.utils import immediate_subdirectories
+from cfbs.utils import immediate_subdirectories, version_is_at_least
 
 DOWNLOAD_PATH = "downloaded_masterfiles"
 
