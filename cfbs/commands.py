@@ -59,7 +59,6 @@ from typing import Iterable
 
 from cfbs.cfbs_json import CFBSJson
 from cfbs.cfbs_types import CFBSCommandExitCode, CFBSCommandGitResult
-from cfbs.masterfiles.analyze import most_relevant_version
 from cfbs.masterfiles.download import download_single_version
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
@@ -72,6 +71,7 @@ from cfbs.utils import (
     file_diff_text,
     is_cfbs_repo,
     mkdir,
+    most_relevant_version,
     read_json,
     CFBSExitError,
     save_file,

@@ -1,8 +1,13 @@
 import os
 from collections import OrderedDict
 
-from cfbs.masterfiles.analyze import version_as_comparable_list
-from cfbs.utils import dict_diff, read_json, CFBSExitError, write_json
+from cfbs.utils import (
+    dict_diff,
+    read_json,
+    CFBSExitError,
+    write_json,
+    version_as_comparable_list,
+)
 
 
 def check_download_matches_git(versions):

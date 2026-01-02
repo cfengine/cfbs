@@ -4,11 +4,6 @@ from typing import Tuple, Union
 import copy
 
 from cfbs.internal_file_management import fetch_archive
-from cfbs.masterfiles.analyze import (
-    highest_version,
-    sort_versions,
-    version_as_comparable_list,
-)
 from cfbs.utils import (
     CFBSNetworkError,
     cfbs_dir,
@@ -16,9 +11,12 @@ from cfbs.utils import (
     fetch_url,
     file_sha256,
     get_json,
+    highest_version,
     immediate_subdirectories,
     mkdir,
     read_json,
+    sort_versions,
+    version_as_comparable_list,
     CFBSExitError,
 )
 
