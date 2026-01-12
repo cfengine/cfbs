@@ -28,9 +28,6 @@ class ArgsTypesNamespace(argparse.Namespace):
     git_commit_message = None  # type: Optional[str]
     ignore_versions_json = False  # type: bool
     diffs = None  # type: Optional[str]
-    omit_download = False  # type: bool
-    check_against_git = False  # type: bool
-    minimum_version = None  # type: Optional[str]
     to_json = None  # type: Optional[str]
     reference_version = None  # type: Optional[str]
     masterfiles_dir = None  # type: Optional[str]
@@ -168,21 +165,6 @@ def get_arg_parser(whitespace_for_manual=False):
         nargs="?",
         const="diffs.txt",
         default=None,
-    )
-    parser.add_argument(
-        "--omit-download",
-        help="Use existing masterfiles instead of downloading in 'cfbs generate-release-information'",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--check-against-git",
-        help="Check whether masterfiles from cfengine.com and github.com match in 'cfbs generate-release-information'",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--from",
-        help="Specify minimum version in 'cfbs generate-release-information'",
-        dest="minimum_version",
     )
     parser.add_argument(
         "--to-json",

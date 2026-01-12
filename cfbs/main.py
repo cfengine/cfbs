@@ -90,24 +90,6 @@ def _main() -> int:
             % args.command
         )
 
-    if args.omit_download and args.command != "generate-release-information":
-        raise CFBSUserError(
-            "The option --omit-download is only for 'cfbs generate-release-information', not 'cfbs %s'"
-            % args.command
-        )
-
-    if args.check_against_git and args.command != "generate-release-information":
-        raise CFBSUserError(
-            "The option --check-against-git is only for 'cfbs generate-release-information', not 'cfbs %s'"
-            % args.command
-        )
-
-    if args.minimum_version and args.command != "generate-release-information":
-        raise CFBSUserError(
-            "The option --from is only for 'cfbs generate-release-information', not 'cfbs %s'"
-            % args.command
-        )
-
     if args.masterfiles_dir and args.command not in ("analyze", "analyse"):
         raise CFBSUserError(
             "The option --masterfiles-dir is only for 'cfbs analyze', not 'cfbs %s'"
@@ -192,13 +174,6 @@ def _main() -> int:
         )
     if args.command == "convert":
         return commands.convert_command(args.non_interactive, args.offline)
-
-    if args.command == "generate-release-information":
-        return commands.generate_release_information_command(
-            omit_download=args.omit_download,
-            check=args.check_against_git,
-            min_version=args.minimum_version,
-        )
 
     # Commands you cannot run outside a cfbs repo:
     if not is_cfbs_repo():

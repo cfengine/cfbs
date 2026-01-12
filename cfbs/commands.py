@@ -59,7 +59,7 @@ from typing import Iterable
 
 from cfbs.cfbs_json import CFBSJson
 from cfbs.cfbs_types import CFBSCommandExitCode, CFBSCommandGitResult
-from cfbs.masterfiles.download import download_single_version
+from cfbs.download import download_single_version
 from cfbs.updates import ModuleUpdates, update_module
 from cfbs.utils import (
     CFBSNetworkError,
@@ -123,7 +123,6 @@ from cfbs.git import (
 from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import prompt_user, prompt_user_yesno
 from cfbs.module import Module, is_module_absolute, is_module_added_manually
-from cfbs.masterfiles.generate_release_information import generate_release_information
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
 
@@ -1609,12 +1608,4 @@ def get_input_command(name, outfile):
     except OSError as e:
         log.error("Failed to write json: %s" % e)
         return 1
-    return 0
-
-
-@cfbs_command("generate-release-information")
-def generate_release_information_command(
-    omit_download=False, check=False, min_version=None
-):
-    generate_release_information(omit_download, check, min_version)
     return 0
