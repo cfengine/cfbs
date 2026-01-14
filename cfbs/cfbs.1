@@ -1,15 +1,15 @@
-.TH CFBS "1" "2025\-10\-03" "cfbs" "CFEngine Build System manual"
+.TH CFBS "1" "2026\-01\-13" "cfbs" "CFEngine Build System manual"
 .SH NAME
 cfbs \- combines multiple modules into 1 policy set to deploy on your infrastructure. Modules can be custom promise types, JSON files which enable certain functionality, or reusable CFEngine policy. The modules you use can be written by the CFEngine team, others in the community, your colleagues, or yourself.
 .SH SYNOPSIS
 .B cfbs
-[-h] [--loglevel LOGLEVEL] [-M] [--version] [--force] [--non-interactive] [--index INDEX] [--check] [--checksum CHECKSUM] [--keep-order] [--git {yes,no}] [--git-user-name GIT_USER_NAME] [--git-user-email GIT_USER_EMAIL] [--git-commit-message GIT_COMMIT_MESSAGE] [--ignore-versions-json] [--diffs [DIFFS]] [--omit-download] [--check-against-git] [--from MINIMUM_VERSION] [--to-json [TO_JSON]] [--reference-version REFERENCE_VERSION] [--masterfiles-dir MASTERFILES_DIR] [--ignored-path-components [IGNORED_PATH_COMPONENTS ...]] [--offline] [--masterfiles MASTERFILES] [cmd] [args ...]
+[-h] [--loglevel LOGLEVEL] [-M] [--version] [--force] [--non-interactive] [--index INDEX] [--check] [--checksum CHECKSUM] [--keep-order] [--git {yes,no}] [--git-user-name GIT_USER_NAME] [--git-user-email GIT_USER_EMAIL] [--git-commit-message GIT_COMMIT_MESSAGE] [--ignore-versions-json] [--diffs [DIFFS]] [--to-json [TO_JSON]] [--reference-version REFERENCE_VERSION] [--masterfiles-dir MASTERFILES_DIR] [--ignored-path-components [IGNORED_PATH_COMPONENTS ...]] [--offline] [--masterfiles MASTERFILES] [cmd] [args ...]
 .SH DESCRIPTION
 CFEngine Build System.
 
 .TP
 \fBcmd\fR
-The command to perform (pretty, init, status, search, add, remove, clean, update, validate, download, build, install, help, info, show, analyse, analyze, convert, input, set\-input, get\-input, generate\-release\-information)
+The command to perform (pretty, init, status, search, add, remove, clean, update, validate, download, build, install, help, info, show, analyse, analyze, convert, input, set\-input, get\-input)
 
 .TP
 \fBargs\fR
@@ -75,18 +75,6 @@ Ignore versions.json. Necessary in case of a custom index or testing changes to 
 .TP
 \fB\-\-diffs\fR \fI\,[DIFFS]\/\fR
 Write diffs of files overwritten with a copy build step during 'cfbs build' to the specified file
-
-.TP
-\fB\-\-omit\-download\fR
-Use existing masterfiles instead of downloading in 'cfbs generate\-release\-information'
-
-.TP
-\fB\-\-check\-against\-git\fR
-Check whether masterfiles from cfengine.com and github.com match in 'cfbs generate\-release\-information'
-
-.TP
-\fB\-\-from\fR \fI\,MINIMUM_VERSION\/\fR
-Specify minimum version in 'cfbs generate\-release\-information'
 
 .TP
 \fB\-\-to\-json\fR \fI\,[TO_JSON]\/\fR
