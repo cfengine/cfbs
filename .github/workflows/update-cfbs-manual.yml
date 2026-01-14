@@ -53,6 +53,5 @@ jobs:
             olehermanse
             larsewi
             craigcomstock
-            jakub-nt
           branch: pr-update-manpage
           branch-suffix: timestamp
