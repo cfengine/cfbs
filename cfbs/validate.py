@@ -227,6 +227,10 @@ def validate_module_name_content(name):
     r = "[a-z][a-z0-9]*(-[a-z0-9]+)*"
     proper_name = name
 
+    if is_module_local(name) or is_module_absolute(name):
+        # If one of these are true, the other must be false
+        assert is_module_absolute(name) != is_module_local(name)
+
     if is_module_local(name):
         if not name.startswith("./"):
             raise CFBSValidationError(name, "Local module names should begin with `./`")
@@ -270,10 +274,18 @@ def validate_module_name_content(name):
             "Module name proper is empty",
         )
 
+    if proper_name[0] not in "abcdefghijklmnopqrstuvwxyz":
+        raise CFBSValidationError(
+            name,
+            "Module name must start with a lowercase ASCII letter ('{}' starts with '{}')".format(
+                proper_name, proper_name[0]
+            ),
+        )
+
     if not re.fullmatch(r, proper_name):
         raise CFBSValidationError(
             name,
-            "Module name contains illegal characters (only lowercase ASCII alphanumeric characters are legal)",
+            "Module name contains illegal characters (only lowercase ASCII alphanumeric characters and single dash separators are allowed)",
         )
 
     log.debug("Successfully validated name of module %s" % name)
