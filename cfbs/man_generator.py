@@ -18,9 +18,7 @@ def generate_man_page():
         + "Modules can be custom promise types, JSON files which enable certain functionality, or reusable CFEngine policy. "
         + "The modules you use can be written by the CFEngine team, others in the community, your colleagues, or yourself."
     )
-    body = (
-        str(manpage)
-        + """
+    body = str(manpage) + """
 .br
 Binary packages may be downloaded from https://cfengine.com/download/.
 .br
@@ -40,7 +38,6 @@ GitHub pull-requests may be submitted to https://github.com/cfengine/cfbs.
 .SH AUTHOR
     Northern.tech AS
         """
-    )
     with open(os.path.dirname(__file__) + "/cfbs.1", "w", encoding="utf-8") as man_file:
         man_file.write(body)
     return body

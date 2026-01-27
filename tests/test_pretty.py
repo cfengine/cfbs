@@ -220,15 +220,10 @@ def test_pretty_file():
 def test_pretty_check_string():
     assert pretty_check_string(' "Hello" ') is False
     assert pretty_check_string('"Hello"') is True
-    assert (
-        pretty_check_string(
-            """{
+    assert pretty_check_string("""{
   "name": "lars",
   "age": 27
-}"""
-        )
-        is True
-    )
+}""") is True
     assert pretty_check_string('{ "name": "lars", "age": 27 }') is False
 
 
@@ -242,29 +237,20 @@ def test_pretty_sorting_simple_top_level():
         ),
     }
     assert pretty_string("""{}""", lex_sorting) == """{}"""
-    assert (
-        pretty_string("""{"a":1}""", lex_sorting)
-        == """{
+    assert pretty_string("""{"a":1}""", lex_sorting) == """{
   "a": 1
 }"""
-    )
 
-    assert (
-        pretty_string("""{"b":2,"a":1}""", lex_sorting)
-        == """{
+    assert pretty_string("""{"b":2,"a":1}""", lex_sorting) == """{
   "a": 1,
   "b": 2
 }"""
-    )
 
-    assert (
-        pretty_string("""{"b":2,"a":1,"c":3}""", lex_sorting)
-        == """{
+    assert pretty_string("""{"b":2,"a":1,"c":3}""", lex_sorting) == """{
   "a": 1,
   "b": 2,
   "c": 3
 }"""
-    )
 
     length_sorting = {
         None: (
@@ -274,29 +260,20 @@ def test_pretty_sorting_simple_top_level():
     }
 
     assert pretty_string("""{}""", length_sorting) == """{}"""
-    assert (
-        pretty_string("""{"aa":1}""", length_sorting)
-        == """{
+    assert pretty_string("""{"aa":1}""", length_sorting) == """{
   "aa": 1
 }"""
-    )
 
-    assert (
-        pretty_string("""{"bbb":2,"aa":1}""", length_sorting)
-        == """{
+    assert pretty_string("""{"bbb":2,"aa":1}""", length_sorting) == """{
   "aa": 1,
   "bbb": 2
 }"""
-    )
 
-    assert (
-        pretty_string("""{"bbb":2,"aa":1,"c":3}""", length_sorting)
-        == """{
+    assert pretty_string("""{"bbb":2,"aa":1,"c":3}""", length_sorting) == """{
   "c": 3,
   "aa": 1,
   "bbb": 2
 }"""
-    )
 
     integer_sorting = {
         None: (
@@ -306,39 +283,27 @@ def test_pretty_sorting_simple_top_level():
     }
 
     assert pretty_string("""{}""", integer_sorting) == """{}"""
-    assert (
-        pretty_string("""{"a":1}""", integer_sorting)
-        == """{
+    assert pretty_string("""{"a":1}""", integer_sorting) == """{
   "a": 1
 }"""
-    )
 
-    assert (
-        pretty_string("""{"b":2,"a":1}""", integer_sorting)
-        == """{
+    assert pretty_string("""{"b":2,"a":1}""", integer_sorting) == """{
   "a": 1,
   "b": 2
 }"""
-    )
 
-    assert (
-        pretty_string("""{"b":2,"a":1,"c":3}""", integer_sorting)
-        == """{
+    assert pretty_string("""{"b":2,"a":1,"c":3}""", integer_sorting) == """{
   "a": 1,
   "b": 2,
   "c": 3
 }"""
-    )
 
-    assert (
-        pretty_string("""{"b":2,"a":1,"c":3,"z":-1}""", integer_sorting)
-        == """{
+    assert pretty_string("""{"b":2,"a":1,"c":3,"z":-1}""", integer_sorting) == """{
   "z": -1,
   "a": 1,
   "b": 2,
   "c": 3
 }"""
-    )
 
     specific_sorting = {
         None: (
@@ -349,38 +314,26 @@ def test_pretty_sorting_simple_top_level():
 
     assert pretty_string("""{}""", specific_sorting) == """{}"""
 
-    assert (
-        pretty_string("""{"a":1}""", specific_sorting)
-        == """{
+    assert pretty_string("""{"a":1}""", specific_sorting) == """{
   "a": 1
 }"""
-    )
 
-    assert (
-        pretty_string("""{"b":2,"a":1}""", specific_sorting)
-        == """{
+    assert pretty_string("""{"b":2,"a":1}""", specific_sorting) == """{
   "b": 2,
   "a": 1
 }"""
-    )
 
-    assert (
-        pretty_string("""{"b":2,"a":1,"c":3}""", specific_sorting)
-        == """{
+    assert pretty_string("""{"b":2,"a":1,"c":3}""", specific_sorting) == """{
   "b": 2,
   "a": 1,
   "c": 3
 }"""
-    )
-    assert (
-        pretty_string("""{"b":2,"a":1,"c":3,"z":-1}""", specific_sorting)
-        == """{
+    assert pretty_string("""{"b":2,"a":1,"c":3,"z":-1}""", specific_sorting) == """{
   "z": -1,
   "b": 2,
   "a": 1,
   "c": 3
 }"""
-    )
 
 
 def test_pretty_sorting_array():

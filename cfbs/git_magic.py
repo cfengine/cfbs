@@ -19,7 +19,6 @@ from cfbs.cfbs_types import CFBSCommandExitCode, CFBSCommandGitResult
 import logging as log
 from functools import partial
 
-
 first_commit = True
 
 

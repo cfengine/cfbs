@@ -13,7 +13,6 @@ TODOs:
   3. Add modules and make commits
 """
 
-
 import os
 import copy
 import glob
