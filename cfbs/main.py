@@ -41,6 +41,8 @@ def init_logging(level):
         log.basicConfig(level=log.INFO, format=format)
     elif level == "debug":
         log.basicConfig(level=log.DEBUG, format=format)
+    elif level == "none":
+        log.disable(level=log.CRITICAL)
     else:
         raise ValueError("Unknown log level: {}".format(level))
 
