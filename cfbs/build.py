@@ -10,6 +10,7 @@ There are some preliminary parts of 'cfbs build' implemented
 elsewhere, like validation and downloading modules.
 """
 
+import json
 import os
 import logging as log
 import shutil
@@ -485,7 +486,12 @@ def perform_build(config: CFBSConfig, diffs_filename=None) -> int:
     assert os.path.isdir("./out/masterfiles/")
     shutil.copyfile("./cfbs.json", "./out/masterfiles/cfbs.json")
     if os.path.isfile("out/masterfiles/def.json"):
-        pretty_file("out/masterfiles/def.json")
+        try:
+            pretty_file("out/masterfiles/def.json")
+        except json.decoder.JSONDecodeError as e:
+            raise CFBSExitError(
+                "Error parsing JSON in 'out/masterfiles/def.json': %s" % e
+            )
     print("")
     print("Generating tarball...")
     sh("( cd out/ && tar -czf masterfiles.tgz masterfiles )")
