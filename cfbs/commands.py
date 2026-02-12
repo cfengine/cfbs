@@ -176,7 +176,7 @@ def pretty_command(filenames: List[str], check: bool, keep_order: bool):
         except FileNotFoundError:
             raise CFBSExitError("File '%s' not found" % f)
         except json.decoder.JSONDecodeError as ex:
-            raise CFBSExitError("Error reading json file '{}': {}".format(f, ex))
+            raise CFBSExitError("Error parsing JSON in '%s': %s" % (f, ex))
     if check:
         print("Would reformat %d file(s)" % num_files)
         return 1 if num_files > 0 else 0
