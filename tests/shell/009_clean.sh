@@ -1,20 +1,17 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 cfbs --non-interactive init
 cfbs --non-interactive add promise-type-git
-grep '"name": "library-for-promise-types-in-python"' cfbs.json
-grep '"name": "promise-type-git"' cfbs.json
+assert_file_contains cfbs.json '"name": "library-for-promise-types-in-python"'
+assert_file_contains cfbs.json '"name": "promise-type-git"'
 cfbs --non-interactive remove promise-type-git --non-interactive
-! grep '"name": "library-for-promise-types-in-python"' cfbs.json
-! grep '"name": "promise-type-git"' cfbs.json
+assert_file_not_contains cfbs.json '"name": "library-for-promise-types-in-python"'
+assert_file_not_contains cfbs.json '"name": "promise-type-git"'
 
 # Check that clean does nothing:
 cat cfbs.json > before.json
 cfbs --non-interactive clean
-diff cfbs.json before.json
+assert_diff cfbs.json before.json
+
+test_finish
