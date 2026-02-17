@@ -1,10 +1,5 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 cleanup() {
    rm -rf /tmp/foo
@@ -29,7 +24,7 @@ cfbs --non-interactive init --masterfiles no
 cfbs --non-interactive add /tmp/foo
 cfbs build
 
-grep "$head_commit" cfbs.json
+assert_file_contains cfbs.json "$head_commit"
 
 # Add second commit
 cp ../sample/bar/baz/main.cf /tmp/foo/baz.cf
@@ -43,4 +38,6 @@ cd -
 cfbs --non-interactive update
 cfbs build
 
-grep "$head_commit" cfbs.json
+assert_file_contains cfbs.json "$head_commit"
+
+test_finish
