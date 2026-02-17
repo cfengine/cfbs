@@ -1,13 +1,10 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 cfbs --non-interactive init
-cfbs --non-interactive add groups > output.log
+run cfbs --non-interactive add groups
 
-grep "alias" output.log
-grep "Added module" output.log
+assert_output_contains "alias"
+assert_output_contains "Added module"
+
+test_finish
