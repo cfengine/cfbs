@@ -1,13 +1,10 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 cfbs --non-interactive init
 cfbs --non-interactive add groups@0.1.2 --non-interactive
-grep '"version": "0.1.2"' cfbs.json
-grep '"commit": "087a2fd81e1bbaf241dfa7bf39013efd9d8d348f"' cfbs.json
+assert_file_contains cfbs.json '"version": "0.1.2"'
+assert_file_contains cfbs.json '"commit": "087a2fd81e1bbaf241dfa7bf39013efd9d8d348f"'
 cfbs --non-interactive remove promise-type-groups --non-interactive
+
+test_finish
