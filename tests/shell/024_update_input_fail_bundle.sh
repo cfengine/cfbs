@@ -1,10 +1,5 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 rm -rf example-module
 cp -r ../shell/024_update_input_fail_bundle/example-module .
 cp ../shell/024_update_input_fail_bundle/example-cfbs.json cfbs.json
@@ -15,5 +10,7 @@ cp ../shell/024_update_input_fail_bundle/example-cfbs.json cfbs.json
 # so the test now fails "earlier", during validation of the JSON.
 # Effectively, it now tests that cfbs update does validation, and fails on
 # the missing namespace field.
-! cfbs --loglevel=debug --non-interactive update > output.log 2>&1
-grep 'The "namespace" field is required in module input elements' ./output.log
+run cfbs --loglevel=debug --non-interactive update
+assert_output_contains 'The "namespace" field is required in module input elements'
+
+test_finish
