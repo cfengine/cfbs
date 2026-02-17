@@ -1,19 +1,16 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
-cfbs info masterfiles
-cfbs info masterfiles | grep "MPF"
+run cfbs info masterfiles
+assert_output_contains "MPF"
 
 cfbs --non-interactive init
 
-cfbs info autorun
-cfbs info autorun | grep "Not added"
+run cfbs info autorun
+assert_output_contains "Not added"
 
 cfbs --non-interactive add autorun
-cfbs info autorun
-cfbs info autorun | grep "Added"
+run cfbs info autorun
+assert_output_contains "Added"
+
+test_finish
