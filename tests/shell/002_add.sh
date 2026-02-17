@@ -1,11 +1,8 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 cfbs --non-interactive init
 cfbs --non-interactive add autorun
-grep masterfiles cfbs.json
+assert_file_contains cfbs.json masterfiles
+
+test_finish
