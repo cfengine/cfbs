@@ -1,11 +1,5 @@
-set -e
-set -x
-cd tests/
-source shell/testlib.sh
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 rm -rf delete-files
 
 cfbs --non-interactive init
@@ -45,13 +39,15 @@ echo '[
 
 commit_b=$(git rev-parse HEAD)
 
-test "x$commit_a" != "x$commit_b"
+assert_not_equal "$commit_a" "$commit_b"
 
 cfbs get-input delete-files - | cfbs set-input delete-files -
 
 commit_c=$(git rev-parse HEAD)
 
-test "x$commit_b" = "x$commit_c"
+assert_equal "$commit_b" "$commit_c"
 
 assert_git_tracks delete-files/input.json
 assert_git_no_diffs
+
+test_finish
