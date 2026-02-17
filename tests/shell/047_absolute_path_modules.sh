@@ -26,7 +26,7 @@ cd -
 
 # run cfbs
 cfbs --non-interactive init --masterfiles no
-cfbs --non-interactive add /tmp/foo 
+cfbs --non-interactive add /tmp/foo
 cfbs build
 
 grep "$head_commit" cfbs.json
