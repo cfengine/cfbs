@@ -1,10 +1,6 @@
-set -e
-set -x
-cd tests/
-source shell/testlib.sh
-mkdir -p ./tmp/
-cd ./tmp/
-rm -rf cfbs.json .git def.json policy.cf foo
+source "$(dirname "$0")/testlib.sh"
+test_init
+rm -rf def.json policy.cf foo
 
 cfbs --non-interactive init
 
@@ -23,7 +19,7 @@ cat <<EOF > policy.cf
 bundle agent foo
 {
   reports:
-      "Hello from $(this.bundle)";
+      "Hello from \$(this.bundle)";
 }
 EOF
 
@@ -40,7 +36,7 @@ cat <<EOF > foo/baz.cf
 bundle agent baz
 {
   reports:
-      "Hello from $(this.bundle)";
+      "Hello from \$(this.bundle)";
 }
 EOF
 
@@ -51,3 +47,5 @@ assert_git_tracks policy.cf
 assert_git_tracks foo/bar.json
 assert_git_tracks foo/baz.cf
 assert_git_no_diffs
+
+test_finish
