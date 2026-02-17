@@ -1,9 +1,5 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-rm -rf cfbs.json .git 
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 # Check that the options '--git-user-name' and '--git-user-email' is not
 # ignored by the 'set-input' command.
@@ -41,3 +37,5 @@ cat <<EOF | cfbs --git-user-name=foo --git-user-email=bar@baz set-input delete-f
 EOF
 
 git log -n1 | grep "Author: foo <bar@baz>"
+
+test_finish
