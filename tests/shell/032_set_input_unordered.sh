@@ -1,11 +1,5 @@
-set -e
-set -x
-cd tests/
-source shell/testlib.sh
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 rm -rf delete-files
 
 cfbs --non-interactive init
@@ -44,3 +38,5 @@ echo '[
 
 assert_git_tracks delete-files/input.json
 assert_git_no_diffs
+
+test_finish
