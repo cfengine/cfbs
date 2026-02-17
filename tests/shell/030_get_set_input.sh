@@ -1,10 +1,5 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 rm -rf create-single-file
 
 echo '{
@@ -33,7 +28,7 @@ echo '[
     "question": "What file should this module create?"
   }
 ]' > expected.output
-diff actual.output expected.output
+assert_diff actual.output expected.output
 
 # Igor adds response with some php magic
 echo '[
@@ -57,7 +52,7 @@ echo '[
     "response": "/tmp/test-1.txt"
   }
 ]' > expected.output
-diff actual.output expected.output
+assert_diff actual.output expected.output
 
 # Igor changes the response to something else
 echo '[
@@ -81,7 +76,7 @@ echo '[
     "response": "/tmp/test-2.txt"
   }
 ]' > expected.output
-diff actual.output expected.output
+assert_diff actual.output expected.output
 
 # Igor changes the wrong value
 echo '[
@@ -93,7 +88,7 @@ echo '[
     "response": "/tmp/test-2.txt"
   }
 ]' > igors-input.json
-! cfbs set-input create-single-file igors-input.json
+assert_failure cfbs set-input create-single-file igors-input.json
 
 # Now Igor instead changes a key
 echo '[
@@ -105,7 +100,7 @@ echo '[
     "response": "/tmp/test-2.txt"
   }
 ]' > igors-input.json
-! cfbs set-input create-single-file igors-input.json
+assert_failure cfbs set-input create-single-file igors-input.json
 
 # Igor changes the order but that's all right
 echo '[
@@ -129,7 +124,7 @@ echo '[
     "question": "What file should this module create?"
   }
 ]' > expected.output
-diff actual.output expected.output
+assert_diff actual.output expected.output
 
 # Igor asks for input of a module that is not in the project
 cfbs get-input delete-files@0.0.1 actual.output
@@ -158,6 +153,8 @@ echo '[
     "while": "Specify another file you want deleted on your hosts?"
   }
 ]' > expected.output
-diff actual.output expected.output
+assert_diff actual.output expected.output
 
 echo "Igor is happy!"
+
+test_finish
