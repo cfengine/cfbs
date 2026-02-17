@@ -43,9 +43,6 @@ test_init() {
 
     _TEST_NAME=$(_test_name_from_path "${BASH_SOURCE[1]:-$0}")
 
-    # Source common.sh helpers (git-must-track, git-no-diffs)
-    source "$_TESTLIB_DIR/common.sh"
-
     rm -rf ./tests/tmp/
     mkdir -p ./tests/tmp/
     cd ./tests/tmp/
@@ -60,6 +57,22 @@ test_finish() {
     elapsed=$(( end - _TEST_START_TIME ))
     set +x
     echo "--- PASS: $_TEST_NAME (${elapsed}s) ---" >&2
+}
+
+# --- Git assertions ---
+
+assert_git_tracks() {
+    # $1: Path / filename
+    # Error if the file has never been added:
+    git ls-files --error-unmatch "$1" || _test_fail "Expected git to track: $1"
+}
+
+assert_git_no_diffs() {
+    # Error if there are staged changes (added, not yet commited):
+    git diff --exit-code --staged || _test_fail "Unexpected staged changes"
+
+    # Error if there are uncommited changes (to tracked files):
+    git diff --exit-code || _test_fail "Unexpected uncommited changes"
 }
 
 # --- Assertions ---

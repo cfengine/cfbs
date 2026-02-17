@@ -1,7 +1,7 @@
 set -e
 set -x
 cd tests/
-source shell/common.sh
+source shell/testlib.sh
 mkdir -p ./tmp/
 cd ./tmp/
 touch cfbs.json && rm cfbs.json
@@ -53,5 +53,5 @@ commit_c=$(git rev-parse HEAD)
 
 test "x$commit_b" = "x$commit_c"
 
-git-must-track delete-files/input.json
-git-no-diffs
+assert_git_tracks delete-files/input.json
+assert_git_no_diffs
