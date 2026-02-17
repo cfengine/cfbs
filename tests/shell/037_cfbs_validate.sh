@@ -1,9 +1,5 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-rm -rf ./*
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 # A small index:
 
@@ -87,7 +83,7 @@ echo '{
 }
 ' > cfbs.json
 
-!( cfbs validate )
+assert_failure cfbs validate
 
 # Same, but without listing a dependency
 
@@ -200,7 +196,7 @@ echo '{
   ]
 }' > cfbs.json
 
-!( cfbs validate )
+assert_failure cfbs validate
 
 # Dependency exists in index, but not in build - should error:
 
@@ -225,7 +221,9 @@ echo '{
   ]
 }' > cfbs.json
 
-!( cfbs validate )
+assert_failure cfbs validate
 
 # NOTE: This shell test just covers some basic cases
 #       See the unit tests for more thorough testing of validation
+
+test_finish
