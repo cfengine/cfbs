@@ -1,17 +1,16 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 cfbs --non-interactive init
-cfbs search > all.log
-cfbs search mpf > mpf.log
-cfbs search masterfiles > masterfiles.log
 
-grep "python" all.log
-! grep "python" mpf.log
-grep "masterfiles" mpf.log
-grep "masterfiles" masterfiles.log
+run cfbs search
+assert_output_contains "python"
+
+run cfbs search mpf
+assert_output_not_contains "python"
+assert_output_contains "masterfiles"
+
+run cfbs search masterfiles
+assert_output_contains "masterfiles"
+
+test_finish

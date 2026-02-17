@@ -1,9 +1,5 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-rm -rf ./*
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 # The purpose of this test is to ensure that older CFEngine Build projects
 # still build in newer versions of cfbs
@@ -37,14 +33,14 @@ echo '{
 cfbs build
 
 # Look for some proof that the build actually did something:
-grep 'bundle common inventory' out/masterfiles/promises.cf
+assert_file_contains out/masterfiles/promises.cf 'bundle common inventory'
 
 # NOTE: We expect cfbs build to work, but not cfbs validate since
 #       this older module entry has an empty string for "subdirectory".
-!( cfbs validate )
+assert_failure cfbs validate
 
 # Same for cfbs status since it runs validate:
-!( cfbs status )
+assert_failure cfbs status
 
 # Once more, but let's do download and build as separate steps:
 rm -rf out/
@@ -55,7 +51,7 @@ cfbs download
 cfbs build
 
 # Perform same checks again:
-grep 'bundle common inventory' out/masterfiles/promises.cf
+assert_file_contains out/masterfiles/promises.cf 'bundle common inventory'
 
 # Finally, let's see validation working if we fix the module:
 rm -rf out/
@@ -83,3 +79,5 @@ echo '{
 ' > cfbs.json
 
 cfbs validate
+
+test_finish

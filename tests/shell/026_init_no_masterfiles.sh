@@ -1,12 +1,9 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 cfbs --non-interactive init --masterfiles=no
-!( grep '"name": "masterfiles"' cfbs.json )
+assert_file_not_contains cfbs.json '"name": "masterfiles"'
 cfbs status
-!( cfbs build )
+assert_failure cfbs build
+
+test_finish

@@ -1,12 +1,9 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 cfbs --non-interactive init
 cfbs download
 
-ls ~/.cfengine/cfbs/downloads/*
+assert_file_exists ~/.cfengine/cfbs/downloads/*
+
+test_finish

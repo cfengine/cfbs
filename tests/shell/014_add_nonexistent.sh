@@ -1,11 +1,8 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 cfbs --non-interactive init
-! ( cfbs --non-interactive add bollocks > output.log 2>&1 )
-grep -F "Error: Module 'bollocks' does not exist" output.log
+run_expect_failure cfbs --non-interactive add bollocks
+assert_output_contains "Error: Module 'bollocks' does not exist"
+
+test_finish

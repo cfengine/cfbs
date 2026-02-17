@@ -1,10 +1,5 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 mkdir -p doofus
 echo 'bundle agent doofus {
@@ -38,21 +33,23 @@ cfbs --non-interactive add ./doofus/
 cfbs status
 
 cfbs status | grep "./doofus/"
-grep '"name": "./doofus/"' cfbs.json
-grep '"directory ./ services/cfbs/doofus/"' cfbs.json
-grep '"policy_files services/cfbs/doofus/"' cfbs.json
-grep '"bundles doofus"' cfbs.json
+assert_file_contains cfbs.json '"name": "./doofus/"'
+assert_file_contains cfbs.json '"directory ./ services/cfbs/doofus/"'
+assert_file_contains cfbs.json '"policy_files services/cfbs/doofus/"'
+assert_file_contains cfbs.json '"bundles doofus"'
 
 cfbs build
 
-grep '"inputs"' out/masterfiles/def.json
-grep '"services/cfbs/doofus/doofus.cf"' out/masterfiles/def.json
-grep '"services/cfbs/doofus/foo/foo.cf"' out/masterfiles/def.json
+assert_file_contains out/masterfiles/def.json '"inputs"'
+assert_file_contains out/masterfiles/def.json '"services/cfbs/doofus/doofus.cf"'
+assert_file_contains out/masterfiles/def.json '"services/cfbs/doofus/foo/foo.cf"'
 
-grep '"control_common_bundlesequence_end"' out/masterfiles/def.json
-grep '"doofus"' out/masterfiles/def.json
+assert_file_contains out/masterfiles/def.json '"control_common_bundlesequence_end"'
+assert_file_contains out/masterfiles/def.json '"doofus"'
 
-grep '"foo_thing": "awesome"' out/masterfiles/def.json
+assert_file_contains out/masterfiles/def.json '"foo_thing": "awesome"'
 
-ls out/masterfiles/services/cfbs/doofus/doofus.cf
-ls out/masterfiles/services/cfbs/doofus/foo/foo.cf
+assert_file_exists out/masterfiles/services/cfbs/doofus/doofus.cf
+assert_file_exists out/masterfiles/services/cfbs/doofus/foo/foo.cf
+
+test_finish

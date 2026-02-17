@@ -1,9 +1,5 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-rm -rf ./*
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 # This test is similar to the previous test, except it has more modules.
 
@@ -84,18 +80,18 @@ echo '{
 cfbs build
 
 # Look for some proof that these modules are actually being built into the policy set:
-grep 'services_autorun' out/masterfiles/def.json
-grep '"control_executor_splaytime": "1",' out/masterfiles/def.json
-grep 'inventory_systemd_service_units_running' out/masterfiles/def.json
-grep 'bundle common inventory' out/masterfiles/promises.cf
-grep '$(paths.systemctl) list-units --type=service --state=running' out/masterfiles/services/inventory-systemd/main.cf
+assert_file_contains out/masterfiles/def.json 'services_autorun'
+assert_file_contains out/masterfiles/def.json '"control_executor_splaytime": "1",'
+assert_file_contains out/masterfiles/def.json 'inventory_systemd_service_units_running'
+assert_file_contains out/masterfiles/promises.cf 'bundle common inventory'
+assert_file_contains out/masterfiles/services/inventory-systemd/main.cf '$(paths.systemctl) list-units --type=service --state=running'
 
 # NOTE: We expect cfbs build to work, but not cfbs validate since
 #       this older module entry has an empty string for "subdirectory".
-!( cfbs validate )
+assert_failure cfbs validate
 
 # Same for cfbs status since it runs validate:
-!( cfbs status )
+assert_failure cfbs status
 
 # Once more, but let's do download and build as separate steps:
 rm -rf out/
@@ -106,8 +102,10 @@ cfbs download
 cfbs build
 
 # Perform same checks again:
-grep 'services_autorun' out/masterfiles/def.json
-grep '"control_executor_splaytime": "1",' out/masterfiles/def.json
-grep 'inventory_systemd_service_units_running' out/masterfiles/def.json
-grep 'bundle common inventory' out/masterfiles/promises.cf
-grep '$(paths.systemctl) list-units --type=service --state=running' out/masterfiles/services/inventory-systemd/main.cf
+assert_file_contains out/masterfiles/def.json 'services_autorun'
+assert_file_contains out/masterfiles/def.json '"control_executor_splaytime": "1",'
+assert_file_contains out/masterfiles/def.json 'inventory_systemd_service_units_running'
+assert_file_contains out/masterfiles/promises.cf 'bundle common inventory'
+assert_file_contains out/masterfiles/services/inventory-systemd/main.cf '$(paths.systemctl) list-units --type=service --state=running'
+
+test_finish

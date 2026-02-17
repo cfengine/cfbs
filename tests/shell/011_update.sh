@@ -1,10 +1,5 @@
-set -e
-set -x
-cd tests/
-mkdir -p ./tmp/
-cd ./tmp/
-touch cfbs.json && rm cfbs.json
-rm -rf .git
+source "$(dirname "$0")/testlib.sh"
+test_init
 
 cfbs --non-interactive init
 cfbs --non-interactive add promise-type-ansible@0.1.1
@@ -16,37 +11,37 @@ cfbs --non-interactive update
 # Also, it should not break on new commits(!)
 # TODO: Use jq, a python script, cfbs validate or something similar
 
-cat cfbs.json | grep -F "name" | grep -F "Example"
-cat cfbs.json | grep -F "type" | grep -F "policy-set"
-cat cfbs.json | grep -F "description" | grep -F "Example description"
+assert_file_matches cfbs.json '"name".*"Example'
+assert_file_matches cfbs.json '"type".*"policy-set"'
+assert_file_matches cfbs.json '"description".*"Example description"'
 
-cat cfbs.json | grep -F "name" | grep -F "promise-type-ansible"
-cat cfbs.json | grep -F "version" | grep -F "."
-cat cfbs.json | grep -F "commit"
-cat cfbs.json | grep -F "added_by" | grep -F "cfbs add"
-cat cfbs.json | grep -F "steps"
-cat cfbs.json | grep -F "copy ansible_promise.py modules/promises/"
-cat cfbs.json | grep -F "append enable.cf services/init.cf"
-cat cfbs.json | grep -F "tags" | grep -F "supported" | grep -F "promise-type"
-cat cfbs.json | grep -F "by" | grep -F "https://github.com/tranchitella"
-cat cfbs.json | grep -F "repo" | grep -F "https://github.com/cfengine/modules"
-cat cfbs.json | grep -F "subdirectory" | grep -F "promise-types/ansible"
-cat cfbs.json | grep -F "dependencies" | grep -F "library-for-promise-types-in-python"
-cat cfbs.json | grep -F "description" | grep -F "Promise type to run ansible playbooks"
+assert_file_matches cfbs.json '"name".*"promise-type-ansible"'
+assert_file_matches cfbs.json '"version":.*[0-9]+\.[0-9]+'
+assert_file_contains cfbs.json '"commit"'
+assert_file_matches cfbs.json '"added_by".*"cfbs add"'
+assert_file_contains cfbs.json '"steps"'
+assert_file_contains cfbs.json 'copy ansible_promise.py modules/promises/'
+assert_file_contains cfbs.json 'append enable.cf services/init.cf'
+assert_file_matches cfbs.json '"tags".*"supported"'
+assert_file_matches cfbs.json '"by".*"https://github.com/tranchitella"'
+assert_file_matches cfbs.json '"repo".*"https://github.com/cfengine/modules"'
+assert_file_matches cfbs.json '"subdirectory".*"promise-types/ansible"'
+assert_file_matches cfbs.json '"dependencies".*"library-for-promise-types-in-python"'
+assert_file_matches cfbs.json '"description".*"Promise type to run ansible playbooks'
 
-cat cfbs.json | grep -F "name" | grep -F "library-for-promise-types-in-python"
-cat cfbs.json | grep -F "description" | grep -F "Library enabling promise types implemented in python"
-cat cfbs.json | grep -F "tags" | grep -F "supported" | grep -F "library"
-cat cfbs.json | grep -F "repo" | grep -F "https://github.com/cfengine/modules"
-cat cfbs.json | grep -F "by" | grep -F "https://github.com/cfengine"
-cat cfbs.json | grep -F "version" | grep -F "."
-cat cfbs.json | grep -F "commit"
-cat cfbs.json | grep -F "subdirectory" | grep -F "libraries/python"
-cat cfbs.json | grep -F "added_by" | grep -F "promise-type-ansible"
-cat cfbs.json | grep -F "copy cfengine_module_library.py modules/promises/cfengine_module_library.py"
+assert_file_matches cfbs.json '"name".*"library-for-promise-types-in-python"'
+assert_file_matches cfbs.json '"description".*"Library enabling promise types implemented in python'
+assert_file_matches cfbs.json '"tags".*"library"'
+assert_file_matches cfbs.json '"repo".*"https://github.com/cfengine/modules"'
+assert_file_matches cfbs.json '"by".*"https://github.com/cfengine"'
+assert_file_matches cfbs.json '"subdirectory".*"libraries/python"'
+assert_file_matches cfbs.json '"added_by".*"promise-type-ansible"'
+assert_file_contains cfbs.json 'copy cfengine_module_library.py modules/promises/cfengine_module_library.py'
 
 cfbs status
 cfbs build
 
-ls out/masterfiles/promises.cf
-ls out/masterfiles/modules/promises/ansible_promise.py
+assert_file_exists out/masterfiles/promises.cf
+assert_file_exists out/masterfiles/modules/promises/ansible_promise.py
+
+test_finish
