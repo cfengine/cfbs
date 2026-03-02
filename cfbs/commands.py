@@ -497,18 +497,55 @@ def remove_command(to_remove: List[str]):
 
     num_lines = len(msg.strip().splitlines())
     changes_made = num_lines > 0
+    deps = get_unused_dependancies(config)
+
+    if deps:
+        print(
+            "The following modules were added as dependencies but are no longer needed:"
+        )
+        for module in deps:
+            name = module.get("name", "")
+            description = module.get("description", "")
+            added_by = module.get("added_by", "")
+            print("%s - %s - added by: %s" % (name, description, added_by))
+
+        if prompt_user_yesno(
+            config.non_interactive,
+            "Do you wish to remove these modules?",
+        ):
+            num_lines += len(deps)
+            for dep in sorted(deps, key=lambda x: x["name"]):
+                msg += "\n - Removed module '%s'" % dep["name"]
+                num_removed += 1
+                modules.remove(dep)
+
     if num_lines > 1:
         msg = "Removed %d modules\n" % num_removed + msg
     else:
         msg = msg[4:]  # Remove the '\n - ' part of the message
 
     config.save()
-    if num_removed:
-        try:
-            _clean_unused_modules(config)
-        except CFBSReturnWithoutCommit:
-            pass
     return CFBSCommandGitResult(0, changes_made, msg, files)
+
+
+def get_unused_dependancies(config):
+    modules = config.get("build", [])
+
+    def _someone_needs_me(this) -> bool:
+        if ("added_by" not in this) or is_module_added_manually(this["added_by"]):
+            return True
+        for other in modules:
+            if "dependencies" not in other:
+                continue
+            if this["name"] in other["dependencies"]:
+                return _someone_needs_me(other)
+        return False
+
+    to_remove = list()
+    for module in modules:
+        if not _someone_needs_me(module):
+            to_remove.append(module)
+    return to_remove
 
 
 @cfbs_command("clean")
@@ -529,20 +566,7 @@ def _clean_unused_modules(config=None):
     if len(modules) == 0:
         return 0
 
-    def _someone_needs_me(this) -> bool:
-        if ("added_by" not in this) or is_module_added_manually(this["added_by"]):
-            return True
-        for other in modules:
-            if "dependencies" not in other:
-                continue
-            if this["name"] in other["dependencies"]:
-                return _someone_needs_me(other)
-        return False
-
-    to_remove = list()
-    for module in modules:
-        if not _someone_needs_me(module):
-            to_remove.append(module)
+    to_remove = get_unused_dependancies(config)
 
     if not to_remove:
         raise CFBSReturnWithoutCommit(0)
