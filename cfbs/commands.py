@@ -50,7 +50,6 @@ import re
 import copy
 import logging as log
 import json
-import functools
 from typing import Callable, List, Optional, Union
 from collections import OrderedDict
 from cfbs.analyze import analyze_policyset
@@ -416,41 +415,35 @@ def remove_command(to_remove: List[str]):
     modules = config["build"]
 
     def _get_dependents(dependency) -> list:
+        """Get all modules that depend on the given module"""
         if len(modules) < 2:
             return []
+        dependents = []
+        for module in modules:
+            if dependency in module.get("dependencies", []):
+                dependents.append(module["name"])
+        return dependents
 
-        def reduce_dependencies(a, b):
-            result_b = [b["name"]] if dependency in b.get("dependencies", []) else []
-            if type(a) is list:
-                return a + result_b
-            else:
-                return (
-                    [a["name"]] if dependency in a.get("dependencies", []) else []
-                ) + result_b
+    def _get_all_dependents_recursive(module_name, visited=None) -> set:
+        """Recursively get all modules that depend on this module"""
+        if visited is None:
+            visited = set()
+        if module_name in visited:
+            return visited
+        visited.add(module_name)
 
-        return functools.reduce(reduce_dependencies, modules)
+        direct_dependents = _get_dependents(module_name)
+        for dependent in direct_dependents:
+            _get_all_dependents_recursive(dependent, visited)
+        return visited
 
     def _get_module_by_name(name) -> Union[dict, None]:
         if not name.startswith("./") and name.endswith(".cf") and os.path.exists(name):
             name = "./" + name
-
         for module in modules:
             if module["name"] == name:
                 return module
         return None
-
-    def _remove_module_user_prompt(module):
-        dependents = _get_dependents(module["name"])
-        return prompt_user_yesno(
-            config.non_interactive,
-            "Do you wish to remove '%s'?" % module["name"]
-            + (
-                " (The module is a dependency of the following module%s: %s)"
-                % ("s" if len(dependents) > 1 else "", ", ".join(dependents))
-                if dependents
-                else ""
-            ),
-        )
 
     def _get_modules_by_url(name) -> list:
         r = []
@@ -459,46 +452,90 @@ def remove_command(to_remove: List[str]):
                 r.append(module)
         return r
 
-    num_removed = 0
-    msg = ""
-    files = []
+    modules_to_remove = set()
+
+    removal_msg = lambda module, all_affected: (
+        (
+            "Module '%s' is a dependency of the following module%s: %s.\n"
+            "Removing '%s' will also remove %s.\n"
+            "Do you wish to continue?"
+        )
+        % (
+            module["name"],
+            "s" if len(all_affected) > 1 else "",
+            ", ".join(sorted(all_affected)),
+            module["name"],
+            "these modules" if len(all_affected) > 1 else "this module",
+        )
+        if all_affected
+        else "Do you wish to remove '%s'?" % module["name"]
+    )
+
     for name in to_remove:
         if name.startswith(SUPPORTED_URI_SCHEMES):
             matches = _get_modules_by_url(name)
             if not matches:
                 raise CFBSExitError("Could not find module with URL '%s'" % name)
             for module in matches:
-                if _remove_module_user_prompt(module):
-                    print("Removing module '%s'" % module["name"])
-                    modules.remove(module)
-                    msg += "\n - Removed module '%s'" % module["name"]
-                    num_removed += 1
+                all_affected = _get_all_dependents_recursive(module["name"])
+                all_affected.discard(module["name"])
+                prompt_msg = removal_msg(module, all_affected)
+
+                if prompt_user_yesno(
+                    config.non_interactive,
+                    prompt_msg,
+                ):
+                    modules_to_remove.add(module["name"])
+                    modules_to_remove.update(all_affected)
+                else:
+                    print("Skipping removal of '%s'" % module["name"])
         else:
             module = _get_module_by_name(name)
-            if module:
-                if _remove_module_user_prompt(module):
-                    print("Removing module '%s'" % name)
-                    modules.remove(module)
-                    msg += "\n - Removed module '%s'" % module["name"]
-                    num_removed += 1
-            else:
+            if not module:
                 print("Module '%s' not found" % name)
-        input_path = os.path.join(".", name, "input.json")
-        if os.path.isfile(input_path) and prompt_user_yesno(
-            config.non_interactive,
-            "Module '%s' has input data '%s'. Do you want to remove it?"
-            % (name, input_path),
-            default="no",
-        ):
-            rm(input_path)
-            files.append(input_path)
-            msg += "\n - Removed input data for module '%s'" % name
-            log.debug("Deleted module data '%s'" % input_path)
+                continue
 
-    num_lines = len(msg.strip().splitlines())
-    changes_made = num_lines > 0
+            all_affected = _get_all_dependents_recursive(module["name"])
+            all_affected.discard(module["name"])
+            prompt_msg = removal_msg(module, all_affected)
+
+            if prompt_user_yesno(
+                config.non_interactive,
+                prompt_msg,
+            ):
+                modules_to_remove.add(module["name"])
+                modules_to_remove.update(all_affected)
+            else:
+                print("Skipping removal of '%s'" % module["name"])
+
+    removed_modules = []
+    msg = ""
+    files = []
+
+    while modules_to_remove:
+        for module_name in list(modules_to_remove):
+            module = _get_module_by_name(module_name)
+            if module:
+                print("Removing module '%s'" % module_name)
+                modules.remove(module)
+                removed_modules.append(module)
+                msg += "\n - Removed module '%s'" % module_name
+            modules_to_remove.remove(module_name)
+
+            input_path = os.path.join(".", module_name, "input.json")
+            if os.path.isfile(input_path) and prompt_user_yesno(
+                config.non_interactive,
+                "Module '%s' has input data '%s'. Do you want to remove it?"
+                % (module_name, input_path),
+                default="no",
+            ):
+                rm(input_path)
+                files.append(input_path)
+                msg += "\n - Removed input data for module '%s'" % module_name
+                log.debug("Deleted module data '%s'" % input_path)
+
+    # Remove orphans
     deps = get_unused_dependancies(config)
-
     if deps:
         print(
             "The following modules were added as dependencies but are no longer needed:"
@@ -513,11 +550,14 @@ def remove_command(to_remove: List[str]):
             config.non_interactive,
             "Do you wish to remove these modules?",
         ):
-            num_lines += len(deps)
             for dep in sorted(deps, key=lambda x: x["name"]):
                 msg += "\n - Removed module '%s'" % dep["name"]
-                num_removed += 1
                 modules.remove(dep)
+                removed_modules.append(dep)
+
+    num_removed = len(removed_modules)
+    num_lines = len(msg.strip().splitlines())
+    changes_made = num_lines > 0
 
     if num_lines > 1:
         msg = "Removed %d modules\n" % num_removed + msg

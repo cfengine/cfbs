@@ -1,0 +1,32 @@
+{
+  "name": "example-project",
+  "description": "Example description",
+  "type": "policy-set",
+  "build": [
+    {
+      "name": "masterfiles-example-module",
+      "description": "Example",
+      "url": "https://github.com/example/",
+      "commit": "0000000000000000000000000000000000000000",
+      "added_by": "cfbs add",
+      "steps": ["run this"]
+    },
+    {
+      "name": "example-module",
+      "description": "Example",
+      "url": "https://github.com/example/",
+      "commit": "0000000000000000000000000000000000000000",
+      "added_by": "cfbs add",
+      "steps": ["delete this"]
+    },
+    {
+      "name": "example-dependency",
+      "description": "Example",
+      "url": "https://github.com/example/",
+      "commit": "0000000000000000000000000000000000000000",
+      "dependencies": ["example-module"],
+      "added_by": "cfbs add",
+      "steps": ["delete this"]
+    }
+  ]
+}
