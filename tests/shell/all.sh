@@ -91,6 +91,8 @@ run_test tests/shell/044_replace.sh
 run_test tests/shell/045_update_from_url_branch_uptodate.sh
 run_test tests/shell/046_update_from_url_branch.sh
 run_test tests/shell/047_absolute_path_modules.sh
+run_test tests/shell/048_remove_with_dependencies.sh
+run_test tests/shell/049_remove_with_circular_dependencies.sh
 
 # Summary
 _suite_end=$(date +%s)
