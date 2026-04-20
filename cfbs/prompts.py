@@ -30,6 +30,9 @@ def prompt_user(non_interactive: bool, prompt: str, choices=None, default=None):
             answer = input(prompt)
         except EOFError:
             answer = ""
+        except KeyboardInterrupt:
+            print("\nOperation cancelled by user")
+            exit(1)
 
         if answer == "":
             answer = default
