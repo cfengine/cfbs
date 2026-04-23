@@ -188,6 +188,11 @@ class CFBSJson:
                 "missing required key 'provides' in module definition: %s"
                 % pretty(self._data)
             )
+        if not isinstance(self._data["provides"], dict):
+            raise CFBSValidationError(
+                "'provides' must be a JSON object (dict), not a list or other type in module definition: %s"
+                % pretty(self._data)
+            )
         for k, v in self._data["provides"].items():
             module = _construct_provided_module(
                 k, v, self.url, self.url_commit, self.url_branch, added_by
