@@ -13,6 +13,7 @@ import urllib.error
 from collections import OrderedDict
 from shutil import rmtree
 from typing import Iterable, List, Optional, Tuple, Union
+import filecmp
 
 from cfbs.pretty import pretty
 
@@ -181,62 +182,37 @@ def cp(src, dst):
     return sh("rsync -r %s/ %s" % (src, dst))
 
 
-def cp_dry_itemize(src: str, dst: str) -> List[Tuple[str, str]]:
-    """Emulates a dry run of `cfbs.utils.cp` and itemizes files to be copied.
-
-    Returns a list of `rsync --itemize` strings (described in the rsync manual) with their corresponding paths.
-    """
-    above = os.path.dirname(dst)
-    if not os.path.exists(above):
-        mkdir(above)
-    if dst.endswith("/") and not os.path.exists(dst):
-        mkdir(dst)
-    if os.path.isfile(src):
-        result = sh("rsync -rniic %s %s" % (src, dst))
-    else:
-        result = sh("rsync -rniic %s/ %s" % (src, dst))
-    lines = result.stdout.decode("utf-8").split("\n")
-    itemization = []
-    for line in lines:
-        terms = line.split()
-        if len(terms) == 2:
-            item_string = terms[0]
-            file_relpath = terms[1]
-            itemization.append((item_string, file_relpath))
-        elif len(terms) > 0:
-            log.debug("Abnormal rsync output line: '%s'" % terms)
-
-    return itemization
-
-
 def cp_dry_overwrites(src: str, dst: str) -> Tuple[List[str], List[str]]:
     """Returns paths of files that would be overwritten by `cfbs.utils.cp`, grouping identical and non-identical file overwrites separately."""
     noop_overwrites_relpaths = []
     modifying_overwrites_relpaths = []
 
-    itemization = cp_dry_itemize(src, dst)
+    if os.path.isfile(src):
+        dst_file = (
+            os.path.join(dst, os.path.basename(src)) if os.path.isdir(dst) else dst
+        )
+        if os.path.isfile(dst_file):
+            target = os.path.basename(dst_file)
+            if filecmp.cmp(src, dst_file, shallow=False):
+                noop_overwrites_relpaths.append(target)
+            else:
+                modifying_overwrites_relpaths.append(target)
+        return noop_overwrites_relpaths, modifying_overwrites_relpaths
 
-    for item_string, file_relpath in itemization:
-        if item_string[1] != "f":
-            # only consider regular files
-            continue
-        if item_string[0] == "." or len(item_string) < 3:
-            # the first character being a dot means that it's a no-op overwrite (possibly except file attributes)
-            # explanation for the `< 3` comparison:
-            # if all attributes are unchanged, the rsync item string will use spaces instead of dots and they will have been parsed away earlier
-            noop_overwrites_relpaths.append(file_relpath)
-            continue
-        if item_string[2] == "+":
-            # the copied file is new
-            continue
-        if item_string[2] == "c":
-            # the copied file has a different checksum
-            modifying_overwrites_relpaths.append(file_relpath)
-            continue
-        elif item_string[2] == ".":
-            # the copied regular file doesn't have a different checksum
-            noop_overwrites_relpaths.append(file_relpath)
-        log.debug("Novel item string: %s %s" % (item_string, file_relpath))
+    for dirpath, _, filenames in os.walk(src):
+        rel_dir = os.path.relpath(dirpath, src)  # "." at top level
+        for filename in filenames:
+            src_file = os.path.join(dirpath, filename)
+            rel_path = filename if rel_dir == "." else os.path.join(rel_dir, filename)
+            dst_file = os.path.join(dst, rel_path)
+
+            if not os.path.isfile(dst_file):
+                continue  # new file, not an overwrite
+
+            if filecmp.cmp(src_file, dst_file, shallow=False):
+                noop_overwrites_relpaths.append(rel_path)
+            else:
+                modifying_overwrites_relpaths.append(rel_path)
 
     return noop_overwrites_relpaths, modifying_overwrites_relpaths
 
