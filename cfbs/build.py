@@ -193,7 +193,7 @@ def _perform_copy_step(args, source, destination, prefix):
             for overwrite_noop in noop_overwrites_relpaths[-9:]:
                 warning_message += "  " + overwrite_noop + "\n"
         # display all the messages as one warning
-        # log.warning(warning_message) # ENT-14110
+        log.warning(warning_message)
     cp(src, dst)
 
     return step_diffs_data
