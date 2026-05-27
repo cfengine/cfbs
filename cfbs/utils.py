@@ -1,5 +1,4 @@
 import difflib
-import logging as log
 import os
 import re
 import sys
