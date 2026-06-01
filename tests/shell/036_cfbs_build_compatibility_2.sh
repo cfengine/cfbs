@@ -99,7 +99,7 @@ grep '$(paths.systemctl) list-units --type=service --state=running' out/masterfi
 
 # Once more, but let's do download and build as separate steps:
 rm -rf out/
-rm -rf ~/.cfengine/cfbs
+rm -rf ~/.cache/cfengine/cfbs
 
 cfbs download
 

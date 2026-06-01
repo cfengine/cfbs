@@ -21,10 +21,10 @@ grep scl_dmidecode_example out/masterfiles/scl_example.json
 # so let's test that it works after deleting the things which
 # will not be on the next machine.
 # Notably, cfbs add will download some things which can be reused in
-# cfbs build (git clones / zip downloads in ~/.cfengine/cfbs)
+# cfbs build (git clones / zip downloads in ~/.cache/cfengine/cfbs)
 
 rm -rf out/
-rm -rf ~/.cfengine/cfbs
+rm -rf ~/.cache/cfengine/cfbs
 
 cfbs build
 ls out/masterfiles/lib/scl/

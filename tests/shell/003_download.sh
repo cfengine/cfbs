@@ -9,4 +9,4 @@ rm -rf .git
 cfbs --non-interactive init
 cfbs download
 
-ls ~/.cfengine/cfbs/downloads/*
+ls ~/.cache/cfengine/cfbs/downloads/*
