@@ -19,6 +19,7 @@ from cfbs.utils import (
     is_cfbs_repo,
     CFBSProgrammerError,
     CFBSNetworkError,
+    migrate_config_paths,
 )
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
@@ -61,6 +62,7 @@ def _main() -> int:
 
     This function is wrapped by main() which catches exceptions.
     """
+    migrate_config_paths()
     args = get_args()
     init_logging(args.loglevel)
     if args.manual:

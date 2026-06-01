@@ -860,7 +860,7 @@ def validate_command(paths=None, index_arg=None):
 
 def _download_dependencies(config: CFBSConfig, redownload=False, ignore_versions=False):
     # TODO: This function should be split in 2:
-    #       1. Code for downloading things into ~/.cfengine
+    #       1. Code for downloading things into ~/.cache/cfengine
     #       2. Code for copying things into ./out
     print("\nModules:")
     counter = 1

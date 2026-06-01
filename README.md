@@ -304,7 +304,7 @@ They don't have interactive prompts, you can expect fewer changes to them, and b
 `cfbs` respects the following environment variables:
 
 - `CFBS_GLOBAL_DIR`: Directory where `cfbs` stores global information, such as its cache of downloaded modules.
-  - **Default:** `~/.cfengine/cfbs/`.
+  - **Default:** `~/.cache/cfenginge/cfbs/`.
   - **Usage:** `CFBS_GLOBAL_DIR=/tmp/cfbs cfbs build`.
   - **Note:** `cfbs` still uses the current working directory for finding and building a project (`./cfbs.json`, `./out/`, etc.).
 
