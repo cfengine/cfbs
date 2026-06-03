@@ -712,7 +712,14 @@ def update_command(to_update):
                 log.debug("Module '%s' has no version attribute." % old_module["name"])
                 continue
 
-            index_info = index.get_module_object(update.name)
+            if update.version and not index.exists(update):
+                log.warning(
+                    "Module '%s' version '%s' is not present in the index,"
+                    " cannot update it." % (old_module["name"], update.version)
+                )
+                continue
+
+            index_info = index.get_module_object(update)
             if not index_info:
                 log.warning(
                     "Module '%s' not present in the index, cannot update it."

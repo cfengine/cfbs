@@ -245,6 +245,11 @@ class Index:
                 }
                 object.update(specifics)
                 object["version"] = version
+                # The version index stores an empty "subdirectory" for
+                # modules without one; an empty subdirectory is invalid, so
+                # drop it (matches how 'cfbs add' cleans the module up).
+                if object.get("subdirectory") == "":
+                    del object["subdirectory"]
 
         assert object is not None
         module.update(object)
