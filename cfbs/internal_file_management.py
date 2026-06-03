@@ -5,7 +5,7 @@ file system changes for cfbs add / cfbs download / cfbs build to work.
 
 The functions here are quite "contained", they don't rely on the
 global config (read and writen to cfbs.json), just their parameters
-and what is on the file system (in ~/.cfengine and ./out).
+and what is on the file system (in ~/.cache/cfengine and ./out).
 """
 
 import os

@@ -48,7 +48,7 @@ grep 'bundle common inventory' out/masterfiles/promises.cf
 
 # Once more, but let's do download and build as separate steps:
 rm -rf out/
-rm -rf ~/.cfengine/cfbs
+rm -rf ~/.cache/cfengine/cfbs
 
 cfbs download
 
@@ -59,7 +59,7 @@ grep 'bundle common inventory' out/masterfiles/promises.cf
 
 # Finally, let's see validation working if we fix the module:
 rm -rf out/
-rm -rf ~/.cfengine/cfbs
+rm -rf ~/.cache/cfengine/cfbs
 
 echo '{
   "name": "backwards-compatibility-test-1",

@@ -1,4 +1,5 @@
 import difflib
+import shutil
 import os
 import re
 import sys
@@ -434,7 +435,7 @@ def are_paths_equal(path_a, path_b) -> bool:
 
 
 def cfengine_dir(subdir=None):
-    CFENGINE_DIR = "~/.cfengine/"
+    CFENGINE_DIR = "~/.cache/cfengine/"
     cfengine_dir_abspath = os.path.abspath(os.path.expanduser(CFENGINE_DIR))
 
     return path_append(cfengine_dir_abspath, subdir)
@@ -675,3 +676,21 @@ def most_relevant_version(
     highest_lower = highest_version(lower_other_versions)
     assert highest_lower is not None
     return highest_lower
+
+
+def migrate_config_paths():
+    old_dir = os.path.expanduser("~/.cfengine/cfbs/")
+    new_dir = os.path.expanduser("~/.cache/cfengine/cfbs/")
+    if not os.path.exists(os.path.dirname(old_dir)):
+        return  # nothing to migrate
+    if os.path.exists(new_dir):
+        pass  # Migration has already occured
+    else:
+        shutil.copytree(
+            old_dir,
+            new_dir,
+        )
+        print("CFBS related files have been moved to '%s'" % new_dir)
+
+    shutil.rmtree(old_dir)
+    print("REMOVED: %s, use %s" % (old_dir, new_dir))
