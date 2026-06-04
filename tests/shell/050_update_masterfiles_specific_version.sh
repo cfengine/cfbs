@@ -36,16 +36,16 @@ cfbs validate
 cfbs --non-interactive update masterfiles@3.24.4
 [ "$(mf version)" = "3.24.4" ]
 
-# Asking for an older version than the current one must not downgrade.
+# Downgrading to an older version is allowed.
 cfbs --non-interactive update masterfiles@3.24.1
-[ "$(mf version)" = "3.24.4" ]
+[ "$(mf version)" = "3.24.1" ]
+[ "$(mf commit)" = "1171e2e50a229d78e2fdd4357a5d07ecc19bdbf4" ]
+cfbs validate
 
-# A plain update (no @version) still moves to a strictly newer version than the
-# pin. Checking "!= 3.24.4" alone would also pass on a downgrade, so verify that
-# 3.24.4 sorts before the new version (i.e. the new version is the greater one).
+# A plain update (no @version) moves to the newest version available.
 cfbs --non-interactive update masterfiles
 new_ver="$(mf version)"
-[ "$new_ver" != "3.24.4" ]
-[ "$(printf '%s\n%s\n' "3.24.4" "$new_ver" | sort -V | tail -1)" = "$new_ver" ]
+[ "$new_ver" != "3.24.1" ]
+[ "$(printf '%s\n%s\n' "3.24.1" "$new_ver" | sort -V | tail -1)" = "$new_ver" ]
 
 cfbs build
