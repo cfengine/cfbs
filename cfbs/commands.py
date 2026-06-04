@@ -740,11 +740,9 @@ def update_command(to_update):
                 continue
             elif local_ver > index_ver:
                 log.warning(
-                    "The requested version of module '%s' is older than current version (%s < %s)."
-                    " Skipping its update."
-                    % (old_module["name"], index_info["version"], old_module["version"])
+                    "Downgrading module '%s' from %s to %s."
+                    % (old_module["name"], old_module["version"], index_info["version"])
                 )
-                continue
 
             new_module = index_info
         update_objects.append(update)
