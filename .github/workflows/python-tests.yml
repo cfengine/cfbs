@@ -27,6 +27,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Verify Python version
+        shell: bash
+        run: |
+          echo "Active Python: $(python --version)"
+          python --version 2>&1 | grep -q "^Python ${{ inputs.python-version }}" || (echo "ERROR: Expected Python ${{ inputs.python-version }}" && exit 1)
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -34,13 +39,13 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
         run: |
-          flake8 . --ignore=E203,W503,E722,E731 --max-complexity=100 --max-line-length=160
+          python -m flake8 . --ignore=E203,W503,E722,E731 --max-complexity=100 --max-line-length=160
       - name: Lint with pyright (type checking)
         run: |
-          pyright cfbs --pythonversion ${{ matrix.python-version }}
+          python -m pyright cfbs --pythonversion ${{ matrix.python-version }}
       - name: Test with pytest
         run: |
-          pytest
+          python -m pytest
       - name: Install
         run: |
           python setup.py sdist bdist_wheel
