@@ -274,18 +274,26 @@ def validate_module_name_content(name):
             "Module name proper is empty",
         )
 
+    # build a suggested fix for the module name:
+    suggested_proper_name = re.sub(r"[^a-z0-9]+", "-", proper_name.lower()).strip("-")
+    if suggested_proper_name and re.fullmatch(r, suggested_proper_name):
+        suggestion = " Consider renaming it to '{}'.".format(suggested_proper_name)
+    else:
+        suggestion = ""
+
     if proper_name[0] not in "abcdefghijklmnopqrstuvwxyz":
         raise CFBSValidationError(
             name,
-            "Module name must start with a lowercase ASCII letter ('{}' starts with '{}')".format(
-                proper_name, proper_name[0]
+            "Module name must start with a lowercase ASCII letter ('{}' starts with '{}'){}".format(
+                proper_name, proper_name[0], suggestion
             ),
         )
 
     if not re.fullmatch(r, proper_name):
         raise CFBSValidationError(
             name,
-            "Module name contains illegal characters (only lowercase ASCII alphanumeric characters and single dash separators are allowed)",
+            "Module name contains illegal characters (only lowercase ASCII alphanumeric characters and single dash separators are allowed)"
+            + suggestion,
         )
 
     log.debug("Successfully validated name of module %s" % name)
