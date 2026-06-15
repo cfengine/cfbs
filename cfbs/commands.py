@@ -73,6 +73,7 @@ from cfbs.utils import (
     most_relevant_version,
     read_json,
     CFBSExitError,
+    remove_empty_folders,
     save_file,
     strip_right,
     pad_right,
@@ -1526,6 +1527,8 @@ def convert_command(non_interactive=False, offline=False):
 
             first_patch_conversion = False
 
+    print("\n")
+    remove_empty_folders(os.getcwd())
     print("Conversion finished successfully.")
 
     return 0
