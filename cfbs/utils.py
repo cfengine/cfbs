@@ -11,6 +11,7 @@ import urllib
 import urllib.request  # needed on some platforms
 import urllib.error
 from collections import OrderedDict
+from pathlib import Path
 from shutil import rmtree
 from typing import Iterable, List, Optional, Tuple, Union
 import filecmp
@@ -694,3 +695,29 @@ def migrate_config_paths():
 
     shutil.rmtree(old_dir)
     print("REMOVED: %s, use %s" % (old_dir, new_dir))
+
+
+def remove_empty_folders(target_path):
+    root_path = Path(target_path).expanduser()
+    assert root_path.exists()
+
+    all_empty_dirs = set(
+        p
+        for p in root_path.glob("**/")
+        if p.is_dir()
+        and not any(part.startswith(".") for part in p.relative_to(root_path).parts)
+        and not any(files for _, _, files in os.walk(p))
+    )
+
+    for p in all_empty_dirs:
+        if p.parent not in all_empty_dirs:
+            print(
+                "Deleted folder hierarchy which is now empty at '%s/'"
+                % p.relative_to(Path.cwd())
+            )
+
+    for path in sorted(all_empty_dirs, key=lambda p: len(p.parts), reverse=True):
+        try:
+            path.rmdir()
+        except OSError:
+            pass
