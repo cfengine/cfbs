@@ -112,7 +112,7 @@ This `input` key contains the specification for what input the module accepts, i
 
 User's responses are stored in `<module-name>/input.json`.
 For completeness, the input specification is also stored with the responses.
-Here is an example of a `input.json` file with responses:
+Here is an example of an `input.json` file with responses:
 
 ```json
 [
@@ -241,7 +241,7 @@ https://northerntech.atlassian.net/browse/CFE-4102
 We expect policy writers and module authors to use the `cfbs` tooling from the command line, when working on projects, in combination with their editor of choice, much in a similar way to `git`, `cargo`, or `npm`.
 When humans are running the tool in a shell, manually typing in commands, we want it to be intuitive, and have helpful prompts to make it easy to use.
 However, we also expect some of the commands to be run inside scripts, and as part of the code and automation which deploys your policy to your hosts.
-In these situations, prompts are undesireable, and stability is very important (you don't want the deployment to start failing).
+In these situations, prompts are undesirable, and stability is very important (you don't want the deployment to start failing).
 For these reasons, we've outlined 2 categories of commands below.
 
 **Note:** The 2 categories below are not strict rules.
@@ -304,7 +304,7 @@ They don't have interactive prompts, you can expect fewer changes to them, and b
 `cfbs` respects the following environment variables:
 
 - `CFBS_GLOBAL_DIR`: Directory where `cfbs` stores global information, such as its cache of downloaded modules.
-  - **Default:** `~/.cache/cfenginge/cfbs/`.
+  - **Default:** `~/.cache/cfengine/cfbs/`.
   - **Usage:** `CFBS_GLOBAL_DIR=/tmp/cfbs cfbs build`.
   - **Note:** `cfbs` still uses the current working directory for finding and building a project (`./cfbs.json`, `./out/`, etc.).
 
