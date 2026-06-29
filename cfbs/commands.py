@@ -530,7 +530,6 @@ def remove_command(to_remove: List[str]):
                 % (module_name, input_path),
                 default="no",
             ):
-                rm(input_path)
                 files.append(input_path)
                 msg += "\n - Removed input data for module '%s'" % module_name
                 log.debug("Deleted module data '%s'" % input_path)
@@ -566,6 +565,8 @@ def remove_command(to_remove: List[str]):
         msg = msg[4:]  # Remove the '\n - ' part of the message
 
     config.save()
+    for input_path in files:
+        rm(input_path)
     return CFBSCommandGitResult(0, changes_made, msg, files)
 
 
