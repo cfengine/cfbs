@@ -45,8 +45,9 @@ jobs:
         run: git add cfbs/cfbs.1 && git commit -m "Regenerated man page"
       - name: Create Pull Request
         if: env.MANPAGE_HASH_BEFORE != env.MANPAGE_HASH_AFTER
-        uses: cfengine/create-pull-request@v6
+        uses: cfengine/create-pull-request@v7
         with:
+          sign-commits: true
           title: Updated cfbs manual
           body: Automated updates to the cfbs manual using [the `update_cfbs_manual` workflow](https://github.com/cfengine/cfbs/blob/master/.github/workflows/update-cfbs-manual.yml).
           reviewers: |
