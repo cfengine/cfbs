@@ -10,8 +10,32 @@ on:
     branches: [master]
 
 jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+          uv lock --check
+          uv build
+      - name: Upload dists as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dists
+          path: dist/
   test-legacy:
     runs-on: ubuntu-24.04
+    needs: build
     permissions:
       contents: read
     env:
@@ -30,9 +54,13 @@ jobs:
         uses: ./.github/actions/set-up-legacy-python
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Retrieve dists built on modern Python
+        uses: actions/download-artifact@v4
+        with:
+          name: dists
+          path: dist/
       - name: Install
         run: |
-          python setup.py sdist bdist_wheel
           pip install dist/cfbs-*.whl
       - name: Run bash tests
         run: |

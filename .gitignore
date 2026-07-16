@@ -3,6 +3,8 @@ __pycache__/
 cfbs.egg-info
 cfbs/VERSION
 *.pyc
+.venv/
+.pytest_cache/
 
 # Node / npm:
 node_modules/

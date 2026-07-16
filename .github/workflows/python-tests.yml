@@ -10,6 +10,29 @@ on:
     branches: [master]
 
 jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+          uv lock --check
+          uv build
+      - name: Upload dists as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dists
+          path: dist/
   test:
     runs-on: ubuntu-24.04
     permissions:
@@ -17,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@v4
@@ -27,34 +50,32 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Verify Python version
-        shell: bash
-        run: |
-          echo "Active Python: $(python --version)"
-          python --version 2>&1 | grep -q "^Python ${{ inputs.python-version }}" || (echo "ERROR: Expected Python ${{ inputs.python-version }}" && exit 1)
-      - name: Install dependencies
+      - name: Install uv and sync dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install flake8 pyright pytest setuptools wheel
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m pip install uv
+          echo "${{ matrix.python-version }}" > .python-version
+          uv lock --check
+          uv sync
       - name: Lint with flake8
         run: |
-          python -m flake8 . --ignore=E203,W503,E722,E731 --max-complexity=100 --max-line-length=160
+          uv run flake8 cfbs/ tests/ --extend-exclude=tests/tmp --ignore=E203,W503,E722,E731 --max-complexity=100 --max-line-length=160
       - name: Lint with pyright (type checking)
         run: |
-          python -m pyright cfbs --pythonversion ${{ matrix.python-version }}
+          uv tool run pyright cfbs --pythonversion ${{ matrix.python-version }}
       - name: Test with pytest
         run: |
-          python -m pytest
+          uv run pytest
       - name: Install
         run: |
-          python setup.py sdist bdist_wheel
+          uv build
           pip install dist/cfbs-*.whl
       - name: Run bash tests
         run: |
           UNSAFE_TESTS=1 bash tests/shell/all.sh
   test-legacy:
     runs-on: ubuntu-24.04
+    needs: build
     permissions:
       contents: read
     env:
@@ -88,9 +109,13 @@ jobs:
       - name: Test with pytest
         run: |
           python -m pytest
+      - name: Retrieve dists built on modern Python
+        uses: actions/download-artifact@v4
+        with:
+          name: dists
+          path: dist/
       - name: Install
         run: |
-          python setup.py sdist bdist_wheel
           pip install dist/cfbs-*.whl
       - name: Run bash tests
         run: |

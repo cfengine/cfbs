@@ -1,0 +1,51 @@
+[build-system]
+# Note: These lower bounds are the newest versions which still work on
+# Python 3.8, the oldest version we build / develop on (see the CI matrix).
+requires = ["setuptools>=75.3", "setuptools-scm>=8.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cfbs"
+dynamic = ["version"]
+description = "Tooling to build, manage and deploy CFEngine policy"
+readme = "README.md"
+authors = [{ name = "Northern.tech, Inc.", email = "contact@northern.tech" }]
+requires-python = ">=3.5"
+dependencies = []
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/cfengine/cfbs"
+
+[project.scripts]
+cfbs = "cfbs.main:main"
+
+[tool.setuptools]
+license-files = [] # Workaround bug in setuptools https://github.com/astral-sh/uv/issues/9513
+
+[tool.setuptools.packages.find]
+include = ["cfbs*"]
+
+[tool.setuptools.package-data]
+cfbs = ["VERSION", "cfbs.1"]
+
+[tool.setuptools_scm]
+version_file = "cfbs/VERSION"
+version_file_template = "{version}\n"
+
+[tool.pyright]
+include = ["cfbs"]
+venvPath = "."
+venv = ".venv"
+
+# cfbs itself supports very old Python versions (see requires-python above),
+# but the development tools below do not, hence the markers:
+[dependency-groups]
+dev = [
+  "flake8>=5.0; python_full_version >= '3.8.1'",
+  "pytest>=7.0; python_full_version >= '3.8.1'",
+]
