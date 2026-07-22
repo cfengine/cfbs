@@ -1225,6 +1225,15 @@ def convert_command(non_interactive=False, offline=False):
 
     dir_name = dir_content[0]
     path_string = "./" + dir_name + "/"
+    has_gitfolder = os.path.isdir(os.path.join(path_string, ".git"))
+    if has_gitfolder:
+        print(
+            "A `.git`-directory already exists inside %s and it will not be possible to initialize a cfbs-project"
+            % path_string
+        )
+        if not prompt_user_yesno(non_interactive, "Do you want to remove this?"):
+            raise CFBSExitError("`.git`-directory was not removed, exiting.")
+        rm(os.path.join(path_string, ".git"))
 
     # validate the local module
     validate_module_name_content(path_string)
@@ -1282,6 +1291,7 @@ def convert_command(non_interactive=False, offline=False):
     print("Initializing a new CFBS project...")
     # since there should be no other files than the masterfiles-name directory, there shouldn't be a .git directory
     assert not is_git_repo()
+    assert not is_git_repo(path_string)
     try:
         r = init_command(
             masterfiles="no", non_interactive=non_interactive, use_git=True
