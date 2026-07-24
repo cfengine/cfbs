@@ -215,7 +215,7 @@ $ head out/masterfiles/modules/promise_types/git.py
 import os
 import subprocess
 from typing import Dict, Optional
-from cfengine import PromiseModule, ValidationError, Result
+from cfengine_module_library import PromiseModule, ValidationError, Result
 from pydantic import (
     BaseModel,
     ValidationError as PydanticValidationError,
