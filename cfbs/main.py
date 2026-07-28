@@ -240,6 +240,42 @@ def _main() -> int:
         finally:
             if needs_close:
                 file.close()
+    if args.command == "render-input":
+        if len(args.args) != 3:
+            log.error(
+                "%s <module>, <infile (or - for stdin)>"
+                " and <outfile (or - for stdout)>"
+                % (
+                    "Too many arguments: expected"
+                    if len(args.args) > 3
+                    else "Missing required arguments"
+                )
+            )
+            return 1
+
+        module, infilename, outfilename = args.args
+
+        # Open the infile first, so that a mistyped infile doesn't truncate the
+        # outfile:
+        try:
+            infile, close_infile = open_file_arg(infilename, "r")
+        except OSError as e:
+            log.error("Can't open '%s': %s" % (infilename, e))
+            return 1
+        try:
+            outfile, close_outfile = open_file_arg(outfilename, "w")
+        except OSError as e:
+            log.error("Can't open '%s': %s" % (outfilename, e))
+            if close_infile:
+                infile.close()
+            return 1
+        try:
+            return commands.render_input_command(module, infile, outfile)
+        finally:
+            if close_infile:
+                infile.close()
+            if close_outfile:
+                outfile.close()
 
     raise CFBSProgrammerError(
         "Command '%s' not handled appropriately by the code above" % args.command

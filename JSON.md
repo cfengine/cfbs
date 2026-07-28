@@ -477,6 +477,9 @@ Some modules allow for users to add module input by responding to questions expr
 User input can be added using the `cfbs input <module-name>` command, which stores responses in `./<module-name>/input.json`.
 These responses are translated into augments which will be added to `./out/masterfiles/def.json` during `cfbs build`.
 
+The `cfbs render-input` command performs the same translation, but writes the augments to a file of your choosing or stdout.
+Augments rendered with `cfbs render-input` will not be added to `./out/masterfiles/def.json` automatically during a build.
+
 ### Create single file example
 
 The `"input"` attribute takes a list of input definitions as illustrated below.

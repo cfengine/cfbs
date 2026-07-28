@@ -97,6 +97,11 @@ run_test tests/shell/050_update_masterfiles_specific_version.sh
 run_test tests/shell/051_get_input_no_build_list.sh
 run_test tests/shell/052_get_input_module_not_found.sh
 run_test tests/shell/053_set_input_not_a_list.sh
+run_test tests/shell/054_render_input.sh
+run_test tests/shell/055_render_input_two_variables.sh
+run_test tests/shell/056_render_input_list.sh
+run_test tests/shell/057_render_input_no_response.sh
+run_test tests/shell/058_render_input_fail.sh
 
 # Summary
 _suite_end=$(date +%s)

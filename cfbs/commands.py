@@ -92,6 +92,7 @@ from cfbs.pretty import (
     pretty_file,
     CFBS_DEFAULT_SORTING_RULES,
 )
+from cfbs.augments import generate_augment
 from cfbs.build import (
     init_out_folder,
     perform_build,
@@ -1658,6 +1659,47 @@ def get_input_command(name, outfile):
     data = pretty(data) + "\n"
     try:
         outfile.write(data)
+    except OSError as e:
+        log.error("Failed to write json: %s" % e)
+        return 1
+    return 0
+
+
+@cfbs_command("render-input")
+def render_input_command(name, infile, outfile):
+    config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
+    module = config.get_module_from_build(name)
+    if module is None:
+        module = config.index.get_module_object(name)
+    if module is None:
+        log.error("Module '%s' not found" % name)
+        return 1
+
+    spec = module.get("input")
+    if spec is None:
+        log.error("Module '%s' does not accept input" % name)
+        return 1
+    log.debug("Input spec for module '%s': %s" % (name, pretty(spec)))
+
+    try:
+        data = json.load(infile, object_pairs_hook=OrderedDict)
+    except json.decoder.JSONDecodeError as e:
+        log.error("Error reading input data for module '%s': %s" % (name, e))
+        return 1
+    log.debug("Input data for module '%s': %s" % (name, pretty(data)))
+
+    if not input_data_matches_spec(spec, data):
+        log.error(
+            "Input data for module '%s' does not conform with input definition" % name
+        )
+        return 1
+
+    augment = generate_augment(name, data)
+    log.debug("Generated augment: %s" % pretty(augment))
+
+    try:
+        outfile.write(pretty(augment) + "\n")
     except OSError as e:
         log.error("Failed to write json: %s" % e)
         return 1

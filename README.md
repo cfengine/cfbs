@@ -150,6 +150,43 @@ Here is an example of an `input.json` file with responses:
 
 The `input.json` file is converted and merged into the main `def.json` during the build, using the `input` build step.
 
+### Render module input as an augments file
+
+```
+cfbs render-input <module> <infile (or - for stdin)> <outfile (or - for stdout)>
+```
+
+Converts input data for a module, as shown above, into the augments (`def.json`) format, and writes it to the outfile.
+This is the same conversion the `input` build step performs during `cfbs build`, except that the input data is read from the infile instead of `<module-name>/input.json`, and nothing is stored in the project.
+
+Use it to render an augment for input data which is kept outside of the project, for example input entered per host group in Mission Portal:
+
+```
+$ cfbs render-input create-single-file - - <<EOF
+[
+  {
+    "type": "string",
+    "variable": "filename",
+    "label": "Filename",
+    "question": "What file should this module create?",
+    "response": "/tmp/create-single-file.txt"
+  }
+]
+EOF
+{
+  "variables": {
+    "cfbs:create_single_file.filename": {
+      "value": "/tmp/create-single-file.txt",
+      "comment": "Added by 'cfbs input'"
+    }
+  }
+}
+```
+
+The input data must conform with the module's input definition, just like for `cfbs set-input`.
+A variable is only added to the augment if the input data has a `response` for it.
+Thus, if none of the questions have been answered, the rendered augment contains no variables at all.
+
 ### Deploy your policy set to a remote hub
 
 ```
@@ -288,6 +325,9 @@ These commands are intended to be run as part of build systems / deployment pipe
   Empty list `[]` is returned if the module was found, but it does not accept any input.
 - `cfbs install`: Run this on a hub as root to install the policy set (copy the files from `out/masterfiles` to `/var/cfengine/masterfiles`).
 - `cfbs pretty`: Run on a JSON file to pretty-format it. (May be expanded to other formats in the future).
+- `cfbs render-input`: Convert input data for a module into an augments file (`def.json`) and print it.
+  Takes the same input data as `cfbs set-input`, validates it the same way, but stores nothing - the augment is written to the given outfile instead.
+  Useful for rendering the augment for input data which is not stored in the project, for example input entered per host group in Mission Portal.
 - `cfbs set-input`: Set input data for a module.
   Non-interactive version of `cfbs input`, takes the input as a JSON, validates it and stores it.
   `cfbs set-input` and `cfbs get-input` can be thought of as ways to save and load the input file.
