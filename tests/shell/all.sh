@@ -94,6 +94,7 @@ run_test tests/shell/047_absolute_path_modules.sh
 run_test tests/shell/048_remove_with_dependencies.sh
 run_test tests/shell/049_remove_with_circular_dependencies.sh
 run_test tests/shell/050_update_masterfiles_specific_version.sh
+run_test tests/shell/051_get_input_no_build_list.sh
 
 # Summary
 _suite_end=$(date +%s)
