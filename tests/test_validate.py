@@ -257,3 +257,24 @@ def test_input_data_matches_spec_not_objects():
     ]
     assert not input_data_matches_spec(spec, ["not an object"])
     assert not input_data_matches_spec(["not an object"], spec)
+
+
+def test_input_data_matches_spec_not_lists():
+    spec = [
+        {
+            "type": "string",
+            "variable": "filename",
+            "label": "Filename",
+            "question": "What file should this module create?",
+        }
+    ]
+    # Input data has to be a list of input definitions:
+    assert not input_data_matches_spec(spec, 0)
+    assert not input_data_matches_spec(spec, "response")
+    assert not input_data_matches_spec(spec, None)
+    assert not input_data_matches_spec(spec, {})
+    assert not input_data_matches_spec(spec, {"variable": "filename"})
+
+    # And so does the input definition:
+    assert not input_data_matches_spec(0, spec)
+    assert not input_data_matches_spec({}, spec)

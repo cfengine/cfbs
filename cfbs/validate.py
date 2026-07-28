@@ -815,6 +815,9 @@ def input_data_matches_spec(spec, data):
     :param data: the input data to check
     :return: True if the input data conforms with the input definition
     """
+    if not isinstance(spec, list) or not isinstance(data, list):
+        return False
+
     for a, b in zip(spec, data):
         if (
             not isinstance(a, dict)
