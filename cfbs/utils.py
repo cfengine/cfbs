@@ -13,7 +13,7 @@ import urllib.error
 from collections import OrderedDict
 from pathlib import Path
 from shutil import rmtree
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import IO, Iterable, List, Optional, Tuple, Union
 import filecmp
 
 from cfbs.pretty import pretty
@@ -294,6 +294,22 @@ def save_file(path, data):
         mkdir("/".join(path.split("/")[0:-1]))
     with open(path, "w") as f:
         f.write(data)
+
+
+def open_file_arg(filename, mode) -> Tuple[IO, bool]:
+    """Open a filename given as a command line argument.
+
+    A filename of "-" means stdin or stdout, depending on the mode.
+
+    :param filename: filename from the command line, or "-"
+    :param mode: "r" to read the file, "w" to write it
+    :return: (file, needs_close), needs_close being False for stdin and stdout,
+             since we should not close those
+    """
+    assert mode in ("r", "w")
+    if filename == "-":
+        return (sys.stdin if mode == "r" else sys.stdout), False
+    return open(filename, mode), True
 
 
 def read_json(path) -> Union[OrderedDict, None]:

@@ -4,7 +4,6 @@
 __copyright__ = ["Northern.tech AS"]
 
 import logging as log
-import sys
 import os
 import traceback
 import pathlib
@@ -20,6 +19,7 @@ from cfbs.utils import (
     CFBSProgrammerError,
     CFBSNetworkError,
     migrate_config_paths,
+    open_file_arg,
 )
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
@@ -226,20 +226,20 @@ def _main() -> int:
 
         module, filename = args.args[0], args.args[1]
 
-        if filename == "-":
-            file = sys.stdin if args.command == "set-input" else sys.stdout
-        else:
-            try:
-                file = open(filename, "r" if args.command == "set-input" else "w")
-            except OSError as e:
-                log.error("Can't open '%s': %s" % (filename, e))
-                return 1
+        try:
+            file, needs_close = open_file_arg(
+                filename, "r" if args.command == "set-input" else "w"
+            )
+        except OSError as e:
+            log.error("Can't open '%s': %s" % (filename, e))
+            return 1
         try:
             if args.command == "set-input":
                 return commands.set_input_command(module, file)
             return commands.get_input_command(module, file)
         finally:
-            file.close()
+            if needs_close:
+                file.close()
 
     raise CFBSProgrammerError(
         "Command '%s' not handled appropriately by the code above" % args.command
