@@ -767,6 +767,64 @@ def _validate_module_input(name, module):
                     )
 
 
+def _compare_dict(a, b, ignore=None):
+    assert isinstance(a, dict) and isinstance(b, dict)
+    ignore = ignore or set()
+    if set(a.keys()) != set(b.keys()) - ignore:
+        return False
+    # Avoid code duplication by converting the values of the two dicts
+    # into two lists in the same order and compare the lists instead
+    keys = a.keys()
+    return _compare_list([a[key] for key in keys], [b[key] for key in keys])
+
+
+def _compare_list(a, b):
+    assert isinstance(a, list) and isinstance(b, list)
+    if len(a) != len(b):
+        return False
+    for x, y in zip(a, b):
+        if type(x) is not type(y):
+            return False
+        if isinstance(x, dict):
+            if not _compare_dict(x, y):
+                return False
+        elif isinstance(x, list):
+            if not _compare_list(x, y):
+                return False
+        else:
+            assert x is None or isinstance(
+                x, (int, float, str, bool)
+            ), "Illegal value type"
+            if x != y:
+                return False
+    return True
+
+
+def input_data_matches_spec(spec, data):
+    """Check that input data conforms with a module's input definition.
+
+    Compares each element of the input definition (the module's "input") with
+    the corresponding element of the input data, ignoring the "response" key,
+    which is what the user adds.
+
+    Note that this checks the input _data_ (an input definition along with the
+    user's responses), not the input _definition_ in cfbs.json, which is checked
+    by _validate_module_input() above.
+
+    :param spec: the module's input definition
+    :param data: the input data to check
+    :return: True if the input data conforms with the input definition
+    """
+    for a, b in zip(spec, data):
+        if (
+            not isinstance(a, dict)
+            or not isinstance(b, dict)
+            or not _compare_dict(a, b, ignore=set({"response"}))
+        ):
+            return False
+    return True
+
+
 def validate_single_module(context, name, module, config, local_check=False):
     """Function to validate one module object.
 

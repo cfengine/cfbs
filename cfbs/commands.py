@@ -98,6 +98,7 @@ from cfbs.build import (
 )
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import (
+    input_data_matches_spec,
     validate_config,
     validate_config_raise_exceptions,
     validate_module_name_content,
@@ -1603,48 +1604,11 @@ def set_input_command(name, infile):
         return CFBSCommandGitResult(1)
     log.debug("Input data for module '%s': %s" % (name, pretty(data)))
 
-    def _compare_dict(a, b, ignore=None):
-        assert isinstance(a, dict) and isinstance(b, dict)
-        ignore = ignore or set()
-        if set(a.keys()) != set(b.keys()) - ignore:
-            return False
-        # Avoid code duplication by converting the values of the two dicts
-        # into two lists in the same order and compare the lists instead
-        keys = a.keys()
-        return _compare_list([a[key] for key in keys], [b[key] for key in keys])
-
-    def _compare_list(a, b):
-        assert isinstance(a, list) and isinstance(b, list)
-        if len(a) != len(b):
-            return False
-        for x, y in zip(a, b):
-            if type(x) is not type(y):
-                return False
-            if isinstance(x, dict):
-                if not _compare_dict(x, y):
-                    return False
-            elif isinstance(x, list):
-                if not _compare_list(x, y):
-                    return False
-            else:
-                assert x is None or isinstance(
-                    x, (int, float, str, bool)
-                ), "Illegal value type"
-                if x != y:
-                    return False
-        return True
-
-    for a, b in zip(spec, data):
-        if (
-            not isinstance(a, dict)
-            or not isinstance(b, dict)
-            or not _compare_dict(a, b, ignore=set({"response"}))
-        ):
-            log.error(
-                "Input data for module '%s' does not conform with input definition"
-                % name
-            )
-            return CFBSCommandGitResult(1)
+    if not input_data_matches_spec(spec, data):
+        log.error(
+            "Input data for module '%s' does not conform with input definition" % name
+        )
+        return CFBSCommandGitResult(1)
 
     path = os.path.join(name, "input.json")
 
