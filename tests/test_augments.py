@@ -1,4 +1,5 @@
 from cfbs.augments import generate_augment
+from cfbs.pretty import pretty
 
 
 def test_generate_augment_string():
@@ -191,6 +192,33 @@ def test_generate_augment_no_response():
     }
 
     assert generate_augment("create-single-file", []) == {"variables": {}}
+
+
+def test_generate_augment_key_order():
+    """The keys are in the same order regardless of the Python version
+
+    Dictionaries don't preserve the insertion order before Python 3.7,
+    so the augment is built using OrderedDict.
+    """
+    input_data = [
+        {
+            "type": "string",
+            "variable": "filename",
+            "label": "Filename",
+            "question": "What file should this module create?",
+            "response": "/tmp/create-single-file.txt",
+        }
+    ]
+    assert pretty(generate_augment("create-single-file", input_data)) == (
+        "{\n"
+        '  "variables": {\n'
+        '    "cfbs:create_single_file.filename": {\n'
+        '      "value": "/tmp/create-single-file.txt",\n'
+        '      "comment": "Added by \'cfbs input\'"\n'
+        "    }\n"
+        "  }\n"
+        "}"
+    )
 
 
 def test_generate_augment_not_a_list():

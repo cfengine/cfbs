@@ -2,6 +2,8 @@
 Functions for generating CFEngine augments (def.json)
 """
 
+from collections import OrderedDict
+
 from cfbs.utils import canonify
 
 
@@ -16,7 +18,11 @@ def generate_augment(module_name, input_data):
     if not isinstance(input_data, list):
         return None
 
-    augment = {"variables": {}}
+    # OrderedDict, so that the keys are in the same order regardless of
+    # the Python version. Dictionaries don't preserve the insertion order
+    # before Python 3.7:
+    augment = OrderedDict()
+    augment["variables"] = OrderedDict()
 
     for variable in input_data:
         if not isinstance(variable, dict) or any(
@@ -30,9 +36,9 @@ def generate_augment(module_name, input_data):
         value = variable["response"]
         comment = variable.get("comment", "Added by 'cfbs input'")
 
-        augment["variables"]["%s:%s.%s" % (namespace, bundle, name)] = {
-            "value": value,
-            "comment": comment,
-        }
+        augment_variable = OrderedDict()
+        augment_variable["value"] = value
+        augment_variable["comment"] = comment
+        augment["variables"]["%s:%s.%s" % (namespace, bundle, name)] = augment_variable
 
     return augment
