@@ -449,7 +449,8 @@ class CFBSConfig(CFBSJson):
         ]
         modules_already_added = self["build"]
 
-        assert not any(m for m in modules_to_add if "name" not in m)
+        # check_existence() above ensures all of them are in the index:
+        assert not any(m for m in modules_to_add if m is None or "name" not in m)
         assert not any(m for m in modules_already_added if "name" not in m)
 
         # Find all unmet dependencies:

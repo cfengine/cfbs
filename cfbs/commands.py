@@ -704,6 +704,9 @@ def update_command(to_update):
             new_module = provides[module_name]
         elif is_module_absolute(old_module["name"]):
             new_module = index.get_module_object(update.name)
+            # Module objects for absolute modules are generated, not looked up
+            # in the index, so this is never None:
+            assert new_module is not None
             new_module["commit"] = head_commit_hash(old_module["name"])
         else:
 
@@ -1269,7 +1272,10 @@ def convert_command(non_interactive=False, offline=False):
         raise
 
     current_index = CFBSConfig.get_instance().index
-    default_version = current_index.get_module_object("masterfiles")["version"]
+    masterfiles = current_index.get_module_object("masterfiles")
+    if masterfiles is None:
+        raise CFBSExitError("Could not find the 'masterfiles' module in the index")
+    default_version = masterfiles["version"]
 
     reference_version = analyzed_files.reference_version
     if reference_version is None:
