@@ -1,0 +1,12 @@
+{
+  "variables": {
+    "cfbs:create_single_file_with_content.filename": {
+      "value": "/tmp/create-single-file-with-content.txt",
+      "comment": "Added by 'cfbs input'"
+    },
+    "cfbs:create_single_file_with_content.content": {
+      "value": "Hello CFEngine!\nBye CFEngine!",
+      "comment": "Added by 'cfbs input'"
+    }
+  }
+}

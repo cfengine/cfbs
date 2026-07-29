@@ -1,0 +1,33 @@
+{
+  "name": "Example",
+  "type": "policy-set",
+  "description": "Example description",
+  "git": false,
+  "build": [
+    {
+      "name": "create-single-file-with-content",
+      "description": "Create a single file with content.",
+      "steps": ["input ./input.json def.json"],
+      "input": [
+        {
+          "type": "string",
+          "variable": "filename",
+          "namespace": "cfbs",
+          "bundle": "create_single_file_with_content",
+          "label": "Filename",
+          "question": "What file should this module create?",
+          "default": "/tmp/create-single-file-with-content.txt"
+        },
+        {
+          "type": "string-multiline",
+          "variable": "content",
+          "namespace": "cfbs",
+          "bundle": "create_single_file_with_content",
+          "label": "Content",
+          "question": "What content should this file have?",
+          "default": "Hello CFEngine!\nBye CFEngine!"
+        }
+      ]
+    }
+  ]
+}
