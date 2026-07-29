@@ -3,8 +3,8 @@
 
 __copyright__ = ["Northern.tech AS"]
 
+import contextlib
 import logging as log
-import sys
 import os
 import traceback
 import pathlib
@@ -20,6 +20,7 @@ from cfbs.utils import (
     CFBSProgrammerError,
     CFBSNetworkError,
     migrate_config_paths,
+    open_file_arg,
 )
 from cfbs.cfbs_config import CFBSConfig
 from cfbs import commands
@@ -226,20 +227,52 @@ def _main() -> int:
 
         module, filename = args.args[0], args.args[1]
 
-        if filename == "-":
-            file = sys.stdin if args.command == "set-input" else sys.stdout
-        else:
+        # ExitStack rather than a plain with statement, so that the OSError
+        # handling only covers opening the files, not whatever exceptions happen
+        # in commands.set_input() / commands.get_input():
+        with contextlib.ExitStack() as stack:
             try:
-                file = open(filename, "r" if args.command == "set-input" else "w")
+                file = stack.enter_context(
+                    open_file_arg(filename, "r" if args.command == "set-input" else "w")
+                )
             except OSError as e:
                 log.error("Can't open '%s': %s" % (filename, e))
                 return 1
-        try:
             if args.command == "set-input":
                 return commands.set_input_command(module, file)
             return commands.get_input_command(module, file)
-        finally:
-            file.close()
+    if args.command == "render-input":
+        if len(args.args) != 3:
+            log.error(
+                "%s <module>, <infile (or - for stdin)>"
+                " and <outfile (or - for stdout)>"
+                % (
+                    "Too many arguments: expected"
+                    if len(args.args) > 3
+                    else "Missing required arguments"
+                )
+            )
+            return 1
+
+        module, infilename, outfilename = args.args
+
+        # ExitStack rather than a plain with statement, so that the OSError
+        # handling only covers opening the files, not whatever exceptions happen
+        # in commands.render_input_command():
+        with contextlib.ExitStack() as stack:
+            # Open the infile first, so that a mistyped infile doesn't truncate
+            # the outfile:
+            try:
+                infile = stack.enter_context(open_file_arg(infilename, "r"))
+            except OSError as e:
+                log.error("Can't open '%s': %s" % (infilename, e))
+                return 1
+            try:
+                outfile = stack.enter_context(open_file_arg(outfilename, "w"))
+            except OSError as e:
+                log.error("Can't open '%s': %s" % (outfilename, e))
+                return 1
+            return commands.render_input_command(module, infile, outfile)
 
     raise CFBSProgrammerError(
         "Command '%s' not handled appropriately by the code above" % args.command

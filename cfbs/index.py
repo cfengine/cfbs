@@ -214,7 +214,23 @@ class Index:
         module,
         added_by: Optional[str] = None,
         explicit_build_steps: Optional[List[str]] = None,
+        default=None,
     ):
+        """Get the module object for a module in the index.
+
+        Local ("./name") and absolute ("/path/") modules are not in the index,
+        their module objects are generated with default build steps instead.
+
+        :param module: module name, "name@version", or a Module object
+        :param added_by: what to put in the module's "added_by" field, omitted
+                         from the module object if not specified
+        :param explicit_build_steps: build steps to use for a local subdirectory
+                                     module, instead of the default "directory"
+                                     build step
+        :param default: what to return if the module, or the requested version
+                        of it, is not in the index
+        :return: the module object, or default if it was not found
+        """
         if isinstance(module, str):
             module = Module(module)
         name = module.name
@@ -231,6 +247,8 @@ class Index:
             # due to that, this hack is used to prevent creating the "version" field
             module = Module(name).to_dict()
         else:
+            if name not in self:
+                return default
             object = self[name]
             if version:
                 try:
@@ -239,6 +257,8 @@ class Index:
                     raise CFBSExitError(
                         "Downloading CFEngine Build Module Index failed - check your Wi-Fi / network settings."
                     )
+                if name not in versions or version not in versions[name]:
+                    return default
                 new_values = versions[name][version]
                 specifics = {
                     k: v for (k, v) in new_values.items() if k in Module.attributes()

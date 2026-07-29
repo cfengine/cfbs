@@ -215,7 +215,7 @@ class CFBSJson:
         return "build" in self and module["name"] in (m["name"] for m in self["build"])
 
     def get_module_from_build(self, module):
-        for m in self["build"]:
+        for m in self.get("build") or []:
             if m["name"] == module:
                 return m
         return None

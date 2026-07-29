@@ -92,12 +92,14 @@ from cfbs.pretty import (
     pretty_file,
     CFBS_DEFAULT_SORTING_RULES,
 )
+from cfbs.augments import generate_augment
 from cfbs.build import (
     init_out_folder,
     perform_build,
 )
 from cfbs.cfbs_config import CFBSConfig, CFBSReturnWithoutCommit
 from cfbs.validate import (
+    input_data_matches_spec,
     validate_config,
     validate_config_raise_exceptions,
     validate_module_name_content,
@@ -703,6 +705,9 @@ def update_command(to_update):
             new_module = provides[module_name]
         elif is_module_absolute(old_module["name"]):
             new_module = index.get_module_object(update.name)
+            # Module objects for absolute modules are generated, not looked up
+            # in the index, so this is never None:
+            assert new_module is not None
             new_module["commit"] = head_commit_hash(old_module["name"])
         else:
 
@@ -1268,7 +1273,10 @@ def convert_command(non_interactive=False, offline=False):
         raise
 
     current_index = CFBSConfig.get_instance().index
-    default_version = current_index.get_module_object("masterfiles")["version"]
+    masterfiles = current_index.get_module_object("masterfiles")
+    if masterfiles is None:
+        raise CFBSExitError("Could not find the 'masterfiles' module in the index")
+    default_version = masterfiles["version"]
 
     reference_version = analyzed_files.reference_version
     if reference_version is None:
@@ -1603,48 +1611,11 @@ def set_input_command(name, infile):
         return CFBSCommandGitResult(1)
     log.debug("Input data for module '%s': %s" % (name, pretty(data)))
 
-    def _compare_dict(a, b, ignore=None):
-        assert isinstance(a, dict) and isinstance(b, dict)
-        ignore = ignore or set()
-        if set(a.keys()) != set(b.keys()) - ignore:
-            return False
-        # Avoid code duplication by converting the values of the two dicts
-        # into two lists in the same order and compare the lists instead
-        keys = a.keys()
-        return _compare_list([a[key] for key in keys], [b[key] for key in keys])
-
-    def _compare_list(a, b):
-        assert isinstance(a, list) and isinstance(b, list)
-        if len(a) != len(b):
-            return False
-        for x, y in zip(a, b):
-            if type(x) is not type(y):
-                return False
-            if isinstance(x, dict):
-                if not _compare_dict(x, y):
-                    return False
-            elif isinstance(x, list):
-                if not _compare_list(x, y):
-                    return False
-            else:
-                assert x is None or isinstance(
-                    x, (int, float, str, bool)
-                ), "Illegal value type"
-                if x != y:
-                    return False
-        return True
-
-    for a, b in zip(spec, data):
-        if (
-            not isinstance(a, dict)
-            or not isinstance(b, dict)
-            or not _compare_dict(a, b, ignore=set({"response"}))
-        ):
-            log.error(
-                "Input data for module '%s' does not conform with input definition"
-                % name
-            )
-            return CFBSCommandGitResult(1)
+    if not input_data_matches_spec(spec, data):
+        log.error(
+            "Input data for module '%s' does not conform with input definition" % name
+        )
+        return CFBSCommandGitResult(1)
 
     path = os.path.join(name, "input.json")
 
@@ -1688,6 +1659,47 @@ def get_input_command(name, outfile):
     data = pretty(data) + "\n"
     try:
         outfile.write(data)
+    except OSError as e:
+        log.error("Failed to write json: %s" % e)
+        return 1
+    return 0
+
+
+@cfbs_command("render-input")
+def render_input_command(name, infile, outfile):
+    config = CFBSConfig.get_instance()
+    config.warn_about_unknown_keys()
+    module = config.get_module_from_build(name)
+    if module is None:
+        module = config.index.get_module_object(name)
+    if module is None:
+        log.error("Module '%s' not found" % name)
+        return 1
+
+    spec = module.get("input")
+    if spec is None:
+        log.error("Module '%s' does not accept input" % name)
+        return 1
+    log.debug("Input spec for module '%s': %s" % (name, pretty(spec)))
+
+    try:
+        data = json.load(infile, object_pairs_hook=OrderedDict)
+    except json.decoder.JSONDecodeError as e:
+        log.error("Error reading input data for module '%s': %s" % (name, e))
+        return 1
+    log.debug("Input data for module '%s': %s" % (name, pretty(data)))
+
+    if not input_data_matches_spec(spec, data):
+        log.error(
+            "Input data for module '%s' does not conform with input definition" % name
+        )
+        return 1
+
+    augment = generate_augment(name, data)
+    log.debug("Generated augment: %s" % pretty(augment))
+
+    try:
+        outfile.write(pretty(augment) + "\n")
     except OSError as e:
         log.error("Failed to write json: %s" % e)
         return 1
