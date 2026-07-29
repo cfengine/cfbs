@@ -3,6 +3,7 @@
 
 __copyright__ = ["Northern.tech AS"]
 
+import contextlib
 import logging as log
 import os
 import traceback
@@ -226,20 +227,20 @@ def _main() -> int:
 
         module, filename = args.args[0], args.args[1]
 
-        try:
-            file, needs_close = open_file_arg(
-                filename, "r" if args.command == "set-input" else "w"
-            )
-        except OSError as e:
-            log.error("Can't open '%s': %s" % (filename, e))
-            return 1
-        try:
+        # ExitStack rather than a plain with statement, so that the OSError
+        # handling only covers opening the files, not whatever exceptions happen
+        # in commands.set_input() / commands.get_input():
+        with contextlib.ExitStack() as stack:
+            try:
+                file = stack.enter_context(
+                    open_file_arg(filename, "r" if args.command == "set-input" else "w")
+                )
+            except OSError as e:
+                log.error("Can't open '%s': %s" % (filename, e))
+                return 1
             if args.command == "set-input":
                 return commands.set_input_command(module, file)
             return commands.get_input_command(module, file)
-        finally:
-            if needs_close:
-                file.close()
     if args.command == "render-input":
         if len(args.args) != 3:
             log.error(
@@ -255,27 +256,23 @@ def _main() -> int:
 
         module, infilename, outfilename = args.args
 
-        # Open the infile first, so that a mistyped infile doesn't truncate the
-        # outfile:
-        try:
-            infile, close_infile = open_file_arg(infilename, "r")
-        except OSError as e:
-            log.error("Can't open '%s': %s" % (infilename, e))
-            return 1
-        try:
-            outfile, close_outfile = open_file_arg(outfilename, "w")
-        except OSError as e:
-            log.error("Can't open '%s': %s" % (outfilename, e))
-            if close_infile:
-                infile.close()
-            return 1
-        try:
+        # ExitStack rather than a plain with statement, so that the OSError
+        # handling only covers opening the files, not whatever exceptions happen
+        # in commands.render_input_command():
+        with contextlib.ExitStack() as stack:
+            # Open the infile first, so that a mistyped infile doesn't truncate
+            # the outfile:
+            try:
+                infile = stack.enter_context(open_file_arg(infilename, "r"))
+            except OSError as e:
+                log.error("Can't open '%s': %s" % (infilename, e))
+                return 1
+            try:
+                outfile = stack.enter_context(open_file_arg(outfilename, "w"))
+            except OSError as e:
+                log.error("Can't open '%s': %s" % (outfilename, e))
+                return 1
             return commands.render_input_command(module, infile, outfile)
-        finally:
-            if close_infile:
-                infile.close()
-            if close_outfile:
-                outfile.close()
 
     raise CFBSProgrammerError(
         "Command '%s' not handled appropriately by the code above" % args.command

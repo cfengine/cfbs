@@ -11,9 +11,10 @@ import urllib
 import urllib.request  # needed on some platforms
 import urllib.error
 from collections import OrderedDict
+from contextlib import contextmanager
 from pathlib import Path
 from shutil import rmtree
-from typing import IO, Iterable, List, Optional, Tuple, Union
+from typing import IO, Iterable, Iterator, List, Optional, Tuple, Union
 import filecmp
 
 from cfbs.pretty import pretty
@@ -296,20 +297,22 @@ def save_file(path, data):
         f.write(data)
 
 
-def open_file_arg(filename, mode) -> Tuple[IO, bool]:
+@contextmanager
+def open_file_arg(filename, mode) -> Iterator[IO]:
     """Open a filename given as a command line argument.
 
-    A filename of "-" means stdin or stdout, depending on the mode.
+    A filename of "-" means stdin or stdout, depending on the mode. stdin and
+    stdout are not closed on exit, since we should not close those.
 
     :param filename: filename from the command line, or "-"
     :param mode: "r" to read the file, "w" to write it
-    :return: (file, needs_close), needs_close being False for stdin and stdout,
-             since we should not close those
     """
     assert mode in ("r", "w")
     if filename == "-":
-        return (sys.stdin if mode == "r" else sys.stdout), False
-    return open(filename, mode), True
+        yield sys.stdin if mode == "r" else sys.stdout
+        return
+    with open(filename, mode) as f:
+        yield f
 
 
 def read_json(path) -> Union[OrderedDict, None]:
