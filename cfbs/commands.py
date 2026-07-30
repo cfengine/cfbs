@@ -66,6 +66,7 @@ from cfbs.utils import (
     CFBSValidationError,
     cfbs_dir,
     cfbs_filename,
+    cp_dry_overwrites,
     display_diff,
     file_diff_text,
     is_cfbs_repo,
@@ -1580,12 +1581,61 @@ def input_command(args, input_from="cfbs input"):
 
         input_data = copy.deepcopy(module["input"])
         config.input_command(module_name, input_data)
+        copied_files = _place_file_input(module_name, input_data)
 
         write_json(input_path, input_data)
         do_commit = True
         files_to_commit.append(input_path)
+        files_to_commit.extend(copied_files)
     config.save()
     return CFBSCommandGitResult(0, do_commit, None, files_to_commit)
+
+
+def _place_file_input(module_name, input_data):
+    """Make sure files given as "file" type input are part of the project.
+
+    A file already inside the project is left where it is and simply
+    referred to. A file from outside the project is copied into the
+    module's directory, next to its input.json, and the response is
+    updated to point at that copy. A "file" input using "while" to collect
+    multiple files has a list of paths as its response, each handled the
+    same way.
+
+    Returns the list of paths that were copied into the project, so they
+    can be committed alongside input.json.
+    """
+    project_root = os.path.abspath(".")
+    module_dir = os.path.join(".", module_name)
+    copied_files = []
+
+    def _place(path):
+        if not path or not os.path.isfile(path):
+            return path
+
+        abs_path = os.path.abspath(path)
+        if os.path.commonpath([abs_path, project_root]) == project_root:
+            return path  # Already part of the project, refer to it as-is
+
+        dest = os.path.join(module_dir, os.path.basename(path))
+        _, modifying_overwrites = cp_dry_overwrites(abs_path, dest)
+        if modifying_overwrites:
+            raise CFBSUserError(
+                "File: %s would overwrite file already existsing at '%s'" % (path, dest)
+            )
+        cp(abs_path, dest)
+        copied_files.append(dest)
+        return dest
+
+    for definition in input_data:
+        if definition.get("type") != "file":
+            continue
+        response = definition.get("response")
+        if isinstance(response, list):
+            definition["response"] = [_place(path) for path in response]
+        else:
+            definition["response"] = _place(response)
+
+    return copied_files
 
 
 @cfbs_command("set-input")

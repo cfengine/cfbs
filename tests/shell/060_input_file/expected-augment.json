@@ -1,0 +1,8 @@
+{
+  "variables": {
+    "cfbs:copy_a_file.source": {
+      "value": "./source.txt",
+      "comment": "Added by 'cfbs input'"
+    }
+  }
+}
