@@ -102,7 +102,7 @@ run_test tests/shell/055_render_input_two_variables.sh
 run_test tests/shell/056_render_input_list.sh
 run_test tests/shell/057_render_input_no_response.sh
 run_test tests/shell/058_render_input_fail.sh
-run_test tests/shell/059_input_multilinestring.sh
+run_test tests/shell/059_input_string_multiline.sh
 
 # Summary
 _suite_end=$(date +%s)

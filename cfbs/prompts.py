@@ -1,3 +1,5 @@
+import sys
+
 YES_NO_CHOICES = ("yes", "y", "no", "n")
 
 
@@ -53,8 +55,8 @@ def prompt_user_multiline(non_interactive: bool, prompt: str, default=None):
 
     print(prompt)
     print(
-        "(Enter one or more lines of text, then finish with double newline or Ctrl+D"
-        " (Ctrl+Z followed by Enter on Windows))"
+        "(Enter one or more lines of text, then finish with double newline or %s)"
+        % ("Ctrl+Z followed by enter" if sys.platform.startswith("win") else "Ctrl+D")
     )
 
     lines = []
