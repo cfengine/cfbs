@@ -44,7 +44,7 @@ from cfbs.module import (
     is_module_local,
     is_module_absolute,
 )
-from cfbs.prompts import prompt_user, prompt_user_yesno
+from cfbs.prompts import prompt_user, prompt_user_yesno, prompt_user_multiline
 from cfbs.validate import validate_single_module
 
 
@@ -565,6 +565,15 @@ class CFBSConfig(CFBSJson):
             )
             return response
 
+        def _input_multiline_string(input_data):
+            _check_keys(["question"], input_data)
+            response = prompt_user_multiline(
+                self.non_interactive,
+                input_data["question"],
+                default=input_data.get("default"),
+            )
+            return response
+
         def _input_elements(subtype):
             result = OrderedDict()
             for element in subtype:
@@ -615,6 +624,8 @@ class CFBSConfig(CFBSJson):
 
             if definition["type"] == "string":
                 definition["response"] = _input_string(definition)
+            elif definition["type"] == "string-multiline":
+                definition["response"] = _input_multiline_string(definition)
             elif definition["type"] == "list":
                 definition["response"] = _input_list(definition)
             else:

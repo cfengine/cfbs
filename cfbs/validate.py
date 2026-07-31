@@ -682,10 +682,10 @@ def _validate_module_input(name, module):
                     % field,
                 )
 
-        if input_element["type"] not in ("string", "list"):
+        if input_element["type"] not in ("string", "list", "string-multiline"):
             raise CFBSValidationError(
                 name,
-                'The input "type" must be "string" or "list", not "%s"'
+                'The input "type" must be "string", "string-multiline", or "list", not "%s"'
                 % input_element["type"],
             )
         if not re.fullmatch(r"[a-z_]+", input_element["variable"]):

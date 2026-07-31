@@ -43,6 +43,40 @@ def prompt_user(non_interactive: bool, prompt: str, choices=None, default=None):
     return answer
 
 
+def prompt_user_multiline(non_interactive: bool, prompt: str, default=None):
+    if non_interactive:
+        if default is None:
+            raise ValueError(
+                "Missing default value for prompt '%s' in non-interactive mode" % prompt
+            )
+        return default
+
+    print(prompt)
+    print(
+        "(Enter one or more lines of text, then finish with double newline or Ctrl+D"
+        " (Ctrl+Z followed by Enter on Windows))"
+    )
+
+    lines = []
+    while True:
+        try:
+            inp = input()
+            if len(lines) > 0 and inp == "" == lines[-1]:
+                break
+            lines.append(inp)
+        except EOFError:
+            break
+        except KeyboardInterrupt:
+            print("\nOperation cancelled by user")
+            exit(1)
+
+    answer = "\n".join(lines)
+    if answer == "" and default is not None:
+        answer = default
+
+    return answer
+
+
 def prompt_user_yesno(non_interactive: bool, prompt: str, default="yes"):
     """Returns `True` if the answer is yes, and `False` otherwise."""
 
