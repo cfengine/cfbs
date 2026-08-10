@@ -1,0 +1,57 @@
+{
+  "name": "Example",
+  "type": "policy-set",
+  "description": "Example description",
+  "git": false,
+  "build": [
+    {
+      "name": "copy-a-file",
+      "description": "Copy a file.",
+      "steps": ["input ./input.json def.json"],
+      "input": [
+        {
+          "type": "file",
+          "variable": "source",
+          "namespace": "cfbs",
+          "bundle": "copy_a_file",
+          "label": "Source file",
+          "question": "Which file should be copied?",
+          "filetype": [".txt", ".log"],
+          "default": "./source.txt"
+        }
+      ]
+    },
+    {
+      "name": "run-scripts",
+      "description": "Run multiple scripts.",
+      "steps": ["input ./input.json def.json"],
+      "input": [
+        {
+          "type": "file",
+          "variable": "scripts",
+          "namespace": "cfbs",
+          "bundle": "run_scripts",
+          "label": "Script",
+          "question": "Which script should be run?",
+          "while": "Do you want to add another script?",
+          "filetype": ".sh"
+        }
+      ]
+    },
+    {
+      "name": "copy-any-file",
+      "description": "Copy a file, no filetype restriction.",
+      "steps": ["input ./input.json def.json"],
+      "input": [
+        {
+          "type": "file",
+          "variable": "source",
+          "namespace": "cfbs",
+          "bundle": "copy_any_file",
+          "label": "Source file",
+          "question": "Which file should be copied?"
+        }
+      ]
+    }
+  ]
+}

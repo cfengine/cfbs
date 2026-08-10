@@ -243,7 +243,86 @@ def _perform_directory_step(args, source, destination, prefix):
     write_json(defjson, merged)
 
 
-def _perform_input_step(args, name, destination, prefix):
+def _path_if_already_shipped(path, build_modules, destination):
+    """If `path` is already inside a local module's directory that has its own
+    "directory" build step shipping it to masterfiles, return the on-host path
+    that step will produce. That step already copies the whole directory
+    during this same build, so the caller doesn't need to (and shouldn't)
+    copy the file itself - just point at where it will end up.
+    """
+    abs_path = os.path.abspath(path)
+    for module in build_modules:
+        module_name = module.get("name", "")
+        if not (module_name.startswith("./") and module_name.endswith("/")):
+            continue
+        module_root = os.path.abspath(module_name)
+
+        if os.path.commonpath([abs_path, module_root]) != module_root:
+            # Only a module that contains the file can be the one shipping it.
+            # Without this, we'd match some other module's directory step and
+            # return a non-None "already shipped" path, suppressing the copy the
+            # file actually needs.
+            continue
+        for step in module.get("steps", []):
+            operation, args = split_build_step(step)
+            if operation != "directory" or len(args) != 2:
+                continue
+            src, dst = args
+            if src not in (".", "./"):
+                continue
+            rel = os.path.relpath(abs_path, module_root)
+            dst = "" if dst in (".", "./") else dst
+            dest = os.path.join(destination, dst, rel)
+            return "$(sys.inputdir)/" + os.path.relpath(dest, destination)
+    return None
+
+
+def _localize_file_inputs(name, input_data, destination, build_modules):
+    """Copy files referenced by "file" type input responses into the built
+    masterfiles, so they're actually part of what gets deployed instead of
+    only existing in the project directory. Rewrites the responses in place
+    to the resulting on-host path.
+
+    If a response is already shipped by another module's own "directory"
+    build step (e.g. the project author set one up manually), that step's
+    destination is used instead of making a redundant copy.
+    """
+    if not isinstance(input_data, list):
+        return
+
+    module_dir_name = name[2:] if name.startswith("./") else name
+    module_dir_name = os.path.basename(module_dir_name.rstrip("/"))
+
+    def _localize(path):
+        if not path or not os.path.isfile(path):
+            return path
+
+        already_shipped = _path_if_already_shipped(path, build_modules, destination)
+        if already_shipped is not None:
+            return already_shipped
+
+        dest = os.path.join(
+            destination,
+            "services",
+            "cfbs",
+            "modules",
+            module_dir_name,
+            os.path.basename(path),
+        )
+        cp(path, dest)
+        return "$(sys.inputdir)/" + os.path.relpath(dest, destination)
+
+    for element in input_data:
+        if not isinstance(element, dict) or element.get("type") != "file":
+            continue
+        response = element.get("response")
+        if isinstance(response, list):
+            element["response"] = [_localize(path) for path in response]
+        else:
+            element["response"] = _localize(response)
+
+
+def _perform_input_step(args, name, destination, prefix, build_modules):
     src, dst = args
     if dst in [".", "./"]:
         dst = ""
@@ -264,6 +343,7 @@ def _perform_input_step(args, name, destination, prefix):
         )
         return
     extras, original = read_json(src), read_json(dst)
+    _localize_file_inputs(name, extras, destination, build_modules)
     extras = generate_augment(name, extras)
     log.debug("Generated augment: %s", pretty(extras))
     if not extras:
@@ -424,7 +504,7 @@ def perform_build(config: CFBSConfig, diffs_filename=None) -> int:
             elif operation == "directory":
                 _perform_directory_step(args, source, destination, prefix)
             elif operation == "input":
-                _perform_input_step(args, name, destination, prefix)
+                _perform_input_step(args, name, destination, prefix, config["build"])
             elif operation == "policy_files":
                 _perform_policy_files_step(args, destination, prefix)
             elif operation == "bundles":

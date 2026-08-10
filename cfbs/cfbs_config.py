@@ -574,6 +574,44 @@ class CFBSConfig(CFBSJson):
             )
             return response
 
+        def _input_file(input_data):
+            _check_keys(["question"], input_data)
+            filetypes = input_data.get("filetype")
+            if filetypes is not None and not isinstance(filetypes, list):
+                filetypes = [filetypes]
+
+            def _one_file():
+                while True:
+                    response = prompt_user(
+                        self.non_interactive,
+                        input_data["question"],
+                        default=input_data.get("default"),
+                    )
+                    if self.non_interactive:
+                        return response
+                    if filetypes and not any(
+                        response.endswith(filetype) for filetype in filetypes
+                    ):
+                        print(
+                            "'%s' does not have one of the accepted file extensions (%s), please try again"
+                            % (response, ", ".join(filetypes))
+                        )
+                        continue
+                    if not os.path.isfile(response):
+                        print("File '%s' not found, please try again" % response)
+                        continue
+                    return response
+
+            if "while" not in input_data:
+                return _one_file()
+
+            result = [_one_file()]
+            while prompt_user_yesno(
+                self.non_interactive, input_data["while"], default="no"
+            ):
+                result.append(_one_file())
+            return result
+
         def _input_elements(subtype):
             result = OrderedDict()
             for element in subtype:
@@ -626,6 +664,8 @@ class CFBSConfig(CFBSJson):
                 definition["response"] = _input_string(definition)
             elif definition["type"] == "string-multiline":
                 definition["response"] = _input_multiline_string(definition)
+            elif definition["type"] == "file":
+                definition["response"] = _input_file(definition)
             elif definition["type"] == "list":
                 definition["response"] = _input_list(definition)
             else:

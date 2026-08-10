@@ -682,10 +682,15 @@ def _validate_module_input(name, module):
                     % field,
                 )
 
-        if input_element["type"] not in ("string", "list", "string-multiline"):
+        if input_element["type"] not in (
+            "string",
+            "string-multiline",
+            "file",
+            "list",
+        ):
             raise CFBSValidationError(
                 name,
-                'The input "type" must be "string", "string-multiline", or "list", not "%s"'
+                'The input "type" must be "string", "string-multiline", "file" or "list", not "%s"'
                 % input_element["type"],
             )
         if not re.fullmatch(r"[a-z_]+", input_element["variable"]):
@@ -765,6 +770,36 @@ def _validate_module_input(name, module):
                         'Only "string" supported for the "type" of module input list elements, not "%s"'
                         % part["type"],
                     )
+
+        if input_element["type"] == "file":
+            if "filetype" in input_element:
+                filetype = input_element["filetype"]
+                filetypes = filetype if type(filetype) is list else [filetype]
+                if not filetypes:
+                    raise CFBSValidationError(
+                        name,
+                        'The "filetype" field of a "file" input element must be a non-empty file extension, or a non-empty list of them, not "%s"'
+                        % filetype,
+                    )
+                for part in filetypes:
+                    if (
+                        type(part) is not str
+                        or not part.strip()
+                        or not part.startswith(".")
+                    ):
+                        raise CFBSValidationError(
+                            name,
+                            'The "filetype" field of a "file" input element must consist of file extensions starting with ".", not "%s"'
+                            % part,
+                        )
+            if "while" in input_element and (
+                type(input_element["while"]) is not str
+                or not input_element["while"].strip()
+            ):
+                raise CFBSValidationError(
+                    name,
+                    'The "while" prompt in an input "file" element must be a non-empty / non-whitespace string',
+                )
 
 
 def _compare_dict(a, b, ignore=None):

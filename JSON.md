@@ -855,3 +855,125 @@ $ cat ./out/masterfiles/def.json
   }
 }
 ```
+
+### Referencing a file example
+
+The `"file"` input type lets a module ask the user for the path to an existing file (a script, playbook, etc.) instead of a value typed in directly - the file must already exist, `cfbs` doesn't generate its contents.
+Two optional attributes are available to the `"file"` input-type: `filetype` restricts which file extension(s) are accepted (a string or list of strings; any extension is accepted if omitted), and `while`, just like for `"list"`, lets the user supply any number of files instead of just one.
+
+```json
+      "input": [
+        {
+          "type": "file",
+          "variable": "scripts",
+          "namespace": "my_namespace",
+          "bundle": "my_bundle",
+          "label": "Script",
+          "question": "Which script should be run?",
+          "filetype": ".sh",
+          "while": "Do you want to add another script?"
+        }
+      ]
+```
+
+```
+$ cfbs input run-scripts
+Collecting input for module 'run-scripts'
+Which script should be run? /tmp/notes.txt
+'/tmp/notes.txt' does not have one of the accepted file extensions (.sh), please try again
+Which script should be run? /tmp/deploy.sh
+Do you want to add another script? yes
+Which script should be run? /tmp/rollback.sh
+Do you want to add another script? no
+$ cat ./run-scripts/input.json
+[
+  {
+    "type": "file",
+    "variable": "scripts",
+    "namespace": "my_namespace",
+    "bundle": "my_bundle",
+    "label": "Script",
+    "question": "Which script should be run?",
+    "filetype": ".sh",
+    "while": "Do you want to add another script?",
+    "response": ["./run-scripts/deploy.sh", "./run-scripts/rollback.sh"]
+  }
+]
+```
+
+Without `"while"`, `"response"` is a single path instead of a list.
+A file already inside the project is referred to as-is; a file from outside (as above) is copied into the module's own directory, next to `input.json`.
+
+Sometimes you may want to place all your files in a separate directory for easier management.
+```
+$ tree -L 2
+.
+├── cfbs.json
+├── out
+│   ├── masterfiles
+│   ├── masterfiles.tgz
+│   └── steps
+├── README.md
+├── run-script-module
+│   ├── input.json
+│   └── main.cf
+└── scripts
+    ├── script1.sh
+    ├── script2.sh
+    ├── script3.sh
+    ├── script4.sh
+    ├── script5.sh
+    └── script6.sh
+```
+
+Then you can add the entire directory as a local module and it will all get copied over to the host.
+Reference the files as usual with either  `cfbs input ./run-scripts-module` or by manually adding them to "input.json"
+
+```
+$ cfbs add ./scripts/
+--snip--
+  [main 48af05f] Added module './scripts/'
+
+$ cfbs input ./module-name/
+..
+...
+..
+...
+$ cfbs build
+--snip--
+
+$ cat out/masterfiles/def.json
+{
+  "inputs": ["services/cfbs/modules/run-script-module/main.cf"],
+  "vars": { "control_common_bundlesequence_end": ["my_namespace:my_bundle"] },
+  "variables": {
+    "my_namespace:my_bundle.scripts": {
+      "value": [
+        "$(sys.inputdir)/services/cfbs/scripts/script1.sh",
+        "$(sys.inputdir)/services/cfbs/scripts/script2.sh",
+        "$(sys.inputdir)/services/cfbs/scripts/script3.sh",
+        "$(sys.inputdir)/services/cfbs/scripts/script4.sh",
+        "$(sys.inputdir)/services/cfbs/scripts/script5.sh",
+        "$(sys.inputdir)/services/cfbs/scripts/script6.sh"
+      ],
+      "comment": "Added by 'cfbs input'"
+    }
+  }
+}
+```
+After deployment your module with the expected files will now live on the host and are ready to be run as part of your policy-set.
+```
+~/tmp/run-script-module main*
+$ tree -L 3 out/masterfiles/services/cfbs
+out/masterfiles/services/cfbs
+├── modules
+│   └── run-script-module
+│       └── main.cf
+└── scripts
+    ├── script1.sh
+    ├── script2.sh
+    ├── script3.sh
+    ├── script4.sh
+    ├── script5.sh
+    └── script6.sh
+```
