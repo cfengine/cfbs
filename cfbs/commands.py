@@ -50,9 +50,12 @@ import re
 import copy
 import logging as log
 import json
+import shutil
+import tempfile
 from typing import Callable, List, Optional, Union
 from collections import OrderedDict
 from cfbs.analyze import analyze_policyset
+from cfbs.analyze import AnalyzedFiles  # noqa: F401 (used in type comments)
 from cfbs.args import get_args
 from typing import Iterable
 
@@ -118,6 +121,7 @@ from cfbs.internal_file_management import (
 from cfbs.index import _VERSION_INDEX, Index
 from cfbs.git import (
     git_configure_and_initialize,
+    git_get_config,
     is_git_repo,
     CFBSGitError,
     head_commit_hash,
@@ -1206,46 +1210,158 @@ def analyze_command(
     return 0
 
 
-@cfbs_command("convert")
-def convert_command(non_interactive=False, offline=False):
-    def cfbs_convert_cleanup():
+class _ConvertState:
+    """Shared state for a single `cfbs convert` run.
+
+    Bundles the fields `_cfbs_convert_*` helpers use instead of having to pass them
+    at each call-site.
+    """
+
+    def __init__(self, dir_name, path_string, non_interactive, offline):
+        self.dir_name = dir_name
+        self.path_string = path_string  # path to the to-be-converted dir
+        self.non_interactive = non_interactive
+        self.offline = offline
+        self.backup_dir = (
+            None
+        )  # type: Optional[str]  # temp copy taken before messing with the project
+        self.retain_git = False  # did we move a pre-existing `.git` to the root?
+        self.is_functional = False  # once True, cleanup() is a no-op
+
+        # both set by _cfbs_convert_analyze_policyset()
+        self.analyzed_files = None  # type: Optional[AnalyzedFiles]
+        self.masterfiles_version = None  # type: Optional[str]
+
+    def cleanup(self):
+        if self.is_functional:
+            return
         rm(cfbs_filename(), missing_ok=True)
-        rm(".git", missing_ok=True)
+        if self.backup_dir is not None:
+            # a pre-existing `.git`-directory was moved or removed, so
+            # restore the original directory (including its `.git`) from
+            # the backup we took before touching anything
+            print("Restoring '%s' to its original state..." % self.path_string)
+            rm(self.path_string, missing_ok=True)
+            rm(".git", missing_ok=True)
+            cp(self.backup_dir, self.path_string)
+            if hasattr(os, "sync"):
+                # make sure the backup is restored before removing it
+                os.sync()
+            rm(self.backup_dir, missing_ok=True)
+            self.backup_dir = None
+        elif not self.retain_git:
+            rm(".git", missing_ok=True)
 
-    def cfbs_convert_git_commit(
-        commit_message: str, add_scope: Union[str, Iterable[str]] = "all"
-    ):
-        print("Creating Git commit...")
-        try:
-            git_commit_maybe_prompt(commit_message, non_interactive, scope=add_scope)
-        except CFBSGitError:
-            cfbs_convert_cleanup()
-            raise
+    def mark_functional(self):
+        """Call once the project is valid/buildable - later failures should
+        no longer roll back everything that came before."""
+        self.is_functional = True
+        if self.backup_dir is not None:
+            rm(self.backup_dir, missing_ok=True)
+            self.backup_dir = None
 
+
+def _cfbs_convert_git_commit(
+    state: _ConvertState,
+    commit_message: str,
+    add_scope: Union[str, Iterable[str]] = "all",
+):
+    print("Creating Git commit...")
+    try:
+        git_commit_maybe_prompt(commit_message, state.non_interactive, scope=add_scope)
+    except CFBSGitError:
+        if state.is_functional:
+            log.warning("Git commit failed, continuing without committing...")
+            return
+        state.cleanup()
+        raise CFBSExitError("Failed to create git commit, aborting conversion.")
+
+
+def _cfbs_convert_check_directory(non_interactive, offline):
+    """Ensure we're in a directory holding exactly one `masterfiles-*` subdir.
+
+    Returns a fresh `_ConvertState` for the rest of the command to use.
+    """
     dir_content = [f.name for f in os.scandir(".")]
-
     if not (len(dir_content) == 1 and dir_content[0].startswith("masterfiles-")):
         raise CFBSUserError(
             "cfbs convert must be run in a directory containing only one item, a subdirectory named masterfiles-<some-name>"
         )
-
     dir_name = dir_content[0]
     path_string = "./" + dir_name + "/"
-    has_gitfolder = os.path.isdir(os.path.join(path_string, ".git"))
-    if has_gitfolder:
+    return _ConvertState(dir_name, path_string, non_interactive, offline)
+
+
+def _cfbs_convert_handle_git(state: _ConvertState):
+    """Deal with a pre-existing `.git` in the policy set: retain, remove, or abort.
+
+    Sets `state.retain_git` and `state.backup_dir` (a temp copy of the policy
+    set taken before anything destructive happens, left `None` when there
+    was no `.git` to deal with).
+    """
+    path_string = state.path_string
+    non_interactive = state.non_interactive
+    if not os.path.isdir(os.path.join(path_string, ".git")):
+        return
+
+    print(
+        "A `.git`-directory already exists inside %s and it will not be possible to initialize a cfbs-project"
+        % path_string
+    )
+    # back up the directory before doing anything destructive to it, so
+    # a failure can restore it to its original state instead of leaving it half-converted
+    state.backup_dir = tempfile.mkdtemp(prefix="cfbs-convert-backup-")
+    cp(path_string, state.backup_dir)
+
+    if prompt_user_yesno(
+        non_interactive,
+        "Would you like to retain the git history of this repository? "
+        "(the existing `.git`-directory will be moved to the root of "
+        "the new CFBS project and become its git history)",
+    ):
         print(
-            "A `.git`-directory already exists inside %s and it will not be possible to initialize a cfbs-project"
+            "Moving the `.git`-directory from '%s' to the root of the new project..."
             % path_string
         )
-        if not prompt_user_yesno(non_interactive, "Do you want to remove this?"):
-            raise CFBSExitError("`.git`-directory was not removed, exiting.")
+        shutil.move(os.path.join(path_string, ".git"), ".git")
+        state.retain_git = True
+        # the retained repo may not have a committer identity configured
+        if git_get_config("user.name") is None or git_get_config("user.email") is None:
+            try:
+                git_configure_and_initialize(
+                    get_args().git_user_name,
+                    get_args().git_user_email,
+                    non_interactive,
+                )
+            except:
+                state.cleanup()
+                raise
+        _cfbs_convert_git_commit(
+            state,
+            "Moved CFEngine policy related files to subdirectory to convert this repository into a CFEngine Build project",
+        )
+    elif prompt_user_yesno(
+        non_interactive, "Do you want to remove the `.git`-directory instead?"
+    ):
         rm(os.path.join(path_string, ".git"))
+    else:
+        rm(state.backup_dir, missing_ok=True)
+        state.backup_dir = None
+        raise CFBSExitError("`.git`-directory was not removed, exiting.")
 
-    # validate the local module
-    validate_module_name_content(path_string)
+
+def _cfbs_convert_validate_policyset(state: _ConvertState):
+    """Validate the local module and confirm it looks like a masterfiles policy set."""
+    dir_name, path_string = state.dir_name, state.path_string
+    try:
+        validate_module_name_content(path_string)
+    except:
+        state.cleanup()
+        raise
 
     promises_cf_path = os.path.join(dir_name, "promises.cf")
     if not os.path.isfile(promises_cf_path):
+        state.cleanup()
         raise CFBSUserError(
             "The file '"
             + promises_cf_path
@@ -1259,6 +1375,13 @@ def convert_command(non_interactive=False, offline=False):
         % path_string
     )
 
+
+def _cfbs_convert_analyze_policyset(state: _ConvertState):
+    """Analyze the policy set and determine which masterfiles version to target.
+
+    Sets `state.analyzed_files` and `state.masterfiles_version`.
+    """
+    dir_name, path_string = state.dir_name, state.path_string
     print("Analyzing '" + path_string + "'...")
     try:
         analyzed_files, _ = analyze_policyset(
@@ -1267,15 +1390,17 @@ def convert_command(non_interactive=False, offline=False):
             reference_version=None,
             masterfiles_dir=dir_name,
             ignored_path_components=None,
-            offline=offline,
+            offline=state.offline,
         )
     except:
         print("Analyzing the policy set failed, aborting conversion.")
+        state.cleanup()
         raise
 
     current_index = CFBSConfig.get_instance().index
     masterfiles = current_index.get_module_object("masterfiles")
     if masterfiles is None:
+        state.cleanup()
         raise CFBSExitError("Could not find the 'masterfiles' module in the index")
     default_version = masterfiles["version"]
 
@@ -1290,145 +1415,272 @@ def convert_command(non_interactive=False, offline=False):
         print("Detected version %s of masterfiles." % reference_version)
         masterfiles_version = reference_version
 
-    if not prompt_user_yesno(
-        non_interactive,
-        "Do you want to continue making a new CFEngine Build project based on masterfiles %s?"
-        % masterfiles_version,
-    ):
-        raise CFBSExitError("User did not proceed, exiting.")
+    state.analyzed_files = analyzed_files
+    state.masterfiles_version = masterfiles_version
 
+
+def _cfbs_convert_init_project(state: _ConvertState):
+    """Initialize the new CFBS project. Returns the init_command return code."""
     print("Initializing a new CFBS project...")
-    # since there should be no other files than the masterfiles-name directory, there shouldn't be a .git directory
-    assert not is_git_repo()
-    assert not is_git_repo(path_string)
+    assert not is_git_repo(state.path_string)
+    # if git history was retained, its .git directory was already moved to
+    # the root, otherwise there shouldn't be a .git directory yet
+    if state.retain_git:
+        assert is_git_repo()
+    else:
+        assert not is_git_repo()
+
     try:
         r = init_command(
-            masterfiles="no", non_interactive=non_interactive, use_git=True
+            masterfiles="no", non_interactive=state.non_interactive, use_git=True
         )
     except CFBSGitError:
-        cfbs_convert_cleanup()
+        state.cleanup()
         print(
             "A Git operation failed during initialization of a new CFBS project, aborting conversion."
         )
         raise
     except:
         print("Initializing a new CFBS project failed, aborting conversion.")
-        cfbs_convert_cleanup()
+        state.cleanup()
         raise
-    # the cfbs-init should've created a Git repository
+
+    # cfbs-init should've created a Git repository, or reused the retained one
     assert is_git_repo()
     if r != 0:
         print("Initializing a new CFBS project failed, aborting conversion.")
-        cfbs_convert_cleanup()
-        return r
+        state.cleanup()
+    return r
 
-    print("Adding masterfiles %s to the project..." % masterfiles_version)
-    masterfiles_to_add = ["masterfiles@%s" % masterfiles_version]
+
+def _cfbs_convert_add_modules(state: _ConvertState):
+    """Add the masterfiles module and the local policy files. Returns a code."""
+    print("Adding masterfiles %s to the project..." % state.masterfiles_version)
     try:
-        r = add_command(masterfiles_to_add, added_by="cfbs convert")
+        r = add_command(
+            ["masterfiles@%s" % state.masterfiles_version], added_by="cfbs convert"
+        )
     except:
         print(
             "Adding the masterfiles module to the project failed, aborting conversion."
         )
-        cfbs_convert_cleanup()
+        state.cleanup()
         raise
     if r != 0:
         print(
             "Adding the masterfiles module to the project failed, aborting conversion."
         )
-        cfbs_convert_cleanup()
+        state.cleanup()
         return r
 
     print("Adding the policy files...")
-    local_module_to_add = [path_string]
     try:
         r = add_command(
-            local_module_to_add,
+            [state.path_string],
             added_by="cfbs convert",
             explicit_build_steps=["copy ./ ./"],
         )
     except:
         print("Adding the policy files module failed, aborting conversion.")
-        cfbs_convert_cleanup()
+        state.cleanup()
         raise
     if r != 0:
         print("Adding the policy files module failed, aborting conversion.")
-        cfbs_convert_cleanup()
+        state.cleanup()
         return r
 
-    # here, matching files are files that have identical (filepath, checksum)
-    if len(analyzed_files.unmodified) != 0:
-        print(
-            "Deleting matching files between masterfiles %s and '%s'..."
-            % (masterfiles_version, path_string)
-        )
-        for unmodified_mpf_file in analyzed_files.unmodified:
-            rm(os.path.join(dir_name, unmodified_mpf_file))
+    return 0
 
-        cfbs_convert_git_commit("Deleted unmodified policy files")
+
+def _cfbs_convert_delete_unmodified(state: _ConvertState):
+    """Delete files identical (same filepath + checksum) to the target masterfiles."""
+    assert state.analyzed_files is not None
+    analyzed_files = state.analyzed_files
+    # here, matching files are files that have identical (filepath, checksum)
+    if len(analyzed_files.unmodified) == 0:
+        return
 
     print(
-        "Your project is now functional, can be built, and will produce a version of masterfiles %s with your modifications."
-        % masterfiles_version
+        "Deleting matching files between masterfiles %s and '%s'..."
+        % (state.masterfiles_version, state.path_string)
     )
+    for unmodified_mpf_file in analyzed_files.unmodified:
+        rm(os.path.join(state.dir_name, unmodified_mpf_file))
+
+    _cfbs_convert_git_commit(state, "Deleted unmodified policy files")
+
+
+def _cfbs_convert_delete_other_version_files(state: _ConvertState):
+    """Offer to delete files that came from *other* masterfiles versions."""
+    assert state.analyzed_files is not None and state.masterfiles_version is not None
+    non_interactive = state.non_interactive
+    masterfiles_version = state.masterfiles_version
     print(
         "The next conversion step is to handle files from other versions of masterfiles."
     )
     if not prompt_user_yesno(non_interactive, "Do you want to continue?"):
         raise CFBSExitError("User did not proceed, exiting.")
-    other_versions_files = analyzed_files.different
-    if len(other_versions_files) > 0:
-        print(
-            "The following files are taken from other versions of masterfiles (not %s):"
-            % masterfiles_version
-        )
-        other_versions_files = sorted(other_versions_files)
-        files_to_delete = []
-        for other_version_file, other_versions in other_versions_files:
-            # don't display all versions (which is an arbitrarily-shaped sequence), instead choose the most relevant one:
-            relevant_version_text = most_relevant_version(
-                other_versions, masterfiles_version
-            )
-            if len(other_versions) > 1:
-                relevant_version_text += ", ..."
-            print("-", other_version_file, "(%s)" % relevant_version_text)
 
-            files_to_delete.append(other_version_file)
-        print(
-            "This usually indicates that someone made mistakes during past upgrades and it's recommended to delete these."
-        )
-        print(
-            "Your policy set will include the versions from %s instead (if they exist)."
-            % masterfiles_version
-        )
-        print(
-            "(Deletions will be visible in Git history so you can review or revert later)."
-        )
-        if prompt_user_yesno(
-            non_interactive, "Delete files from other versions? (Recommended)"
-        ):
-            print("Deleting %s files..." % len(files_to_delete))
-            for file_d in files_to_delete:
-                rm(os.path.join(dir_name, file_d))
-
-            cfbs_convert_git_commit("Deleted policy files from other versions")
-            print("Done.", end=" ")
-    else:
+    other_versions_files = state.analyzed_files.different
+    if len(other_versions_files) == 0:
         print("There are no files from other versions of masterfiles.")
+        return
+
+    print(
+        "The following files are taken from other versions of masterfiles (not %s):"
+        % masterfiles_version
+    )
+    other_versions_files = sorted(other_versions_files)
+    files_to_delete = []
+    for other_version_file, other_versions in other_versions_files:
+        relevant_version_text = most_relevant_version(
+            other_versions, masterfiles_version
+        )
+        if len(other_versions) > 1:
+            relevant_version_text += ", ..."
+        print("-", other_version_file, "(%s)" % relevant_version_text)
+        files_to_delete.append(other_version_file)
+    print(
+        "This usually indicates that someone made mistakes during past upgrades and it's recommended to delete these."
+    )
+    print(
+        "Your policy set will include the versions from %s instead (if they exist)."
+        % masterfiles_version
+    )
+    print(
+        "(Deletions will be visible in Git history so you can review or revert later)."
+    )
+    if prompt_user_yesno(
+        non_interactive, "Delete files from other versions? (Recommended)"
+    ):
+        print("Deleting %s files..." % len(files_to_delete))
+        for file_d in files_to_delete:
+            rm(os.path.join(state.dir_name, file_d))
+
+        _cfbs_convert_git_commit(state, "Deleted policy files from other versions")
+        print("Done.", end=" ")
+
+
+def _cfbs_convert_show_diff(
+    state: _ConvertState,
+    mpf_dir_path,
+    mpf_version_dir_path,
+    mpf_filepath,
+    modified_file_path,
+):
+    """Show a diff between the user's file and the original.
+
+    Returns whether the diff was actually displayed.
+    """
+    display_diffs = True
+    if not os.path.exists(mpf_version_dir_path):
+        try:
+            download_single_version(mpf_dir_path, state.masterfiles_version)
+        except Exception as e:
+            print(
+                "Downloading original masterfiles failed (%s), continuing conversion without displaying file diffs."
+                % str(e)
+            )
+            display_diffs = False
+    if display_diffs:
+        try:
+            display_diff(mpf_filepath, modified_file_path)
+        except:
+            log.warning(
+                "Displaying a diff between your file and the default file failed, continuing without displaying a diff..."
+            )
+    return display_diffs
+
+
+def _cfbs_convert_convert_to_patch(
+    state: _ConvertState,
+    mpf_filepath,
+    modified_file,
+    modified_file_path,
+    first_patch_conversion,
+):
+    """Convert one modified file into a `.patch` under the patches module.
+
+    Returns the (possibly updated) `first_patch_conversion` flag.
+    """
+    print("Converting './%s' into a patch file..." % modified_file)
+    patches_dir = "custom-masterfiles-patches"
+    patches_module = "./" + patches_dir + "/"
+
+    file_diff_data = file_diff_text(
+        mpf_filepath, modified_file_path, modified_file, modified_file
+    )
+
+    patch_filename = modified_file.replace("/", "_") + ".patch"
+    patch_path = os.path.join(patches_dir, patch_filename)
+    # append a number if there are multiple files with the same filename
+    suffix = 1
+    while os.path.exists(patch_path):
+        patch_filename = modified_file.replace("/", "_") + "-" + str(suffix) + ".patch"
+        patch_path = os.path.join(patches_dir, patch_filename)
+        suffix += 1
+
+    # saving the .patch file should be done before creating the patches module
+    try:
+        save_file(patch_path, file_diff_data)
+    except:
+        log.warning(
+            "Saving the patch file failed - keeping the modified file as is instead and continuing..."
+        )
+        return first_patch_conversion  # unchanged: this file is effectively skipped
+
+    # make the patches local module on first use
+    if first_patch_conversion:
+        print("Adding patches local module...")
+        mkdir(patches_dir)
+
+        config = CFBSConfig.get_instance()
+        config.add_command(
+            [patches_module],
+            added_by="cfbs convert",
+            explicit_build_steps=["patch " + patch_filename],
+        )
+        config.save()
+    else:
+        config = CFBSConfig.get_instance()
+        config.add_patch_step(patches_module, patch_filename)
+
+    print("Deleting './%s'..." % modified_file)
+    rm(modified_file_path)
+
+    if first_patch_conversion:
+        _cfbs_convert_git_commit(
+            state,
+            "Added patches local module, converted './%s' into a .patch file"
+            % modified_file,
+        )
+    else:
+        _cfbs_convert_git_commit(
+            state, "Converted './%s' into a .patch file" % modified_file
+        )
+
+    return False
+
+
+def _cfbs_convert_handle_modified_files(state: _ConvertState):
+    """Walk each custom-modified file and let the user drop / keep / patch it."""
+    assert state.analyzed_files is not None and state.masterfiles_version is not None
+    dir_name = state.dir_name
+    non_interactive = state.non_interactive
+    masterfiles_version = state.masterfiles_version
     print(
         "The next conversion step is to handle files which have custom modifications."
     )
     if not prompt_user_yesno(non_interactive, "Do you want to continue?"):
         raise CFBSExitError("User did not proceed, exiting.")
 
-    first_patch_conversion = True
+    modified_files = state.analyzed_files.modified
     print("The following files have custom modifications:")
-    modified_files = analyzed_files.modified
     for modified_file in modified_files:
         print("-", modified_file)
+
+    first_patch_conversion = True
     for i, modified_file in enumerate(modified_files, start=1):
-        # program failures in the middle of this loop would be very user-unfriendly,
-        # so we will catch exceptions and continue the conversion when handling errors
         print("\nFile", i, "diff -", modified_file + ":")
         mpf_dir_path = os.path.join(cfbs_dir(), "masterfiles")
         mpf_version_dir_path = os.path.join(
@@ -1436,23 +1688,15 @@ def convert_command(non_interactive=False, offline=False):
         )
         mpf_filepath = os.path.join(mpf_version_dir_path, modified_file)
         modified_file_path = os.path.join(dir_name, modified_file)
-        display_diffs = True
-        if not os.path.exists(mpf_version_dir_path):
-            try:
-                download_single_version(mpf_dir_path, masterfiles_version)
-            except Exception as e:
-                print(
-                    "Downloading original masterfiles failed (%s), continuing conversion without displaying file diffs."
-                    % str(e)
-                )
-                display_diffs = False
-        if display_diffs:
-            try:
-                display_diff(mpf_filepath, modified_file_path)
-            except:
-                log.warning(
-                    "Displaying a diff between your file and the default file failed, continuing without displaying a diff..."
-                )
+
+        display_diffs = _cfbs_convert_show_diff(
+            state,
+            mpf_dir_path,
+            mpf_version_dir_path,
+            mpf_filepath,
+            modified_file_path,
+        )
+
         if i == 1:
             if display_diffs:
                 print(
@@ -1464,88 +1708,68 @@ def convert_command(non_interactive=False, offline=False):
             print(
                 "Usually, the same thing can be achieved by adding a variable to def.json, or through adding your own policy file (inside 'services/')."
             )
+
         prompt_str = "\nChoose an option:\n"
         prompt_str += "1) Drop modifications - They are not important, or can be achieved in another way.\n"
         prompt_str += "2) Keep modified file - File is kept as is, and can be handled later. Can make future upgrades more complicated.\n"
         prompt_str += "3) Keep patch file - File is converted into a patch file (diff) that hopefully will apply to future versions as well.\n"
-
         response = prompt_user(non_interactive, prompt_str, ["1", "2", "3"], "1")
 
         if response == "1":
             print("Deleting './%s'..." % modified_file)
             rm(modified_file_path)
-            try:
-                cfbs_convert_git_commit("Deleted './%s'" % modified_file)
-            except:
-                log.warning("Git commit failed, continuing without committing...")
-        if response == "2":
+            _cfbs_convert_git_commit(state, "Deleted './%s'" % modified_file)
+        elif response == "2":
             print("Keeping file as is, nothing to do.")
-        if response == "3":
-            print("Converting './%s' into a patch file..." % modified_file)
-            patches_dir = "custom-masterfiles-patches"
-            patches_module = "./" + patches_dir + "/"
-
-            file_diff_data = file_diff_text(
+        elif response == "3":
+            first_patch_conversion = _cfbs_convert_convert_to_patch(
+                state,
                 mpf_filepath,
+                modified_file,
                 modified_file_path,
-                modified_file,
-                modified_file,
+                first_patch_conversion,
             )
 
-            patch_filename = modified_file.replace("/", "_") + ".patch"
-            patch_path = os.path.join(patches_dir, patch_filename)
-            # append a number if there are multiple files with the same filename
-            i = 1
-            while os.path.exists(patch_path):
-                patch_filename = (
-                    modified_file.replace("/", "_") + "-" + str(i) + ".patch"
-                )
-                patch_path = os.path.join(patches_dir, patch_filename)
-                i += 1
 
-            # saving the .patch file should be done before creating the patches module
-            try:
-                save_file(patch_path, file_diff_data)
-            except:
-                log.warning(
-                    "Saving the patch file failed - keeping the modified file as is instead and continuing..."
-                )
-                continue
+@cfbs_command("convert")
+def convert_command(non_interactive=False, offline=False):
+    state = _cfbs_convert_check_directory(non_interactive, offline)
 
-            # make the patches local module on first use
-            if first_patch_conversion:
-                print("Adding patches local module...")
-                mkdir(patches_dir)
+    _cfbs_convert_handle_git(state)
 
-                config = CFBSConfig.get_instance()
-                # `explicit_build_steps=[]` would fail validation, therefore also add the first build step during the module's creation
-                config.add_command(
-                    [patches_module],
-                    added_by="cfbs convert",
-                    explicit_build_steps=["patch " + patch_filename],
-                )
-                config.save()
-            else:
-                config = CFBSConfig.get_instance()
-                config.add_patch_step(patches_module, patch_filename)
+    _cfbs_convert_validate_policyset(state)
 
-            print("Deleting './%s'..." % modified_file)
-            rm(modified_file_path)
+    _cfbs_convert_analyze_policyset(state)
 
-            try:
-                if first_patch_conversion:
-                    cfbs_convert_git_commit(
-                        "Added patches local module, converted './%s' into a .patch file"
-                        % modified_file
-                    )
-                else:
-                    cfbs_convert_git_commit(
-                        "Converted './%s' into a .patch file" % modified_file
-                    )
-            except:
-                log.warning("Git commit failed, continuing without committing...")
+    if not prompt_user_yesno(
+        non_interactive,
+        "Do you want to continue making a new CFEngine Build project based on masterfiles %s?"
+        % state.masterfiles_version,
+    ):
+        state.cleanup()
+        raise CFBSExitError("User did not proceed, exiting.")
 
-            first_patch_conversion = False
+    r = _cfbs_convert_init_project(state)
+    if r != 0:
+        return r
+
+    r = _cfbs_convert_add_modules(state)
+    if r != 0:
+        return r
+
+    _cfbs_convert_delete_unmodified(state)
+
+    print(
+        "Your project is now functional, can be built, and will produce a version of masterfiles %s with your modifications."
+        % state.masterfiles_version
+    )
+    # From here on the project is valid, so failures below should NOT run
+    # cleanup - see _ConvertState.mark_functional().
+    state.mark_functional()
+
+    _cfbs_convert_delete_other_version_files(state)
+
+    _cfbs_convert_handle_modified_files(state)
 
     print("\n")
     remove_empty_folders(os.getcwd())
