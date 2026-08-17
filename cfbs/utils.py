@@ -174,14 +174,11 @@ def rm(path: str, missing_ok=False):
 
 
 def cp(src, dst):
-    above = os.path.dirname(dst)
-    if not os.path.exists(above):
-        mkdir(above)
-    if dst.endswith("/") and not os.path.exists(dst):
-        mkdir(dst)
     if os.path.isfile(src):
-        return sh("rsync -r %s %s" % (src, dst))
-    return sh("rsync -r %s/ %s" % (src, dst))
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy2(src, dst)
+    else:
+        copytree_merge(src, dst)
 
 
 def cp_dry_overwrites(src: str, dst: str) -> Tuple[List[str], List[str]]:
@@ -740,3 +737,19 @@ def remove_empty_folders(target_path):
             path.rmdir()
         except OSError:
             pass
+
+
+def copytree_merge(src, dst, ignore=None):
+    """Backwards-compatible replacement for shutil.copytree(src, dst, dirs_exist_ok=True)"""
+    os.makedirs(dst, exist_ok=True)
+    names = os.listdir(src)
+    ignored_names = ignore(src, names) if ignore else set()
+    for name in names:
+        if name in ignored_names:
+            continue
+        src_path = os.path.join(src, name)
+        dst_path = os.path.join(dst, name)
+        if os.path.isdir(src_path):
+            copytree_merge(src_path, dst_path, ignore=ignore)
+        else:
+            shutil.copy2(src_path, dst_path)
