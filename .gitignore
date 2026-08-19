@@ -6,6 +6,11 @@ cfbs/VERSION
 .venv/
 .pytest_cache/
 
+# coverage
+.coverage.*
+.coverage
+coverage.xml
+
 # Node / npm:
 node_modules/
 
