@@ -605,12 +605,13 @@ class CFBSConfig(CFBSJson):
             if "while" not in input_data:
                 return _one_file()
 
-            result = [_one_file()]
+            result = {_one_file()}
+
             while prompt_user_yesno(
                 self.non_interactive, input_data["while"], default="no"
             ):
-                result.append(_one_file())
-            return result
+                result.add(_one_file())
+            return list(result)
 
         def _input_elements(subtype):
             result = OrderedDict()

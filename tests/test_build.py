@@ -20,47 +20,50 @@ def test_localize_file_inputs_copies_single_file(tmp_path, monkeypatch):
 
     _localize_file_inputs("run-a-script", input_data, "out/masterfiles", [])
 
-    expected_dest = "out/masterfiles/services/cfbs/modules/run-a-script/deploy.sh"
+    expected_dest = "out/masterfiles/services/cfbs/deploy.sh"
     assert os.path.isfile(expected_dest)
-    assert (
-        input_data[0]["response"]
-        == "$(sys.inputdir)/services/cfbs/modules/run-a-script/deploy.sh"
-    )
+    assert input_data[0]["response"] == "$(sys.inputdir)/services/cfbs/deploy.sh"
 
 
 def test_localize_file_inputs_copies_list_of_files(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     os.makedirs("out/masterfiles")
+    os.makedirs("run-scripts-module")
     with open("one.sh", "w") as f:
         f.write("echo one\n")
-    with open("two.sh", "w") as f:
+    with open("run-scripts-module/two.sh", "w") as f:
         f.write("echo two\n")
 
     input_data = [
         {
             "type": "file",
             "variable": "scripts",
-            "response": ["one.sh", "two.sh"],
+            "response": ["one.sh", "run-scripts-module/two.sh"],
         }
     ]
 
     _localize_file_inputs("run-scripts", input_data, "out/masterfiles", [])
 
     assert input_data[0]["response"] == [
-        "$(sys.inputdir)/services/cfbs/modules/run-scripts/one.sh",
-        "$(sys.inputdir)/services/cfbs/modules/run-scripts/two.sh",
+        "$(sys.inputdir)/services/cfbs/one.sh",
+        "$(sys.inputdir)/services/cfbs/modules/run-scripts-module/two.sh",
     ]
-    assert os.path.isfile("out/masterfiles/services/cfbs/modules/run-scripts/one.sh")
-    assert os.path.isfile("out/masterfiles/services/cfbs/modules/run-scripts/two.sh")
+    assert os.path.isfile("out/masterfiles/services/cfbs/one.sh")
+    assert os.path.isfile(
+        "out/masterfiles/services/cfbs/modules/run-scripts-module/two.sh"
+    )
 
 
 def test_localize_file_inputs_strips_local_module_prefix(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     os.makedirs("out/masterfiles")
-    with open("deploy.sh", "w") as f:
+    os.makedirs("run-a-script")
+    with open("run-a-script/deploy.sh", "w") as f:
         f.write("echo hi\n")
 
-    input_data = [{"type": "file", "variable": "script", "response": "deploy.sh"}]
+    input_data = [
+        {"type": "file", "variable": "script", "response": "run-a-script/deploy.sh"}
+    ]
 
     _localize_file_inputs("./run-a-script", input_data, "out/masterfiles", [])
 
@@ -152,7 +155,7 @@ def test_localize_file_inputs_ignores_non_directory_steps(tmp_path, monkeypatch)
         }
     ]
     input_data = [
-        {"type": "file", "variable": "script", "response": "./run-scripts/deploy.sh"}
+        {"type": "file", "variable": "script", "response": "run-scripts/deploy.sh"}
     ]
 
     _localize_file_inputs("run-scripts", input_data, "out/masterfiles", build_modules)
