@@ -104,6 +104,7 @@ run_test tests/shell/057_render_input_no_response.sh
 run_test tests/shell/058_render_input_fail.sh
 run_test tests/shell/059_input_string_multiline.sh
 run_test tests/shell/060_input_file.sh
+run_test tests/shell/061_set_input_file.sh
 
 # Summary
 _suite_end=$(date +%s)

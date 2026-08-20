@@ -1667,11 +1667,15 @@ def set_input_command(name, infile):
         )
         return CFBSCommandGitResult(1)
 
+    copied_files = _place_file_input(name, data)
+
     path = os.path.join(name, "input.json")
 
     log.debug("Comparing with data already in file '%s'" % path)
     old_data = read_json(path)
-    changes_made = old_data != data
+    # A file can be copied in without input.json itself changing, when the user
+    # gives a file of the same name from somewhere else:
+    changes_made = old_data != data or bool(copied_files)
 
     if changes_made:
         write_json(path, data)
@@ -1681,7 +1685,7 @@ def set_input_command(name, infile):
     else:
         log.debug("Input data for '%s' unchanged, nothing to write / commit" % name)
 
-    return CFBSCommandGitResult(0, changes_made, None, [path])
+    return CFBSCommandGitResult(0, changes_made, None, [path] + copied_files)
 
 
 @cfbs_command("get-input")
