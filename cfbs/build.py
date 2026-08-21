@@ -286,12 +286,19 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
     If a response is already shipped by another module's own "directory"
     build step (e.g. the project author set one up manually), that step's
     destination is used instead of making a redundant copy.
+
+    Returns the masterfiles-relative destination path of every file that was
+    localized, so callers can make sure those exact paths get synced by the
+    policy update mechanism even if their extension isn't one of the ones
+    normally recognized.
     """
     if not isinstance(input_data, list):
-        return
+        return []
 
     module_dir_name = name[2:] if name.startswith("./") else name
     module_dir_name = os.path.basename(module_dir_name.rstrip("/"))
+
+    localized_paths = []
 
     def _localize(rel_path):
         if not rel_path or not os.path.isfile(rel_path):
@@ -299,6 +306,7 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
 
         already_shipped = _path_if_already_shipped(rel_path, build_modules, destination)
         if already_shipped is not None:
+            localized_paths.append(strip_left(already_shipped, "$(sys.inputdir)/"))
             return already_shipped
 
         rel_path = os.path.normpath(rel_path)
@@ -311,8 +319,22 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
             "modules" if in_module_dir else "",
             rel_path,
         )
+        abs_destination = os.path.abspath(destination)
+        if (
+            os.path.commonpath([os.path.abspath(dest), abs_destination])
+            != abs_destination
+        ):
+            # rel_path contained a ".." segment, or was absolute (which
+            # discards the destination prefix in os.path.join above) -
+            # either way it would land outside the built masterfiles.
+            raise CFBSExitError(
+                "Input file response '%s' would be placed outside the "
+                "built masterfiles - refusing to copy it" % rel_path
+            )
         cp(rel_path, dest)
-        return "$(sys.inputdir)/" + os.path.relpath(dest, destination)
+        dest_rel = os.path.relpath(dest, destination)
+        localized_paths.append(dest_rel)
+        return "$(sys.inputdir)/" + dest_rel
 
     for element in input_data:
         if not isinstance(element, dict) or element.get("type") != "file":
@@ -322,6 +344,8 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
             element["response"] = [_localize(path) for path in response]
         else:
             element["response"] = _localize(response)
+
+    return localized_paths
 
 
 def _perform_input_step(args, name, destination, prefix, build_modules):
@@ -345,13 +369,23 @@ def _perform_input_step(args, name, destination, prefix, build_modules):
         )
         return
     extras, original = read_json(src), read_json(dst)
-    _localize_file_inputs(name, extras, destination, build_modules)
+    localized_paths = _localize_file_inputs(name, extras, destination, build_modules)
     extras = generate_augment(name, extras)
     log.debug("Generated augment: %s", pretty(extras))
     if not extras:
         raise CFBSExitError(
             "Input data '%s' is incomplete: Skipping build step."
             % os.path.basename(src)
+        )
+    if localized_paths:
+        # Files brought in through "file" type inputs aren't necessarily
+        # matched by the policy update's default `input_name_patterns`.
+        # Rather than widening that extension-based matching for the whole
+        # policy set, point at exactly these files, by their literal
+        # relative path.
+        relative_paths = [path.replace(os.sep, "/") for path in localized_paths]
+        extras = merge_json(
+            extras, {"vars": {"default:update_def.input_paths_extra": relative_paths}}
         )
     if original:
         log.debug("Original def.json: %s", pretty(original))
