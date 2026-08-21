@@ -293,11 +293,11 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
     module_dir_name = name[2:] if name.startswith("./") else name
     module_dir_name = os.path.basename(module_dir_name.rstrip("/"))
 
-    def _localize(path):
-        if not path or not os.path.isfile(path):
-            return path
+    def _localize(rel_path):
+        if not rel_path or not os.path.isfile(rel_path):
+            return rel_path
 
-        already_shipped = _path_if_already_shipped(path, build_modules, destination)
+        already_shipped = _path_if_already_shipped(rel_path, build_modules, destination)
         if already_shipped is not None:
             return already_shipped
 
@@ -305,11 +305,10 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
             destination,
             "services",
             "cfbs",
-            "modules",
-            module_dir_name,
-            os.path.basename(path),
+            "modules" if rel_path.startswith(module_dir_name) else "",
+            rel_path,
         )
-        cp(path, dest)
+        cp(rel_path, dest)
         return "$(sys.inputdir)/" + os.path.relpath(dest, destination)
 
     for element in input_data:
