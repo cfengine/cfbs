@@ -107,6 +107,7 @@ run_test tests/shell/060_input_file.sh
 run_test tests/shell/061_set_input_file.sh
 run_test tests/shell/062_input_file_in_list_with_keys.sh
 run_test tests/shell/063_input_string_multiline_in_list.sh
+run_test tests/shell/064_input_file_check_mpf.sh
 
 # Summary
 _suite_end=$(date +%s)

@@ -287,9 +287,17 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
     If a response is already shipped by another module's own "directory"
     build step (e.g. the project author set one up manually), that step's
     destination is used instead of making a redundant copy.
+
+    Returns the masterfiles-relative destination path of every file that was
+    localized, so callers can make sure those exact paths get synced by the
+    policy update mechanism even if their extension isn't one of the ones
+    normally recognized.
     """
+
     module_dir_name = name[2:] if name.startswith("./") else name
     module_dir_name = os.path.basename(module_dir_name.rstrip("/"))
+
+    localized_paths = []
 
     def _localize(rel_path):
         if not rel_path or not os.path.isfile(rel_path):
@@ -297,6 +305,7 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
 
         already_shipped = _path_if_already_shipped(rel_path, build_modules, destination)
         if already_shipped is not None:
+            localized_paths.append(strip_left(already_shipped, "$(sys.inputdir)/"))
             return already_shipped
 
         rel_path = os.path.normpath(rel_path)
@@ -309,10 +318,66 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
             "modules" if in_module_dir else "",
             rel_path,
         )
+        abs_destination = os.path.abspath(destination)
+        if (
+            os.path.commonpath([os.path.abspath(dest), abs_destination])
+            != abs_destination
+        ):
+            # rel_path contained a ".." segment, or was absolute (which
+            # discards the destination prefix in os.path.join above) -
+            # either way it would land outside the built masterfiles.
+            raise CFBSExitError(
+                "Input file response '%s' would be placed outside the "
+                "built masterfiles - refusing to copy it" % rel_path
+            )
         cp(rel_path, dest)
-        return "$(sys.inputdir)/" + os.path.relpath(dest, destination)
+        dest_rel = os.path.relpath(dest, destination)
+        localized_paths.append(dest_rel)
+        return "$(sys.inputdir)/" + dest_rel
 
     map_file_responses(input_data, _localize)
+    return localized_paths
+
+
+def _warn_if_input_paths_extra_unsupported(destination, build_modules):
+    """input_paths_extra (CFE-4708) is only understood by masterfiles
+    3.29.0+ - on an older target it's just an unused variable in def.json,
+    so the file(s) it names won't actually get synced to clients.
+    """
+    MIN_MASTERFILES_VERSION_FOR_INPUT_PATHS_EXTRA = (3, 29)
+
+    def_json = read_json(os.path.join(destination, "def.json"))
+    if not def_json:
+        return
+    if not def_json.get("vars", {}).get("default:update_def.input_paths_extra"):
+        return
+
+    masterfiles = next(
+        (m for m in build_modules if m.get("name") == "masterfiles"), None
+    )
+    version = masterfiles.get("version") if masterfiles else None
+    if not version:
+        # Not an index-added "masterfiles" module (local copy)
+        # nothing to check the version of.
+        # Assume the user has the latest version of masterfiles
+        return
+
+    parts = version.split(".")
+    try:
+        found = (int(parts[0]), int(parts[1]))
+    except (IndexError, ValueError):
+        return
+    if found >= MIN_MASTERFILES_VERSION_FOR_INPUT_PATHS_EXTRA:
+        return
+
+    log.warning(
+        "'input_paths_extra' in def.json requires masterfiles %s or later, but version is %s."
+        " Files with extensions not listed in 'input_name_patterns' may silently not sync to clients."
+        % (
+            ".".join(str(n) for n in MIN_MASTERFILES_VERSION_FOR_INPUT_PATHS_EXTRA),
+            version,
+        )
+    )
 
 
 def _perform_input_step(args, name, destination, prefix, build_modules):
@@ -336,13 +401,23 @@ def _perform_input_step(args, name, destination, prefix, build_modules):
         )
         return
     extras, original = read_json(src), read_json(dst)
-    _localize_file_inputs(name, extras, destination, build_modules)
+    localized_paths = _localize_file_inputs(name, extras, destination, build_modules)
     extras = generate_augment(name, extras)
     log.debug("Generated augment: %s", pretty(extras))
     if not extras:
         raise CFBSExitError(
             "Input data '%s' is incomplete: Skipping build step."
             % os.path.basename(src)
+        )
+    if localized_paths:
+        # Files brought in through "file" type inputs aren't necessarily
+        # matched by the policy update's default `input_name_patterns`.
+        # Rather than widening that extension-based matching for the whole
+        # policy set, point at exactly these files, by their literal
+        # relative path.
+        relative_paths = [path.replace(os.sep, "/") for path in localized_paths]
+        extras = merge_json(
+            extras, {"vars": {"default:update_def.input_paths_extra": relative_paths}}
         )
     if original:
         log.debug("Original def.json: %s", pretty(original))
@@ -532,6 +607,7 @@ def perform_build(config: CFBSConfig, diffs_filename=None) -> int:
             raise CFBSExitError(
                 "Error parsing JSON in 'out/masterfiles/def.json': %s" % e
             )
+    _warn_if_input_paths_extra_unsupported("out/masterfiles", config["build"])
     print("")
     print("Generating tarball...")
     sh("( cd out/ && tar -czf masterfiles.tgz masterfiles )")

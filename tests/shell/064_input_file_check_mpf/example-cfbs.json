@@ -1,0 +1,46 @@
+{
+  "name": "Example project",
+  "description": "Example description",
+  "type": "policy-set",
+  "git": false,
+  "build": [
+    {
+      "name": "masterfiles",
+      "description": "Official CFEngine Masterfiles Policy Framework (MPF).",
+      "tags": ["supported", "base"],
+      "repo": "https://github.com/cfengine/masterfiles",
+      "by": "https://github.com/cfengine",
+      "version": "3.27.1",
+      "commit": "15d8ca2ca951db3ddf197b90c9dea6ef75f5fa89",
+      "added_by": "cfbs add",
+      "steps": [
+        "run EXPLICIT_VERSION=3.27.1 EXPLICIT_RELEASE=1 ./prepare.sh -y",
+        "copy ./ ./"
+      ]
+    },
+    {
+      "name": "./copy-a-file/",
+      "description": "Copy a file into masterfiles via a file input.",
+      "tags": ["local"],
+      "added_by": "cfbs add",
+      "steps": [
+        "directory ./ services/cfbs/copy-a-file/",
+        "policy_files services/cfbs/copy-a-file/",
+        "bundles copy_a_file",
+        "input ./input.json def.json"
+      ],
+      "input": [
+        {
+          "type": "file",
+          "variable": "source",
+          "namespace": "cfbs",
+          "bundle": "copy_a_file",
+          "label": "Source file",
+          "question": "Which file should be copied?",
+          "filetype": [".txt", ".log"],
+          "default": "./source.txt"
+        }
+      ]
+    }
+  ]
+}
