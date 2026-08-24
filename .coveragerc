@@ -1,0 +1,5 @@
+[run]
+parallel = True
+source = cfbs
+concurrency = multiprocessing
+sigterm = True

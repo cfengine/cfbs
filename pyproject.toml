@@ -48,4 +48,5 @@ venv = ".venv"
 dev = [
   "flake8>=5.0; python_full_version >= '3.8.1'",
   "pytest>=7.0; python_full_version >= '3.8.1'",
+  "coverage; python_version >= '3.10'",
 ]
