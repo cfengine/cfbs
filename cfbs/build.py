@@ -301,11 +301,14 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
         if already_shipped is not None:
             return already_shipped
 
+        rel_path = os.path.normpath(rel_path)
+        in_module_dir = rel_path.split(os.sep)[0] == module_dir_name
+
         dest = os.path.join(
             destination,
             "services",
             "cfbs",
-            "modules" if rel_path.startswith(module_dir_name) else "",
+            "modules" if in_module_dir else "",
             rel_path,
         )
         cp(rel_path, dest)
