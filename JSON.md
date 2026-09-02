@@ -665,6 +665,47 @@ $ cat ./out/masterfiles/def.json
 }
 ```
 
+### Multi-line string input example
+
+For content that may span several lines, use `"string-multiline"` instead of `"string"`.
+Swapping the `content` field from the previous example:
+
+```json
+        {
+          "type": "string-multiline",
+          "variable": "content",
+          "label": "Content",
+          "question": "What content should this file have?",
+          "default": "Hello CFEngine!\nBye CFEngine!"
+        }
+```
+
+When prompted interactively, keep entering lines and finish with double empty line, or Ctrl+D (Ctrl+Z followed by Enter on Windows):
+
+```
+$ cfbs input create-single-file-with-content
+Adding input for module 'create-single-file-with-content':
+What file should this module create? /tmp/create-single-file-with-content.txt
+What content should this file have?
+(Enter one or more lines of text, then finish with double newline or Ctrl+D (Ctrl+Z followed by Enter on Windows))
+Hello CFEngine!
+Bye CFEngine!
+
+```
+
+The entered lines are joined with `\n` into a single string response, same as for `"string"`:
+
+```json
+  {
+    "type": "string-multiline",
+    "variable": "content",
+    "label": "Content",
+    "question": "What content should this file have?",
+    "default": "Hello CFEngine!\nBye CFEngine!",
+    "response": "Hello CFEngine!\nBye CFEngine!"
+  }
+```
+
 ### Create multiple files example
 
 Sometimes we would like a module to support taking an arbritary number of inputs.
@@ -903,6 +944,33 @@ $ cat ./run-scripts/input.json
 
 Without `"while"`, `"response"` is a single path instead of a list.
 A file already inside the project is referred to as-is; a file from outside (as above) is copied into the module's own directory, next to `input.json`.
+
+#### Where these files end up in the built policy set
+
+During `cfbs build`, every `"file"` response is copied into the policy set (so it's actually part of what gets deployed) and rewritten to the resulting `$(sys.inputdir)/...` path.
+
+- If the file is already inside a local module directory that has its own `directory ./ <destination>` build step (see the next example), that step already ships the whole directory during the same build - so the file isn't copied again, its response just points at that step's destination.
+- Otherwise, the file is copied into `services/cfbs/`, preserving its path *relative to the project root* rather than just its filename, so that files with the same name coming from different sources (e.g. two different modules' file inputs both named `deploy.sh`) don't overwrite each other.
+  - If the file lives inside the referencing module's own directory - as is normal for files placed there by `cfbs input`, like the two scripts above, or for a `"file"` input whose `"default"` points at a file the module ships itself - it's additionally namespaced under `services/cfbs/modules/<module-directory>/...`, keeping different modules' same-named files apart from each other.
+
+Continuing the example above, both scripts live inside `./run-scripts/`, next to `input.json`, so `cfbs build` copies them under `modules/run-scripts/`:
+
+```
+$ cfbs build
+--snip--
+$ cat ./out/masterfiles/def.json
+{
+  "variables": {
+    "my_namespace:my_bundle.scripts": {
+      "value": [
+        "$(sys.inputdir)/services/cfbs/modules/run-scripts/deploy.sh",
+        "$(sys.inputdir)/services/cfbs/modules/run-scripts/rollback.sh"
+      ],
+      "comment": "Added by 'cfbs input'"
+    }
+  }
+}
+```
 
 Sometimes you may want to place all your files in a separate directory for easier management.
 ```
