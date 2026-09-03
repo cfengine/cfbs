@@ -42,7 +42,7 @@ def test_localize_file_inputs_copies_list_of_files(tmp_path, monkeypatch):
         }
     ]
 
-    _localize_file_inputs("run-scripts", input_data, "out/masterfiles", [])
+    _localize_file_inputs("run-scripts-module", input_data, "out/masterfiles", [])
 
     assert input_data[0]["response"] == [
         "$(sys.inputdir)/services/cfbs/one.sh",
@@ -51,6 +51,33 @@ def test_localize_file_inputs_copies_list_of_files(tmp_path, monkeypatch):
     assert os.path.isfile("out/masterfiles/services/cfbs/one.sh")
     assert os.path.isfile(
         "out/masterfiles/services/cfbs/modules/run-scripts-module/two.sh"
+    )
+
+
+def test_localize_file_inputs_strips_local_module_prefix_with_dot_slash(
+    tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    os.makedirs("out/masterfiles")
+    os.makedirs("run-a-script")
+    with open("run-a-script/deploy.sh", "w") as f:
+        f.write("echo hi\n")
+
+    input_data = [
+        {
+            "type": "file",
+            "variable": "script",
+            "response": "./run-a-script/deploy.sh",
+        }
+    ]
+
+    _localize_file_inputs("./run-a-script", input_data, "out/masterfiles", [])
+
+    assert input_data[0]["response"] == (
+        "$(sys.inputdir)/services/cfbs/modules/run-a-script/deploy.sh"
+    )
+    assert os.path.isfile(
+        "out/masterfiles/services/cfbs/modules/run-a-script/deploy.sh"
     )
 
 
