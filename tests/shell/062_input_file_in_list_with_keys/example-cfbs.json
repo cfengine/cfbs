@@ -1,0 +1,46 @@
+{
+  "name": "Example",
+  "type": "policy-set",
+  "description": "Example description",
+  "git": false,
+  "build": [
+    {
+      "name": "copy-files",
+      "description": "Copy files, with options per file.",
+      "steps": ["input ./input.json def.json"],
+      "input": [
+        {
+          "type": "list",
+          "variable": "files",
+          "namespace": "cfbs",
+          "bundle": "copy_files",
+          "label": "Files",
+          "subtype": [
+            {
+              "key": "path",
+              "type": "file",
+              "label": "Path",
+              "question": "Which file should be copied?",
+              "filetype": [".txt", ".log"]
+            },
+            {
+              "key": "owner",
+              "type": "string",
+              "label": "Owner",
+              "question": "Who should own the file?",
+              "default": "root"
+            },
+            {
+              "key": "mode",
+              "type": "string",
+              "label": "Mode",
+              "question": "Which mode should the file have?",
+              "default": "0644"
+            }
+          ],
+          "while": "Do you want to copy another file?"
+        }
+      ]
+    }
+  ]
+}

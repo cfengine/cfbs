@@ -36,8 +36,14 @@ def test_localize_file_inputs_copies_list_of_files(tmp_path, monkeypatch):
 
     input_data = [
         {
-            "type": "file",
+            "type": "list",
             "variable": "scripts",
+            "subtype": {
+                "type": "file",
+                "label": "Script",
+                "question": "Which script should be run?",
+            },
+            "while": "Do you want to add another script?",
             "response": ["one.sh", "run-scripts-module/two.sh"],
         }
     ]

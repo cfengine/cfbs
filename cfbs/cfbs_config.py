@@ -580,49 +580,41 @@ class CFBSConfig(CFBSJson):
             if filetypes is not None and not isinstance(filetypes, list):
                 filetypes = [filetypes]
 
-            def _one_file():
-                while True:
-                    response = prompt_user(
-                        self.non_interactive,
-                        input_data["question"],
-                        default=input_data.get("default"),
-                    )
-                    if self.non_interactive:
-                        return response
-                    if filetypes and not any(
-                        response.endswith(filetype) for filetype in filetypes
-                    ):
-                        print(
-                            "'%s' does not have one of the accepted file extensions (%s), please try again"
-                            % (response, ", ".join(filetypes))
-                        )
-                        continue
-                    if not os.path.isfile(response):
-                        print("File '%s' not found, please try again" % response)
-                        continue
+            while True:
+                response = prompt_user(
+                    self.non_interactive,
+                    input_data["question"],
+                    default=input_data.get("default"),
+                )
+                if self.non_interactive:
                     return response
+                if filetypes and not any(
+                    response.endswith(filetype) for filetype in filetypes
+                ):
+                    print(
+                        "'%s' does not have one of the accepted file extensions (%s), please try again"
+                        % (response, ", ".join(filetypes))
+                    )
+                    continue
+                if not os.path.isfile(response):
+                    print("File '%s' not found, please try again" % response)
+                    continue
+                return response
 
-            if "while" not in input_data:
-                return _one_file()
-
-            result = {_one_file()}
-
-            while prompt_user_yesno(
-                self.non_interactive, input_data["while"], default="no"
-            ):
-                result.add(_one_file())
-            return list(result)
+        def _input_subtype(subtype):
+            if subtype["type"] == "string":
+                return _input_string(subtype)
+            if subtype["type"] == "file":
+                return _input_file(subtype)
+            raise CFBSExitError(
+                "Subtype of type '%s' not supported for type list" % subtype["type"]
+            )
 
         def _input_elements(subtype):
             result = OrderedDict()
             for element in subtype:
                 _check_keys(["type", "label", "question", "key"], element)
-                if element["type"] != "string":
-                    raise CFBSExitError(
-                        "Subtype of type '%s' not supported for type list"
-                        % element["type"]
-                    )
-                result[element["key"]] = _input_string(element)
+                result[element["key"]] = _input_subtype(element)
             return result
 
         def _input_list(input_data):
@@ -641,16 +633,11 @@ class CFBSConfig(CFBSJson):
 
             elif isinstance(subtype, dict):
                 _check_keys(["type", "label", "question"], subtype)
-                if subtype["type"] != "string":
-                    raise CFBSExitError(
-                        "Subtype of type '%s' not supported for type list"
-                        % subtype["type"]
-                    )
-                result = [_input_string(subtype)]
+                result = [_input_subtype(subtype)]
                 while prompt_user_yesno(
                     self.non_interactive, input_data["while"], default="no"
                 ):
-                    result.append(_input_string(subtype))
+                    result.append(_input_subtype(subtype))
                 return result
             raise CFBSExitError(
                 "Expected the value of attribute 'subtype' to be a JSON list or object, not: %s"

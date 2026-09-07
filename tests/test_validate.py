@@ -1,7 +1,11 @@
 import pytest
 
 from cfbs.utils import CFBSValidationError
-from cfbs.validate import input_data_matches_spec, validate_module_name_content
+from cfbs.validate import (
+    _validate_module_input,
+    input_data_matches_spec,
+    validate_module_name_content,
+)
 
 
 def test_validate_module_name_content():
@@ -278,3 +282,109 @@ def test_input_data_matches_spec_not_lists():
     # And so does the input definition:
     assert not input_data_matches_spec(0, spec)
     assert not input_data_matches_spec({}, spec)
+
+
+def _module_with_subtype(subtype):
+    return {
+        "input": [
+            {
+                "type": "list",
+                "variable": "files",
+                "namespace": "cfbs",
+                "bundle": "copy_files",
+                "label": "Files",
+                "subtype": subtype,
+                "while": "Do you want to copy another file?",
+            }
+        ]
+    }
+
+
+def test_validate_module_input_file_subtype():
+    """A "file" is accepted as a list "subtype", alone or among other keys"""
+    _validate_module_input(
+        "copy-files",
+        _module_with_subtype(
+            {
+                "type": "file",
+                "label": "Path",
+                "question": "Which file should be copied?",
+                "filetype": [".txt", ".log"],
+            }
+        ),
+    )
+    _validate_module_input(
+        "copy-files",
+        _module_with_subtype(
+            [
+                {
+                    "key": "path",
+                    "type": "file",
+                    "label": "Path",
+                    "question": "Which file should be copied?",
+                    "filetype": ".txt",
+                },
+                {
+                    "key": "owner",
+                    "type": "string",
+                    "label": "Owner",
+                    "question": "Who should own the file?",
+                },
+            ]
+        ),
+    )
+
+
+def test_validate_module_input_subtype_filetype():
+    """A nested "file" has its "filetype" checked like a top level one"""
+    for filetype in ("txt", "", " ", [], [".txt", "log"], [None]):
+        with pytest.raises(CFBSValidationError, match="filetype"):
+            _validate_module_input(
+                "copy-files",
+                _module_with_subtype(
+                    {
+                        "type": "file",
+                        "label": "Path",
+                        "question": "Which file should be copied?",
+                        "filetype": filetype,
+                    }
+                ),
+            )
+
+
+def test_validate_module_input_filetype_surrounding_whitespace():
+    """A "filetype" cannot have leading or trailing whitespace
+
+    Such padding is almost always a typo in the module definition. It is
+    also impossible to match on Windows, where a filename cannot end in
+    a space.
+    """
+    for filetype in (".txt ", " .txt", ".txt\n", "\t.txt", [".txt", ".log "]):
+        with pytest.raises(CFBSValidationError, match="filetype"):
+            _validate_module_input(
+                "copy-files",
+                _module_with_subtype(
+                    {
+                        "type": "file",
+                        "label": "Path",
+                        "question": "Which file should be copied?",
+                        "filetype": filetype,
+                    }
+                ),
+            )
+
+
+def test_validate_module_input_unsupported_subtype():
+    """Only "string" and "file" are values a list "subtype" can consist of"""
+    for subtype_type in ("list", "string-multiline", "blah"):
+        with pytest.raises(CFBSValidationError):
+            _validate_module_input(
+                "copy-files",
+                _module_with_subtype(
+                    {
+                        "type": subtype_type,
+                        "label": "Path",
+                        "question": "Which file should be copied?",
+                    }
+                ),
+            )

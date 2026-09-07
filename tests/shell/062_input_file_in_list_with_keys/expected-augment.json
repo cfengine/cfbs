@@ -1,0 +1,11 @@
+{
+  "variables": {
+    "cfbs:copy_files.files": {
+      "value": [
+        { "path": "./copy-files/one.txt", "owner": "alice", "mode": "0600" },
+        { "path": "./copy-files/two.txt", "owner": "root", "mode": "0644" }
+      ],
+      "comment": "Added by 'cfbs input'"
+    }
+  }
+}

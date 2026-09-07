@@ -649,6 +649,32 @@ def _validate_module_url_field(name, module, field):
         raise CFBSValidationError(name, '"%s" must be an HTTPS URL' % field)
 
 
+def _validate_input_filetype(name, input_element):
+    if "filetype" not in input_element:
+        return
+    filetype = input_element["filetype"]
+    filetypes = filetype if type(filetype) is list else [filetype]
+    if not filetypes:
+        raise CFBSValidationError(
+            name,
+            'The "filetype" field of a "file" input element must be a non-empty file extension, or a non-empty list of them, not "%s"'
+            % filetype,
+        )
+    for part in filetypes:
+        if type(part) is not str or not part.strip() or not part.startswith("."):
+            raise CFBSValidationError(
+                name,
+                'The "filetype" field of a "file" input element must consist of file extensions starting with ".", not "%s"'
+                % part,
+            )
+        if part != part.strip():
+            raise CFBSValidationError(
+                name,
+                'The "filetype" field of a "file" input element must not have leading or trailing whitespace, unlike "%s"'
+                % part,
+            )
+
+
 def _validate_module_input(name, module):
     assert "input" in module
     if type(module["input"]) is not list or not module["input"]:
@@ -764,42 +790,17 @@ def _validate_module_input(name, module):
                             name,
                             'When using module input with type list, and subtype includes multiple values, "key" is required to distinguish them',
                         )
-                if part["type"] != "string":
+                if part["type"] not in ("string", "file"):
                     raise CFBSValidationError(
                         name,
-                        'Only "string" supported for the "type" of module input list elements, not "%s"'
+                        'Only "string" and "file" are supported for the "type" of module input list elements, not "%s"'
                         % part["type"],
                     )
+                if part["type"] == "file":
+                    _validate_input_filetype(name, part)
 
         if input_element["type"] == "file":
-            if "filetype" in input_element:
-                filetype = input_element["filetype"]
-                filetypes = filetype if type(filetype) is list else [filetype]
-                if not filetypes:
-                    raise CFBSValidationError(
-                        name,
-                        'The "filetype" field of a "file" input element must be a non-empty file extension, or a non-empty list of them, not "%s"'
-                        % filetype,
-                    )
-                for part in filetypes:
-                    if (
-                        type(part) is not str
-                        or not part.strip()
-                        or not part.startswith(".")
-                    ):
-                        raise CFBSValidationError(
-                            name,
-                            'The "filetype" field of a "file" input element must consist of file extensions starting with ".", not "%s"'
-                            % part,
-                        )
-            if "while" in input_element and (
-                type(input_element["while"]) is not str
-                or not input_element["while"].strip()
-            ):
-                raise CFBSValidationError(
-                    name,
-                    'The "while" prompt in an input "file" element must be a non-empty / non-whitespace string',
-                )
+            _validate_input_filetype(name, input_element)
 
 
 def _compare_dict(a, b, ignore=None):

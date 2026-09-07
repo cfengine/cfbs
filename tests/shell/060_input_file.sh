@@ -33,10 +33,11 @@ grep '"response": "./source.txt"' copy-a-file/input.json
 cfbs render-input copy-a-file copy-a-file/input.json actual.output
 diff actual.output ../shell/060_input_file/expected-augment.json
 
-# A "file" input with a "while" prompt must let the user supply multiple
-# files. Files from outside the project must be copied into the module's
-# directory, next to input.json, and "response" updated to a list of the
-# (possibly localized) paths:
+# A "list" input with a "file" subtype must let the user supply multiple
+# files, the "while" prompt of the list asking for each one after the first.
+# Files from outside the project must be copied into the module's directory,
+# next to input.json, and "response" updated to a list of the (possibly
+# localized) paths:
 echo "echo one" > /tmp/one.sh
 echo "echo two" > /tmp/two.sh
 printf '/tmp/one.sh\nyes\n/tmp/two.sh\nno\n' | cfbs input run-scripts

@@ -900,18 +900,40 @@ $ cat ./out/masterfiles/def.json
 ### Referencing a file example
 
 The `"file"` input type lets a module ask the user for the path to an existing file (a script, playbook, etc.) instead of a value typed in directly - the file must already exist, `cfbs` doesn't generate its contents.
-Two optional attributes are available to the `"file"` input-type: `filetype` restricts which file extension(s) are accepted (a string or list of strings; any extension is accepted if omitted), and `while`, just like for `"list"`, lets the user supply any number of files instead of just one.
+One optional attribute is available to the `"file"` input-type: `filetype` restricts which file extension(s) are accepted (a string or list of strings; any extension is accepted if omitted).
+
+A `"file"` input asks for exactly one file, and its `"response"` is a single path:
 
 ```json
       "input": [
         {
           "type": "file",
-          "variable": "scripts",
+          "variable": "script",
           "namespace": "my_namespace",
           "bundle": "my_bundle",
           "label": "Script",
           "question": "Which script should be run?",
-          "filetype": ".sh",
+          "filetype": ".sh"
+        }
+      ]
+```
+
+To ask for several files, use a `"list"` input with a `"file"` subtype, exactly as you would for several strings - the `"while"` prompt of the list is what asks for each file after the first:
+
+```json
+      "input": [
+        {
+          "type": "list",
+          "variable": "scripts",
+          "namespace": "my_namespace",
+          "bundle": "my_bundle",
+          "label": "Scripts",
+          "subtype": {
+            "type": "file",
+            "label": "Script",
+            "question": "Which script should be run?",
+            "filetype": ".sh"
+          },
           "while": "Do you want to add another script?"
         }
       ]
@@ -929,20 +951,63 @@ Do you want to add another script? no
 $ cat ./run-scripts/input.json
 [
   {
-    "type": "file",
+    "type": "list",
     "variable": "scripts",
     "namespace": "my_namespace",
     "bundle": "my_bundle",
-    "label": "Script",
-    "question": "Which script should be run?",
-    "filetype": ".sh",
+    "label": "Scripts",
+    "subtype": {
+      "type": "file",
+      "label": "Script",
+      "question": "Which script should be run?",
+      "filetype": ".sh"
+    },
     "while": "Do you want to add another script?",
     "response": ["./run-scripts/deploy.sh", "./run-scripts/rollback.sh"]
   }
 ]
 ```
 
-Without `"while"`, `"response"` is a single path instead of a list.
+A `"file"` can also be one key among several in a list `"subtype"`, which is how a module asks for a file together with some options describing it:
+
+```json
+      "input": [
+        {
+          "type": "list",
+          "variable": "scripts",
+          "namespace": "my_namespace",
+          "bundle": "my_bundle",
+          "label": "Scripts",
+          "subtype": [
+            {
+              "key": "path",
+              "type": "file",
+              "label": "Script",
+              "question": "Which script should be run?",
+              "filetype": ".sh"
+            },
+            {
+              "key": "condition",
+              "type": "string",
+              "label": "Condition",
+              "question": "Condition for when to run it",
+              "default": "any"
+            }
+          ],
+          "while": "Do you want to add another script?"
+        }
+      ]
+```
+
+Each response is then an object, and only the `"file"` keys inside it are treated as paths:
+
+```json
+    "response": [
+      { "path": "./run-scripts/deploy.sh", "condition": "linux" },
+      { "path": "./run-scripts/rollback.sh", "condition": "any" }
+    ]
+```
+
 A file already inside the project is referred to as-is; a file from outside (as above) is copied into the module's own directory, next to `input.json`.
 
 #### Where these files end up in the built policy set
@@ -953,7 +1018,7 @@ During `cfbs build`, every `"file"` response is copied into the policy set (so i
 - Otherwise, the file is copied into `services/cfbs/`, preserving its path *relative to the project root* rather than just its filename, so that files with the same name coming from different sources (e.g. two different modules' file inputs both named `deploy.sh`) don't overwrite each other.
   - If the file lives inside the referencing module's own directory - as is normal for files placed there by `cfbs input`, like the two scripts above, or for a `"file"` input whose `"default"` points at a file the module ships itself - it's additionally namespaced under `services/cfbs/modules/<module-directory>/...`, keeping different modules' same-named files apart from each other.
 
-Continuing the example above, both scripts live inside `./run-scripts/`, next to `input.json`, so `cfbs build` copies them under `modules/run-scripts/`:
+Continuing the list-of-files example above, both scripts live inside `./run-scripts/`, next to `input.json`, so `cfbs build` copies them under `modules/run-scripts/`:
 
 ```
 $ cfbs build
