@@ -1,0 +1,8 @@
+{
+  "variables": {
+    "cfbs:write_notes.notes": {
+      "value": ["Hello CFEngine!\nBye CFEngine!\n", "Just one line\n"],
+      "comment": "Added by 'cfbs input'"
+    }
+  }
+}

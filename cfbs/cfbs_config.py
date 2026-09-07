@@ -604,6 +604,8 @@ class CFBSConfig(CFBSJson):
         def _input_subtype(subtype):
             if subtype["type"] == "string":
                 return _input_string(subtype)
+            if subtype["type"] == "string-multiline":
+                return _input_multiline_string(subtype)
             if subtype["type"] == "file":
                 return _input_file(subtype)
             raise CFBSExitError(

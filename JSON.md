@@ -706,6 +706,22 @@ The entered lines are joined with `\n` into a single string response, same as fo
   }
 ```
 
+A `"string-multiline"` can also be used as the `"subtype"` of a `"list"` input, to collect several blocks of text:
+
+```json
+        {
+          "type": "list",
+          "variable": "notes",
+          "label": "Notes",
+          "subtype": {
+            "type": "string-multiline",
+            "label": "Note",
+            "question": "What should the note say?"
+          },
+          "while": "Do you want to write another note?"
+        }
+```
+
 ### Create multiple files example
 
 Sometimes we would like a module to support taking an arbritary number of inputs.

@@ -300,6 +300,39 @@ def _module_with_subtype(subtype):
     }
 
 
+def test_validate_module_input_string_multiline_subtype():
+    """A "string-multiline" is accepted as a list "subtype" too"""
+    _validate_module_input(
+        "write-notes",
+        _module_with_subtype(
+            {
+                "type": "string-multiline",
+                "label": "Note",
+                "question": "What should the note say?",
+            }
+        ),
+    )
+    _validate_module_input(
+        "write-notes",
+        _module_with_subtype(
+            [
+                {
+                    "key": "name",
+                    "type": "string",
+                    "label": "Name",
+                    "question": "What should the note be called?",
+                },
+                {
+                    "key": "content",
+                    "type": "string-multiline",
+                    "label": "Note",
+                    "question": "What should the note say?",
+                },
+            ]
+        ),
+    )
+
+
 def test_validate_module_input_file_subtype():
     """A "file" is accepted as a list "subtype", alone or among other keys"""
     _validate_module_input(
@@ -375,8 +408,8 @@ def test_validate_module_input_filetype_surrounding_whitespace():
 
 
 def test_validate_module_input_unsupported_subtype():
-    """Only "string" and "file" are values a list "subtype" can consist of"""
-    for subtype_type in ("list", "string-multiline", "blah"):
+    """A list "subtype" cannot consist of just any input type"""
+    for subtype_type in ("list", "blah"):
         with pytest.raises(CFBSValidationError):
             _validate_module_input(
                 "copy-files",

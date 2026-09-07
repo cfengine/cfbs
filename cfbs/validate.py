@@ -790,10 +790,10 @@ def _validate_module_input(name, module):
                             name,
                             'When using module input with type list, and subtype includes multiple values, "key" is required to distinguish them',
                         )
-                if part["type"] not in ("string", "file"):
+                if part["type"] not in ("string", "string-multiline", "file"):
                     raise CFBSValidationError(
                         name,
-                        'Only "string" and "file" are supported for the "type" of module input list elements, not "%s"'
+                        'Only "string", "string-multiline" and "file" are supported for the "type" of module input list elements, not "%s"'
                         % part["type"],
                     )
                 if part["type"] == "file":
