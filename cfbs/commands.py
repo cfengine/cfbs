@@ -1854,6 +1854,55 @@ def _place_file_input(module_name, input_data):
     return copied_files
 
 
+@cfbs_command("remove-input")
+@commit_after_command("Removed input for module%s", [PLURAL_S])
+def remove_input_command(args, input_from="cfbs remove-input"):
+    config = CFBSConfig.get_instance()
+    validate_config_raise_exceptions(config, empty_build_list_ok=True)
+    do_commit = False
+    files_to_remove = []
+    for module_name in args:
+        module = config.get_module_from_build(module_name)
+        if not module:
+            print("Skipping module '%s', module not found" % module_name)
+            continue
+        if "input" not in module:
+            print("Skipping module '%s', no input exists" % module_name)
+            continue
+
+        input_path = os.path.join(".", module_name, "input.json")
+        removed_input_files = _remove_file_input(input_path)
+
+        files_to_remove.append(input_path)
+        files_to_remove.extend(removed_input_files)
+
+    for filepath in files_to_remove:
+        rm(filepath)
+
+    do_commit = True
+    config.save()
+    return CFBSCommandGitResult(0, do_commit, None, files_to_remove)
+
+
+def _remove_file_input(input_path):
+    input_data = read_json(input_path) or []
+    files_to_remove = []
+    for value in input_data:
+        if value["type"] == "file":
+            files_to_remove.append(value["response"])
+        elif value["type"] == "list":
+            file_keys = [
+                sub["key"]
+                for sub in (value.get("subtype") or [])
+                if sub.get("type") == "file" and sub.get("key")
+            ]
+            for row in value["response"]:
+                for key in file_keys:
+                    if key in row:
+                        files_to_remove.append(row[key])
+    return [os.path.join(".", f) for f in files_to_remove]
+
+
 @cfbs_command("set-input")
 @commit_after_command("Set input for module %s", [FIRST_ARG])
 def set_input_command(name, infile):

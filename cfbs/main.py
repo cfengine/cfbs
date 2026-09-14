@@ -207,6 +207,8 @@ def _main() -> int:
         return commands.update_command(args.args)
     if args.command == "input":
         return commands.input_command(args.args)
+    if args.command == "remove-input":
+        return commands.remove_input_command(args.args)
     if args.command in ("set-input", "get-input"):
         filename = "stdin" if args.command == "set-input" else "stdout"
         if len(args.args) <= 0:
