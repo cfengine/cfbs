@@ -17,6 +17,7 @@ import shutil
 import subprocess
 from cfbs.augments import generate_augment
 from cfbs.cfbs_config import CFBSConfig
+from cfbs.module_input import map_file_responses
 from cfbs.utils import (
     CFBSUserError,
     cli_tool_present,
@@ -287,9 +288,6 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
     build step (e.g. the project author set one up manually), that step's
     destination is used instead of making a redundant copy.
     """
-    if not isinstance(input_data, list):
-        return
-
     module_dir_name = name[2:] if name.startswith("./") else name
     module_dir_name = os.path.basename(module_dir_name.rstrip("/"))
 
@@ -314,14 +312,7 @@ def _localize_file_inputs(name, input_data, destination, build_modules):
         cp(rel_path, dest)
         return "$(sys.inputdir)/" + os.path.relpath(dest, destination)
 
-    for element in input_data:
-        if not isinstance(element, dict) or element.get("type") != "file":
-            continue
-        response = element.get("response")
-        if isinstance(response, list):
-            element["response"] = [_localize(path) for path in response]
-        else:
-            element["response"] = _localize(response)
+    map_file_responses(input_data, _localize)
 
 
 def _perform_input_step(args, name, destination, prefix, build_modules):

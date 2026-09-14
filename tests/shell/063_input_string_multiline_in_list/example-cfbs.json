@@ -1,0 +1,28 @@
+{
+  "name": "Example",
+  "type": "policy-set",
+  "description": "Example description",
+  "git": false,
+  "build": [
+    {
+      "name": "write-notes",
+      "description": "Write notes.",
+      "steps": ["input ./input.json def.json"],
+      "input": [
+        {
+          "type": "list",
+          "variable": "notes",
+          "namespace": "cfbs",
+          "bundle": "write_notes",
+          "label": "Notes",
+          "subtype": {
+            "type": "string-multiline",
+            "label": "Note",
+            "question": "What should the note say?"
+          },
+          "while": "Do you want to write another note?"
+        }
+      ]
+    }
+  ]
+}

@@ -130,6 +130,7 @@ from cfbs.git import (
 from cfbs.git_magic import commit_after_command, git_commit_maybe_prompt
 from cfbs.prompts import prompt_user, prompt_user_yesno
 from cfbs.module import Module, is_module_absolute, is_module_added_manually
+from cfbs.module_input import map_file_responses
 
 _MODULES_URL = "https://archive.build.cfengine.com/modules"
 
@@ -1821,9 +1822,7 @@ def _place_file_input(module_name, input_data):
     A file already inside the project is left where it is and simply
     referred to. A file from outside the project is copied into the
     module's directory, next to its input.json, and the response is
-    updated to point at that copy. A "file" input using "while" to collect
-    multiple files has a list of paths as its response, each handled the
-    same way.
+    updated to point at that copy.
 
     Returns the list of paths that were copied into the project, so they
     can be committed alongside input.json.
@@ -1850,14 +1849,7 @@ def _place_file_input(module_name, input_data):
         copied_files.append(dest)
         return dest
 
-    for definition in input_data:
-        if definition.get("type") != "file":
-            continue
-        response = definition.get("response")
-        if isinstance(response, list):
-            definition["response"] = [_place(path) for path in response]
-        else:
-            definition["response"] = _place(response)
+    map_file_responses(input_data, _place)
 
     return copied_files
 
