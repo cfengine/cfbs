@@ -17,7 +17,7 @@ cfbs build
 ls out/masterfiles/services/cfbs/subdir/example.py
 
 # Replace should have changed it:
-! diff ./subdir/example.py out/masterfiles/services/cfbs/subdir/example.py > /dev/null
+if diff ./subdir/example.py out/masterfiles/services/cfbs/subdir/example.py > /dev/null; then exit 1; fi
 
 # This is the expected content:
 diff ./subdir/example.expected.py out/masterfiles/services/cfbs/subdir/example.py

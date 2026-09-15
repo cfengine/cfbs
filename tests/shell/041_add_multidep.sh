@@ -17,5 +17,5 @@ grep -F "Added module: test-inventory-local-groups" ./output.log
 grep -F "Added module: test-inventory-local-users" ./output.log
 
 # Adding modules together with their dependencies should not display skipping messages (CFE-3841):
-! ( grep -F "Skipping already added" ./output.log )
+if ( grep -F "Skipping already added" ./output.log ); then exit 1; fi
 

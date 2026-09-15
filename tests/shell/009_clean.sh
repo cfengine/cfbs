@@ -11,8 +11,8 @@ cfbs --non-interactive add promise-type-git
 grep '"name": "library-for-promise-types-in-python"' cfbs.json
 grep '"name": "promise-type-git"' cfbs.json
 cfbs --non-interactive remove promise-type-git --non-interactive
-! grep '"name": "library-for-promise-types-in-python"' cfbs.json
-! grep '"name": "promise-type-git"' cfbs.json
+if grep '"name": "library-for-promise-types-in-python"' cfbs.json; then exit 1; fi
+if grep '"name": "promise-type-git"' cfbs.json; then exit 1; fi
 
 # Check that clean does nothing:
 cat cfbs.json > before.json

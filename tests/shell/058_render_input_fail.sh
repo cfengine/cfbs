@@ -36,7 +36,7 @@ echo '[
     "response": "/tmp/create-single-file.txt"
   }
 ]' > actual.input
-! cfbs render-input create-single-file actual.input -
+if cfbs render-input create-single-file actual.input -; then exit 1; fi
 
 # Neither does a renamed key:
 echo '[
@@ -48,19 +48,19 @@ echo '[
     "response": "/tmp/create-single-file.txt"
   }
 ]' > actual.input
-! cfbs render-input create-single-file actual.input -
+if cfbs render-input create-single-file actual.input -; then exit 1; fi
 
 # Input data which doesn't parse as json:
 echo 'not json' > actual.input
-! cfbs render-input create-single-file actual.input -
+if cfbs render-input create-single-file actual.input -; then exit 1; fi
 
 # A module which doesn't accept any input:
 echo '[]' > actual.input
-! cfbs render-input autorun actual.input -
+if cfbs render-input autorun actual.input -; then exit 1; fi
 
 # A module which doesn't exist:
-! cfbs render-input no-such-module-anywhere actual.input -
+if cfbs render-input no-such-module-anywhere actual.input -; then exit 1; fi
 
 # A missing outfile, and one argument too many:
-! cfbs render-input create-single-file actual.input
-! cfbs render-input create-single-file actual.input - -
+if cfbs render-input create-single-file actual.input; then exit 1; fi
+if cfbs render-input create-single-file actual.input - -; then exit 1; fi
