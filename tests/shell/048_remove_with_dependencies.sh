@@ -15,8 +15,8 @@ grep '"name": "example-dependency"' cfbs.json
 cfbs --non-interactive remove example-module --non-interactive
 cfbs validate
 
-! grep '"name": "example-module"' cfbs.json
-! grep '"name": "example-dependency"' cfbs.json
+if grep '"name": "example-module"' cfbs.json; then exit 1; fi
+if grep '"name": "example-dependency"' cfbs.json; then exit 1; fi
 
 
 
@@ -30,4 +30,4 @@ cfbs --non-interactive remove example-dependency --non-interactive
 cfbs validate
 
 grep '"name": "example-module"' cfbs.json
-! grep '"name": "example-dependency"' cfbs.json
+if grep '"name": "example-dependency"' cfbs.json; then exit 1; fi

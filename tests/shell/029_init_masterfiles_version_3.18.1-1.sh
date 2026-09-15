@@ -12,5 +12,5 @@ grep '"version": "3.18.1-1"' cfbs.json
 grep '"commit": "b6e9eacc65c797f4c2b4a59056293636c320d0c9"' cfbs.json
 cfbs build
 cfbs --non-interactive update
-! grep '"version": "3.18.1-1"' cfbs.json
-! grep '"commit": "b6e9eacc65c797f4c2b4a59056293636c320d0c9"' cfbs.json
+if grep '"version": "3.18.1-1"' cfbs.json; then exit 1; fi
+if grep '"commit": "b6e9eacc65c797f4c2b4a59056293636c320d0c9"' cfbs.json; then exit 1; fi

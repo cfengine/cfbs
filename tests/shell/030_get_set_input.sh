@@ -93,7 +93,7 @@ echo '[
     "response": "/tmp/test-2.txt"
   }
 ]' > igors-input.json
-! cfbs set-input create-single-file igors-input.json
+if cfbs set-input create-single-file igors-input.json; then exit 1; fi
 
 # Now Igor instead changes a key
 echo '[
@@ -105,7 +105,7 @@ echo '[
     "response": "/tmp/test-2.txt"
   }
 ]' > igors-input.json
-! cfbs set-input create-single-file igors-input.json
+if cfbs set-input create-single-file igors-input.json; then exit 1; fi
 
 # Igor changes the order but that's all right
 echo '[

@@ -12,6 +12,6 @@ cfbs search mpf > mpf.log
 cfbs search masterfiles > masterfiles.log
 
 grep "python" all.log
-! grep "python" mpf.log
+if grep "python" mpf.log; then exit 1; fi
 grep "masterfiles" mpf.log
 grep "masterfiles" masterfiles.log
