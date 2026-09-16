@@ -1,0 +1,32 @@
+{
+  "name": "Example",
+  "type": "policy-set",
+  "description": "Example description",
+  "git": false,
+  "build": [
+    {
+      "name": "copy-files",
+      "description": "Copy files, with options per file.",
+      "steps": ["input ./input.json def.json"],
+      "input": [
+        {
+          "type": "list",
+          "variable": "files",
+          "namespace": "cfbs",
+          "bundle": "copy_files",
+          "label": "Files",
+          "subtype": [
+            {
+              "key": "path",
+              "type": "file",
+              "label": "Path",
+              "question": "Which file should be copied?",
+              "filetype": [".txt", ".log"]
+            }
+          ],
+          "while": "Do you want to copy another file?"
+        }
+      ]
+    }
+  ]
+}
