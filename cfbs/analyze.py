@@ -100,6 +100,43 @@ def checksums_files(
     return checksums_dict, files_dict
 
 
+def mpf_checksums_files_dicts(mpf_versions_dict):
+    """Generates the checksums and files dicts from the versions dict"""
+    mpf_checksums_dict = {}
+    mpf_files_dict = {}
+
+    for version, files_and_checksums in mpf_versions_dict.items():
+        for file, checksum in files_and_checksums.items():
+
+            if checksum not in mpf_checksums_dict:
+                mpf_checksums_dict[checksum] = {}
+
+            if file not in mpf_checksums_dict[checksum]:
+                mpf_checksums_dict[checksum][file] = []
+
+            mpf_checksums_dict[checksum][file].append(version)
+
+            if file not in mpf_files_dict:
+                mpf_files_dict[file] = {}
+
+            if checksum not in mpf_files_dict[file]:
+                mpf_files_dict[file][checksum] = []
+
+            mpf_files_dict[file][checksum].append(version)
+
+    mpf_checksums_dict = OrderedDict(sorted(mpf_checksums_dict.items()))
+    for checksum in mpf_checksums_dict:
+        mpf_checksums_dict[checksum] = OrderedDict(
+            sorted(mpf_checksums_dict[checksum].items())
+        )
+
+    mpf_files_dict = OrderedDict(sorted(mpf_files_dict.items()))
+    for file in mpf_files_dict:
+        mpf_files_dict[file] = OrderedDict(sorted(mpf_files_dict[file].items()))
+
+    return mpf_checksums_dict, mpf_files_dict
+
+
 def mpf_vcf_dicts(offline=False):
     """(vcf stands for versions, checksums, files)"""
     REPO_OWNER = "cfengine"
@@ -176,21 +213,12 @@ def mpf_vcf_dicts(offline=False):
             )
 
     mpf_versions_json_path = os.path.join(mpf_vcf_path, "versions.json")
-    mpf_checkfiles_json_path = os.path.join(mpf_vcf_path, "checksums.json")
-    mpf_files_json_path = os.path.join(mpf_vcf_path, "files.json")
 
     mpf_versions_dict = read_json(mpf_versions_json_path)
     assert mpf_versions_dict is not None
-
     mpf_versions_dict = mpf_versions_dict["versions"]
 
-    mpf_checksums_dict = read_json(mpf_checkfiles_json_path)
-    assert mpf_checksums_dict is not None
-    mpf_checksums_dict = mpf_checksums_dict["checksums"]
-
-    mpf_files_dict = read_json(mpf_files_json_path)
-    assert mpf_files_dict is not None
-    mpf_files_dict = mpf_files_dict["files"]
+    mpf_checksums_dict, mpf_files_dict = mpf_checksums_files_dicts(mpf_versions_dict)
 
     return mpf_versions_dict, mpf_checksums_dict, mpf_files_dict
 
